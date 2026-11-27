@@ -7,13 +7,15 @@ description: |-
     Provides a list of SSL-VPN client certificates which owned by an Alicloud account.
 ---
 
-# alicloud\_ssl_vpn_client_certs
+# alicloud_ssl_vpn_client_certs
 
 The SSL-VPN client certificates data source lists lots of SSL-VPN client certificates resource information owned by an Alicloud account.
 
+-> **NOTE:** Available since v1.39.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ssl_vpn_client_certs" "foo" {
   ids               = ["fake-cert-id"]
   ssl_vpn_server_id = "fake-server-id"
@@ -37,10 +39,17 @@ The following attributes are exported:
 
 * `ids` - A list of SSL-VPN client cert IDs.
 * `names` - A list of SSL-VPN client cert names.
-* `certs` - A list of SSL-VPN client certificates. Each element contains the following attributes:
-  * `id` - ID of the SSL-VPN client certificate.
-  * `ssl_vpn_server_id` - ID of the SSL-VPN Server.
-  * `name` - The name of the SSL-VPN client certificate.
-  * `create_time` - The time of creation.
-  * `end_time` - The expiration time of the client certificate.
-  * `status` - The status of the client certificate. valid value:expiring-soon, normal, expired.
+* `certs` - A list of SSL-VPN client certificates.
+
+---
+
+### `certs`
+
+The certs supports the following attributes:
+
+* `id` - ID of the SSL-VPN client certificate.
+* `ssl_vpn_server_id` - ID of the SSL-VPN Server.
+* `name` - The name of the SSL-VPN client certificate.
+* `create_time` - The time of creation.
+* `end_time` - The expiration time of the client certificate.
+* `status` - The status of the client certificate. valid value:expiring-soon, normal, expired.

@@ -31,13 +31,20 @@ data "alicloud_polardb_gateway_rate_limit_policies" "example" {
 
 ## Attributes Reference
 
-* `policies` - A list of rate limit policies. Each element contains the following attributes:
-  * `id` - The policy ID.
-  * `policy_type` - The policy type.
-  * `scope_type` - The rate limit dimension.
-  * `scope_ref_id` - The dimension object ID.
-  * `rate_limit_rpm` - The maximum requests per minute.
-  * `rate_limit_tpm` - The maximum tokens per minute.
-  * `status` - The policy status.
-  * `create_time` - The creation time.
-  * `modify_time` - The last modification time.
+* `policies` - A list of rate limit policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The policy ID.
+* `policy_type` - The policy type.
+* `scope_type` - The rate limit dimension.
+* `scope_ref_id` - The dimension object ID.
+* `rate_limit_rpm` - The maximum requests per minute.
+* `rate_limit_tpm` - The maximum tokens per minute.
+* `status` - The policy status.
+* `create_time` - The creation time.
+* `modify_time` - The last modification time.

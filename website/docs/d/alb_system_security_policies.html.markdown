@@ -31,7 +31,7 @@ output "alb_system_security_policy_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of System Security Policy IDs.
+* `ids` - (Optional, Computed)  A list of System Security Policy IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `tags` - (Optional) A mapping of tags of the resource.
 
@@ -40,8 +40,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of System Security Policy IDs.
-* `policies` - A list of ALB Security Policies. Each element contains the following attributes:
-  * `id` - The ID of the Security Policy.
-  * `security_policy_id` - The first ID of the resource.
-  * `tls_versions` - The TLS protocol versions are supported. Valid values: TLSv1.0, TLSv1.1, TLSv1.2 and TLSv1.3.
-  * `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.
+* `policies` - A list of ALB Security Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the Security Policy.
+* `security_policy_id` - The first ID of the resource.
+* `tls_versions` - The TLS protocol versions are supported. Valid values: TLSv1.0, TLSv1.1, TLSv1.2 and TLSv1.3.
+* `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.

@@ -31,21 +31,31 @@ output "imm_project_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Project IDs.
+* `ids` - (Optional, Computed)  A list of Project IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `projects` - A list of Imm Projects. Each element contains the following attributes:
+* `projects` - A list of Imm Projects.
 
-  * `create_time` - The creation time of project.
-  * `id` - The ID of project.
-  * `modify_time` - The modification time of project.
-  * `type` - The type of project.
-  * `project` -The name of project.
-  * `service_role` - The service role authorized to the Intelligent Media Management service to access other cloud resources.
-  * `endpoint` - The service address of project.
-  * `billing_type` - The billing type. **Note:** This parameter is deprecated from 2021-04-01.
-  * `compute_unit` - The maximum number of requests that can be processed per second. **Note:** This parameter is deprecated from 2021-04-01.
+---
+
+### `projects`
+
+The projects supports the following attributes:
+
+* `create_time` - The creation time of project.
+* `id` - The ID of project.
+* `modify_time` - The modification time of project.
+* `type` - The type of project.
+* `project` -The name of project.
+* `service_role` - The service role authorized to the Intelligent Media Management service to access other cloud resources.
+* `endpoint` - The service address of project.
+* `billing_type` - The billing type.
+
+  -> **NOTE:** This parameter is deprecated from 2021-04-01.
+* `compute_unit` - The maximum number of requests that can be processed per second.
+
+  -> **NOTE:** This parameter is deprecated from 2021-04-01.

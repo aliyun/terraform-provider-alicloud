@@ -12,7 +12,7 @@ description: |-
 Provides a Alicloud Function Compute Service resource. The resource is the base of launching Function and Trigger configuration.
  For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/en/fc/developer-reference/api-fc-open-2021-04-06-createservice).
 
--> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
+-> **NOTE:** The resource requires a provider field 'account_id'. [See the provider configuration](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs).
 
 -> **NOTE:** If you happen the error "Argument 'internetAccess' is not supported", you need to log on web console and click button "Apply VPC Function"
 which is in the upper of [Function Service Web Console](https://fc.console.aliyun.com/) page.
@@ -281,12 +281,20 @@ The following arguments are supported:
 * `description` - (Optional) The Function Compute Service description.
 * `internet_access` - (Optional) Whether to allow the Service to access Internet. Default to "true".
 * `role` - (Optional) RAM role arn attached to the Function Compute Service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
-* `log_config` - (Optional) Provide this to store your Function Compute Service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm). `log_config` requires the following: (**NOTE:** If both `project` and `logstore` are empty, log_config is considered to be empty or unset.). See [`log_config`](#log_config) below.
-* `vpc_config` - (Optional) Provide this to allow your Function Compute Service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm). `vpc_config` requires the following: (**NOTE:** If both `vswitch_ids` and `security_group_id` are empty, vpc_config is considered to be empty or unset.). See [`vpc_config`](#vpc_config) below.
+* `log_config` - (Optional) Provide this to store your Function Compute Service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm). `log_config` requires the following: (
+
+  -> **NOTE:** If both `project` and `logstore` are empty, log_config is considered to be empty or unset.). See [`log_config`](#log_config) below.
+* `vpc_config` - (Optional) Provide this to allow your Function Compute Service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm). `vpc_config` requires the following: (
+
+  -> **NOTE:** If both `vswitch_ids` and `security_group_id` are empty, vpc_config is considered to be empty or unset.). See [`vpc_config`](#vpc_config) below.
 * `nas_config` - (Optional, available in 1.96.0+) Provide [NAS configuration](https://www.alibabacloud.com/help/doc-detail/87401.htm) to allow Function Compute Service to access your NAS resources. See [`nas_config`](#nas_config) below.
-* `tracing_config` - (Optional, available in 1.183.0+) Provide this to allow your Function Compute to report tracing information. Fields documented below. See [Function Compute Tracing Config](https://help.aliyun.com/document_detail/189805.html). `tracing_config` requires the following: (**NOTE:** If both `type` and `params` are empty, tracing_config is considered to be empty or unset.). See [`tracing_config`](#tracing_config) below.
+* `tracing_config` - (Optional, available in 1.183.0+) Provide this to allow your Function Compute to report tracing information. Fields documented below. See [Function Compute Tracing Config](https://help.aliyun.com/document_detail/189805.html). `tracing_config` requires the following: (
+
+  -> **NOTE:** If both `type` and `params` are empty, tracing_config is considered to be empty or unset.). See [`tracing_config`](#tracing_config) below.
 * `publish` - (Optional, available in 1.101.0+) Whether to publish creation/change as new Function Compute Service Version. Defaults to `false`.
 * `tags` - (Optional, available in 1.212.0+) Map for tagging resources.
+
+---
 
 ### `log_config`
 
@@ -297,13 +305,17 @@ The log_config supports the following:
 * `enable_request_metrics` - (Optional, available in 1.183.0+) Enable request level metrics.
 * `enable_instance_metrics` - (Optional, available in 1.183.0+) Enable instance level metrics.
 
+---
+
 ### `vpc_config`
 
 The vpc_config supports the following:
 
-* `vpc_id` - (Optional) A vpc ID associated with the Function Compute Service.
+* `vpc_id` - (Computed) A vpc ID associated with the Function Compute Service.
 * `vswitch_ids` - (Required) A list of vswitch IDs associated with the Function Compute Service.
 * `security_group_id` - (Required) A security group ID associated with the Function Compute Service.
+
+---
 
 ### `nas_config`
 
@@ -313,12 +325,16 @@ The nas_config supports the following:
 * `group_id` - (Required) The group id of your NAS file system.
 * `mount_points` - (Required) Config the NAS mount points.See [`mount_points`](#nas_config-mount_points) below.
 
+---
+
 ### `nas_config-mount_points`
 
 The nas_config-mount_points supports the following:
 
 * `server_addr` - (Required) The address of the remote NAS directory.
 * `mount_dir` - (Required) The local address where to mount your remote NAS directory.
+
+---
 
 ### `tracing_config`
 

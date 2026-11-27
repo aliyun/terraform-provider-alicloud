@@ -90,6 +90,10 @@ func DataSourceTRAssociations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -218,6 +222,7 @@ func dataSourceTRAssociationsRead(d *schema.ResourceData, meta interface{}) erro
 			"transit_router_owner_id": fmt.Sprint(object["TransitRouterOwnerId"]),
 			"cen_id":                  object["CenId"],
 			"allowed_prefixes_mode":   object["AllowedPrefixesMode"],
+			"description":             object["Description"],
 			"status":                  object["Status"],
 			"create_time":             object["GmtCreate"],
 			"modify_time":             object["GmtModified"],

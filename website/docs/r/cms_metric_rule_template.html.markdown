@@ -71,6 +71,8 @@ The following arguments are supported:
 * `enable_end_time` - (Optional) The end of the time period during which the alert rule is effective. Valid values: `00` to `23`. The value `00` indicates 00:59 and the value `23` indicates 23:59.
 * `alert_templates` - (Optional, Set) The details of alert rules that are generated based on the alert template. See [`alert_templates`](#alert_templates) below.
 
+---
+
 ### `alert_templates`
 
 The alert_templates supports the following:
@@ -88,6 +90,8 @@ The alert_templates supports the following:
 * `webhook` - (Optional) The callback URL to which a POST request is sent when an alert is triggered based on the alert rule.
 * `escalations` - (Optional, Set) The information about the trigger condition based on the alert level. See [`escalations`](#alert_templates-escalations) below.
 
+---
+
 ### `alert_templates-escalations`
 
 The escalations supports the following:
@@ -95,6 +99,8 @@ The escalations supports the following:
 * `critical` - (Optional, Set) The condition for triggering critical-level alerts. See [`critical`](#alert_templates-escalations-critical) below.
 * `info` - (Optional, Set) The condition for triggering info-level alerts. See [`info`](#alert_templates-escalations-info) below.
 * `warn` - (Optional, Set) The condition for triggering warn-level alerts. See [`warn`](#alert_templates-escalations-warn) below.
+
+---
 
 ### `alert_templates-escalations-critical`
 
@@ -105,6 +111,8 @@ The critical supports the following:
 * `threshold` - (Optional) The threshold for critical-level alerts.
 * `times` - (Optional) The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
 
+---
+
 ### `alert_templates-escalations-info`
 
 The info supports the following:
@@ -113,6 +121,8 @@ The info supports the following:
 * `statistics` - (Optional) The statistical aggregation method for info-level alerts.
 * `threshold` - (Optional) The threshold for info-level alerts.
 * `times` - (Optional) The consecutive number of times for which the metric value is measured before an info-level alert is triggered.
+
+---
 
 ### `alert_templates-escalations-warn`
 

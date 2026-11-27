@@ -52,6 +52,8 @@ The following arguments are supported:
 * `sources` - (Required) The Origin Server Information. See [`sources`](#sources) below for details.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `offline`, `online`.
 
+---
+
 ### `sources`
 
 The `sources` block supports the following:
@@ -64,6 +66,8 @@ The `sources` block supports the following:
   * `ipaddr`: IP Source Station.
   * `domain`: the Domain Name.
   * `oss`: OSS Bucket as a Source Station.
+
+---
 
 ### `cert_infos`
 
@@ -86,7 +90,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when create the Domain.
 * `delete` - (Defaults to 1 mins) Used when delete the Domain.

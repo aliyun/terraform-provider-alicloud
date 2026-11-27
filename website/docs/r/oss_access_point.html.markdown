@@ -67,11 +67,15 @@ The following arguments are supported:
 * `public_access_block_configuration` - (Optional, Computed, List) Configuration of Access Point Blocking Public Access See [`public_access_block_configuration`](#public_access_block_configuration) below.
 * `vpc_configuration` - (Optional, ForceNew, List) If the Network Origin is vpc, the VPC source information is saved here. See [`vpc_configuration`](#vpc_configuration) below.
 
+---
+
 ### `public_access_block_configuration`
 
 The public_access_block_configuration supports the following:
 
 * `block_public_access` - (Optional, Computed) Block public access enabled for access point
+
+---
 
 ### `vpc_configuration`
 
@@ -88,7 +92,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Point.
 * `delete` - (Defaults to 10 mins) Used when delete the Access Point.

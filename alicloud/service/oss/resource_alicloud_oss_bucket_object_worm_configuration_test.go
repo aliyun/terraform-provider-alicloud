@@ -106,10 +106,13 @@ func TestAccAliCloudOssBucketObjectWormConfiguration_basic12777(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
+				ResourceName: resourceId,
+				ImportState:  true,
+				// object_worm_enabled accepts "Enabled" only, so its value cannot
+				// change once the configuration exists and no test step can
+				// exercise a modification of it.
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"object_worm_enabled"},
 			},
 		},
 	})

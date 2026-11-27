@@ -63,7 +63,7 @@ func resourceAliCloudOssBucketMetaQueryCreate(d *schema.ResourceData, meta inter
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "OpenMetaQuery", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -122,7 +122,7 @@ func resourceAliCloudOssBucketMetaQueryDelete(d *schema.ResourceData, meta inter
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("POST", "2019-05-17", "CloseMetaQuery", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

@@ -96,6 +96,8 @@ The following arguments are supported:
 * `subscription` - (Optional, Set) Subscription sub-entities: event filtering, cross-workspace routing, and the switch for legacy product event subscription. See [`subscription`](#subscription) below.
 * `workspace` - (Required, ForceNew) The workspace ID, which is used to isolate notification policy resources for different business workspaces. Example: `default-cms-xxxx-cn-hangzhou`.
 
+---
+
 ### `notify_strategy`
 
 The notify_strategy supports the following:
@@ -106,11 +108,15 @@ The notify_strategy supports the following:
 * `ignore_restored_notification` - (Optional) Indicates whether to ignore notifications for recovered events. `true` means no recovery notification is sent.
 * `routes` - (Optional, List) The notification channel routing settings. See [`routes`](#notify_strategy-routes) below.
 
+---
+
 ### `notify_strategy-custom_template_entries`
 
 The notify_strategy-custom_template_entries supports the following:
 
 * `template_uuid` - (Optional) The UUID of the template.
+
+---
 
 ### `notify_strategy-grouping_setting`
 
@@ -120,6 +126,8 @@ The notify_strategy-grouping_setting supports the following:
 * `period_min` - (Optional, Int) The check period in minutes. This parameter does not take effect on this API and does not need to be set.
 * `silence_sec` - (Optional, Int) The silence duration in seconds. This parameter does not take effect on this API and does not need to be set.
 * `times` - (Optional, Int) The number of triggers. This parameter does not take effect on this API and does not need to be set.
+
+---
 
 ### `notify_strategy-routes`
 
@@ -131,6 +139,8 @@ The notify_strategy-routes supports the following:
 * `enable_rca` - (Optional) Specifies whether to enable Root Cause Analysis (RCA).
 * `filter_setting` - (Optional, Set) Route-level event filtering. See [`filter_setting`](#notify_strategy-routes-filter_setting) below.
 
+---
+
 ### `notify_strategy-routes-channels`
 
 The notify_strategy-routes-channels supports the following:
@@ -138,6 +148,8 @@ The notify_strategy-routes-channels supports the following:
 * `channel_type` - (Optional) The channel type. Valid values: `DING`, `WEIXIN`, `FEISHU`, `SLACK`, `TEAMS`, `CONTACT`, `GROUP`, `DUTY`, `DING_COOL_APP`.
 * `enabled_sub_channels` - (Optional, Set) The enabled notification methods. It is required only when `channel_type` is `CONTACT`, `GROUP` or `DUTY`. Valid values: `EMAIL`, `SMS`, `VOICE`, `DING`, `WEIXIN`, `FEISHU`, `WEBHOOK`.
 * `receivers` - (Optional, List) The list of recipient identifiers for the channel. At least one item is required. For a webhook channel it is the webhook UUID, for a robot channel it is the robot UUID, and for `CONTACT` it is the contact ID.
+
+---
 
 ### `notify_strategy-routes-effect_time_range`
 
@@ -148,6 +160,8 @@ The notify_strategy-routes-effect_time_range supports the following:
 * `start_time_in_minute` - (Optional, Int) The start time in minutes. Valid values: 0 to 1438.
 * `time_zone` - (Optional) The time zone, such as Asia/Shanghai.
 
+---
+
 ### `notify_strategy-routes-filter_setting`
 
 The notify_strategy-routes-filter_setting supports the following:
@@ -156,6 +170,8 @@ The notify_strategy-routes-filter_setting supports the following:
 * `expression` - (Optional) The relational expression.
 * `relation` - (Optional) The logical relationship between conditions.
 
+---
+
 ### `notify_strategy-routes-filter_setting-conditions`
 
 The notify_strategy-routes-filter_setting-conditions supports the following:
@@ -163,6 +179,8 @@ The notify_strategy-routes-filter_setting-conditions supports the following:
 * `field` - (Optional) The filter field.
 * `op` - (Optional) The filter operator.
 * `value` - (Optional) The filter value.
+
+---
 
 ### `response_plan`
 
@@ -173,6 +191,8 @@ The response_plan supports the following:
 * `pushing_setting` - (Optional, Set) Action integration push settings. See [`pushing_setting`](#response_plan-pushing_setting) below.
 * `repeat_notify_setting` - (Optional, Set) Repeated notification configuration. See [`repeat_notify_setting`](#response_plan-repeat_notify_setting) below.
 
+---
+
 ### `response_plan-pushing_setting`
 
 The response_plan-pushing_setting supports the following:
@@ -180,12 +200,16 @@ The response_plan-pushing_setting supports the following:
 * `alert_action_ids` - (Optional, List) The list of alert action integration IDs triggered by alerts.
 * `restore_action_ids` - (Optional, List) The list of action integration IDs triggered upon recovery.
 
+---
+
 ### `response_plan-repeat_notify_setting`
 
 The response_plan-repeat_notify_setting supports the following:
 
 * `end_incident_state` - (Optional) The incident state at which repeated notifications stop. For example: `RECOVERED`.
 * `repeat_interval` - (Optional, Int) The interval between repeated notifications, in seconds.
+
+---
 
 ### `subscription`
 
@@ -195,6 +219,8 @@ The subscription supports the following:
 * `subscribe_legacy_event` - (Optional) Specifies whether to subscribe to legacy product events (events with an empty workspace, such as CMS 1.0, ARMS, or SLS events).
 * `workspace_filter_setting` - (Optional, Set) Cross-workspace event routing (global subscription). See [`workspace_filter_setting`](#subscription-workspace_filter_setting) below.
 
+---
+
 ### `subscription-filter_setting`
 
 The subscription-filter_setting supports the following:
@@ -203,12 +229,16 @@ The subscription-filter_setting supports the following:
 * `expression` - (Optional) Relational expression.
 * `relation` - (Optional) Condition relationship.
 
+---
+
 ### `subscription-workspace_filter_setting`
 
 The subscription-workspace_filter_setting supports the following:
 
 * `tag_selector` - (Optional, Set) The tag selector. See [`tag_selector`](#subscription-workspace_filter_setting-tag_selector) below.
 * `workspace_uuids` - (Optional, List) The list of workspace UUIDs.
+
+---
 
 ### `subscription-workspace_filter_setting-tag_selector`
 
@@ -218,6 +248,8 @@ The subscription-workspace_filter_setting-tag_selector supports the following:
 * `expression` - (Optional) The relational expression.
 * `relation` - (Optional) The condition relation.
 
+---
+
 ### `subscription-workspace_filter_setting-tag_selector-conditions`
 
 The subscription-workspace_filter_setting-tag_selector-conditions supports the following:
@@ -225,6 +257,8 @@ The subscription-workspace_filter_setting-tag_selector-conditions supports the f
 * `field` - (Optional) The filter field.
 * `op` - (Optional) The filter operator.
 * `value` - (Optional) The filter value.
+
+---
 
 ### `subscription-filter_setting-conditions`
 
@@ -247,7 +281,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Event Notify Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Event Notify Policy.

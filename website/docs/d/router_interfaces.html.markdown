@@ -49,22 +49,29 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of router interface IDs.
 * `names` - A list of router interface names.
-* `interfaces` - A list of router interfaces. Each element contains the following attributes:
-  * `id` - Router interface ID.
-  * `status` - Router interface status. Possible values: `Active`, `Inactive` and `Idle`.
-  * `name` - Router interface name.
-  * `description` - Router interface description.
-  * `role` - Router interface role. Possible values: `InitiatingSide` and `AcceptingSide`.
-  * `specification` - Router interface specification. Possible values: `Small.1`, `Middle.1`, `Large.2`, ...etc.
-  * `router_id` - ID of the VRouter located in the local region.
-  * `router_type` - Router type in the local region. Possible values: `VRouter` and `VBR`.
-  * `vpc_id` - ID of the VPC that owns the router in the local region.
-  * `access_point_id` - ID of the access point used by the VBR.
-  * `creation_time` - Router interface creation time.
-  * `opposite_region_id` - Peer router region ID.
-  * `opposite_interface_id` - Peer router interface ID.
-  * `opposite_router_id` - Peer router ID.
-  * `opposite_router_type` - Router type in the peer region. Possible values: `VRouter` and `VBR`.
-  * `opposite_interface_owner_id` - Account ID of the owner of the peer router interface.
-  * `health_check_source_ip` - Source IP address used to perform health check on the physical connection.
-  * `health_check_target_ip` - Destination IP address used to perform health check on the physical connection.
+* `interfaces` - A list of router interfaces.
+
+---
+
+### `interfaces`
+
+The interfaces supports the following attributes:
+
+* `id` - Router interface ID.
+* `status` - Router interface status. Possible values: `Active`, `Inactive` and `Idle`.
+* `name` - Router interface name.
+* `description` - Router interface description.
+* `role` - Router interface role. Possible values: `InitiatingSide` and `AcceptingSide`.
+* `specification` - Router interface specification. Possible values: `Small.1`, `Middle.1`, `Large.2`, ...etc.
+* `router_id` - ID of the VRouter located in the local region.
+* `router_type` - Router type in the local region. Possible values: `VRouter` and `VBR`.
+* `vpc_id` - ID of the VPC that owns the router in the local region.
+* `access_point_id` - ID of the access point used by the VBR.
+* `creation_time` - Router interface creation time.
+* `opposite_region_id` - Peer router region ID.
+* `opposite_interface_id` - Peer router interface ID.
+* `opposite_router_id` - Peer router ID.
+* `opposite_router_type` - Router type in the peer region. Possible values: `VRouter` and `VBR`.
+* `opposite_interface_owner_id` - Account ID of the owner of the peer router interface.
+* `health_check_source_ip` - Source IP address used to perform health check on the physical connection.
+* `health_check_target_ip` - Destination IP address used to perform health check on the physical connection.

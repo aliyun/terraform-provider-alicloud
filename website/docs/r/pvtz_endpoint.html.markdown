@@ -80,10 +80,14 @@ resource "alicloud_pvtz_endpoint" "default" {
 The following arguments are supported:
 
 * `endpoint_name` - (Required) The name of the resource.
-* `ip_configs` - (Required) The Ip Configs. See [`ip_configs`](#ip_configs) below. **NOTE:** In order to ensure high availability, add at least 2 and up to 6.
+* `ip_configs` - (Required) The Ip Configs. See [`ip_configs`](#ip_configs) below.
+
+  -> **NOTE:** In order to ensure high availability, add at least 2 and up to 6.
 * `security_group_id` - (Required, ForceNew) The ID of the Security Group.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `vpc_region_id` - (Required, ForceNew) The Region of the VPC.
+
+---
 
 ### `ip_configs`
 
@@ -103,7 +107,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Endpoint.
 * `update` - (Defaults to 10 mins) Used when update the Endpoint.

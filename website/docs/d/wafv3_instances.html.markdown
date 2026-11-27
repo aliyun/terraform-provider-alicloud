@@ -36,8 +36,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance IDs.
-* `instances` - A list of Instance Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `instance_id` - The first ID of the resource.
-  * `id` - The ID of the resource.
-  * `status` - The status of the resource.
+* `instances` - A list of Instance Entries.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `instance_id` - The first ID of the resource.
+* `id` - The ID of the resource.
+* `status` - The status of the resource.

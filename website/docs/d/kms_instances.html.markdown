@@ -121,14 +121,21 @@ output "alicloud_kms_instance_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
-* `instance_name` - (Optional, ForceNew, Available since v1.266.0) The name of the resource.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `ids` - (Optional, Computed) A list of Instance IDs.
+* `instance_name` - (Optional, Available since v1.266.0) The name of the resource.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance IDs.
-* `instances` - A list of Instance Entries. Each element contains the following attributes:
-  * `instance_id` - The first ID of the resource
+* `instances` - A list of Instance Entries.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `instance_id` - The first ID of the resource

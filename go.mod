@@ -8,17 +8,18 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.26
 	github.com/alibabacloud-go/alibabacloud-gateway-oss-util v0.0.14
+	github.com/alibabacloud-go/alibabacloud-gateway-pop v0.1.7
 	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.3.0
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.5
 	github.com/alibabacloud-go/cs-20151215/v8 v8.2.5
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.2.4
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
-	github.com/alibabacloud-go/tea v1.5.2
+	github.com/alibabacloud-go/tea v1.5.3
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.3.4
 	github.com/alibabacloud-go/tea-utils v1.4.5
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.9
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.10
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.5.0
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
@@ -46,6 +47,7 @@ require (
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.31.0
+	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-mux v0.23.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.1
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
@@ -125,7 +127,6 @@ require (
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-exec v0.25.1 // indirect
 	github.com/hashicorp/terraform-json v0.27.2 // indirect
-	github.com/hashicorp/terraform-plugin-log v0.10.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.4.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.2.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
@@ -182,7 +183,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/resty.v1 v1.12.0 // indirect
+	gopkg.in/resty.v1 v1.12.0
 	k8s.io/klog/v2 v2.80.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect

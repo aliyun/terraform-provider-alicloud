@@ -72,6 +72,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `name` - (Deprecated since v1.263.0). Field 'name' has been deprecated from provider version 1.263.0. New field 'parameter_group_name' instead.
 
+---
+
 ### `parameters`
 
 The parameters supports the following, you can view all parameter details for the target database engine version database cluster through the [DescribeParameterTemplates](https://next.api.alibabacloud.com/document/polardb/2017-08-01/DescribeParameterTemplates), including parameter name, value.
@@ -88,7 +90,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Parameter Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Parameter Group.

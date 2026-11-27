@@ -104,6 +104,8 @@ share: CNAME record mode. This is the default value.
 * `resource_manager_resource_group_id` - (Optional, ForceNew, Computed) The ID of the Alibaba Cloud resource group.
 * `tags` - (Optional, Map, Available since v1.257.0) The tags. You can specify up to 20 tags.
 
+---
+
 ### `listen`
 
 The listen supports the following:
@@ -157,6 +159,8 @@ The listen supports the following:
 * `xff_headers` - (Optional, List) The custom header fields that are used to obtain the originating IP address of a client. Specify the value in the **\["header1","header2",...]** format.
 
   -> **NOTE:**   This parameter is required only if you set `XffHeaderMode` to 2.
+
+---
 
 ### `redirect`
 
@@ -218,6 +222,8 @@ By specifying custom request header fields and corresponding values, when the ac
   - `true`  (default)
   - `false`
 
+---
+
 ### `redirect-backend_ports`
 
 The redirect-backend_ports supports the following:
@@ -225,6 +231,8 @@ The redirect-backend_ports supports the following:
 * `backend_port` - (Optional, Int, Available since v2.2.0) The back-to-source port. Valid values: `1` to `65535`. Required together with `listen_port` and `protocol`.
 * `listen_port` - (Optional, Int, Available since v2.2.0) The listening port. Valid values: `1` to `65535`. Required together with `backend_port` and `protocol`.
 * `protocol` - (Optional, String, Available since v2.2.0) The protocol type. Valid values: `http` and `https`. Required together with `listen_port` and `backend_port`.
+
+---
 
 ### `redirect-request_headers`
 
@@ -244,7 +252,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain.

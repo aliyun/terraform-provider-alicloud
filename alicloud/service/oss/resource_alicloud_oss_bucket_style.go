@@ -90,7 +90,7 @@ func resourceAliCloudOssBucketStyleCreate(d *schema.ResourceData, meta interface
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutStyle", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -175,7 +175,7 @@ func resourceAliCloudOssBucketStyleUpdate(d *schema.ResourceData, meta interface
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutStyle", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -210,7 +210,7 @@ func resourceAliCloudOssBucketStyleDelete(d *schema.ResourceData, meta interface
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteStyle", action), query, nil, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

@@ -34,19 +34,26 @@ output "first_brain_industrial_pid_organization_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Pid Organization IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Pid Organization name.
+* `ids` - (Optional, Computed)  A list of Pid Organization IDs.
+* `name_regex` - (Optional) A regex string to filter results by Pid Organization name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `parent_organization_id` - (Optional, ForceNew) The parent organization id.
+* `parent_organization_id` - (Optional) The parent organization id.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Pid Organization names.
-* `organizations` - A list of Brain Industrial Pid Organizations. Each element contains the following attributes:
-	* `id` - The ID of the Pid Organization.
-	* `parent_pid_organization_id` - The parent organization id.
-	* `pid_organization_id` - The organization id.
-	* `pid_organization_level` - The organization level.
-	* `pid_organization_name` - The organization name.
+* `organizations` - A list of Brain Industrial Pid Organizations.
+
+---
+
+### `organizations`
+
+The organizations supports the following attributes:
+
+* `id` - The ID of the Pid Organization.
+* `parent_pid_organization_id` - The parent organization id.
+* `pid_organization_id` - The organization id.
+* `pid_organization_level` - The organization level.
+* `pid_organization_name` - The organization name.

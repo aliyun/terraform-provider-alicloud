@@ -47,14 +47,18 @@ The following arguments are supported:
 
 * `action` - (Optional, Available since v1.211.0) The collection policy of the inbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
 * `destination_cidr_block` - (Required) The destination CIDR block of the outbound traffic.
-* `destination_port_range` - (Optional, Computed) The destination CIDR block of the outbound traffic. Valid values: `1` to `65535`. Separate the first port and last port with a forward slash (/), for example, `1/200` or `80/80`. A value of `-1/-1` indicates that all ports are available. Therefore, do not set the value to `-1/-1`. **NOTE:** When `protocol` is `ICMP`, this parameter is invalid.
+* `destination_port_range` - (Optional, Computed) The destination CIDR block of the outbound traffic. Valid values: `1` to `65535`. Separate the first port and last port with a forward slash (/), for example, `1/200` or `80/80`. A value of `-1/-1` indicates that all ports are available. Therefore, do not set the value to `-1/-1`.
+
+  -> **NOTE:** When `protocol` is `ICMP`, this parameter is invalid.
 * `dry_run` - (Optional) Whether to PreCheck this request only. Value:
   - **true**: sends a check request and does not create inbound or outbound rules. Check items include whether required parameters are filled in, request format, and restrictions. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
   - **false** (default): Sends a normal request and directly creates an inbound or outbound direction rule after checking.
 * `priority` - (Required) The priority of the inbound rule. A smaller value indicates a higher priority. The maximum value is `10`, which indicates that you can configure at most 10 inbound rules for a filter.
 * `protocol` - (Required) The transport protocol used by outbound traffic that needs to be mirrored. Valid values: `ALL`, `ICMP`, `TCP`, `UDP`.
 * `source_cidr_block` - (Required) The source CIDR block of the outbound traffic.
-* `source_port_range` - (Optional, Computed) The source port range of the outbound traffic. Valid values: `1` to `65535`. Separate the first port and last port with a forward slash (/), for example, `1/200` or `80/80`. A value of `-1/-1` indicates that all ports are available. Therefore, do not set the value to `-1/-1`. **NOTE:** When `protocol` is `ICMP`, this parameter is invalid.
+* `source_port_range` - (Optional, Computed) The source port range of the outbound traffic. Valid values: `1` to `65535`. Separate the first port and last port with a forward slash (/), for example, `1/200` or `80/80`. A value of `-1/-1` indicates that all ports are available. Therefore, do not set the value to `-1/-1`.
+
+  -> **NOTE:** When `protocol` is `ICMP`, this parameter is invalid.
 * `traffic_mirror_filter_id` - (Required, ForceNew) The ID of the filter.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
@@ -71,7 +75,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Traffic Mirror Filter Egress Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Mirror Filter Egress Rule.

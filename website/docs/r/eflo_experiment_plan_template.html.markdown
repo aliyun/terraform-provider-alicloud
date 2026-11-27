@@ -70,6 +70,8 @@ The following arguments are supported:
 * `template_name` - (Required, ForceNew) Help users identify and select specific templates.
 * `template_pipeline` - (Required, Set) Representative Template Pipeline. See [`template_pipeline`](#template_pipeline) below.
 
+---
+
 ### `template_pipeline`
 
 The template_pipeline supports the following:
@@ -81,6 +83,8 @@ The template_pipeline supports the following:
 * `setting_params` - (Optional, Map) Represents additional parameters for the run.
 * `workload_id` - (Required, Int) Used to uniquely identify a specific payload.
 * `workload_name` - (Required) The name used to represent a specific payload.
+
+---
 
 ### `template_pipeline-env_params`
 
@@ -106,7 +110,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Experiment Plan Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Experiment Plan Template.

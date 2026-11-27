@@ -33,7 +33,7 @@ func factoryFiles(s *snapshot) map[string]bool {
 	result := map[string]bool{}
 	index := map[string][]string{}
 	for _, d := range s.decls {
-		if !d.test && d.receiver == "" && d.result.name != "" {
+		if !d.test && d.receiver == "" && len(d.results) == 1 && d.results[0].name != "" {
 			key := path.Dir(d.file) + ":" + d.name
 			index[key] = append(index[key], d.file)
 		}

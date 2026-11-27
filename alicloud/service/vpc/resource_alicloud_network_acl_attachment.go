@@ -165,9 +165,7 @@ func resourceAliyunNetworkAclAttachmentUpdateWithDeadline(ctx context.Context, d
 			}
 			request.Resource = &resources
 			err = networkAclAttachmentRetry(ctx, deadline, func() error {
-				raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.UnassociateNetworkAcl(request)
-				})
+				raw, err := client.VpcSdkRpc(request, vpc.CreateUnassociateNetworkAclResponse())
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return err
 			})
@@ -201,9 +199,7 @@ func resourceAliyunNetworkAclAttachmentUpdateWithDeadline(ctx context.Context, d
 			}
 			request.Resource = &resources
 			err = networkAclAttachmentRetry(ctx, deadline, func() error {
-				raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-					return vpcClient.AssociateNetworkAcl(request)
-				})
+				raw, err := client.VpcSdkRpc(request, vpc.CreateAssociateNetworkAclResponse())
 				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				return err
 			})
@@ -275,9 +271,7 @@ func resourceAliyunNetworkAclAttachmentDelete(ctx context.Context, d *schema.Res
 		request.ClientToken = buildClientToken(request.GetActionName())
 		request.Resource = &resources
 		err = networkAclAttachmentRetry(ctx, deadline, func() error {
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.UnassociateNetworkAcl(request)
-			})
+			raw, err := client.VpcSdkRpc(request, vpc.CreateUnassociateNetworkAclResponse())
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return err
 		}, "TaskConflict")

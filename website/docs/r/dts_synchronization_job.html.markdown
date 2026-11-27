@@ -156,7 +156,9 @@ The following arguments supported:
 * `data_initialization` - (Required, ForceNew) Whether to perform full data migration or full data initialization. Valid values: `true`, `false`.
 * `data_synchronization` - (Required, ForceNew) Whether to perform incremental data migration or synchronization. Valid values: `true`, `false`.
 * `structure_initialization` - (Required, ForceNew) Whether to perform library table structure migration or initialization. Valid values: `true`, `false`.
-* `db_list` - (Required) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html). **NOTE:** From version 1.173.0, `db_list` can be modified.
+* `db_list` - (Required) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html).
+
+  -> **NOTE:** From version 1.173.0, `db_list` can be modified.
 * `synchronization_direction` - (Optional, ForceNew) Synchronization direction. Valid values: `Forward`, `Reverse`. Only when the property `sync_architecture` of the `alicloud_dts_synchronization_instance` was `bidirectional` this parameter should be passed, otherwise this parameter should not be specified.
 * `instance_class` - (Optional) The instance class. Valid values: `xmicro`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`, `4xlarge`, `6xlarge`, `8xlarge`. Upgrades take effect directly; downgrades are a restricted capability, see the note below.
 
@@ -174,7 +176,9 @@ The following arguments supported:
 * `source_endpoint_instance_id` - (Optional, ForceNew) The ID of source instance. If the source instance is a cloud database (such as RDS MySQL), you need to pass in the instance ID of the cloud database (such as the instance ID of RDS MySQL). If the source instance is a self-built database, the value of this parameter changes according to the value of `source_endpoint_instance_type`. For example, the value of `source_endpoint_instance_type` is:
   - `ECS`, then this parameter needs to be passed into the instance ID of ECS.
   - `DG`, then this parameter needs to be passed into the ID of database gateway.
-  - `EXPRESS`, `CEN`, then this parameter needs to be passed in the ID of VPC that has been interconnected with the source database. **Note**: when the value is `CEN`, you also need to pass in the ID of CEN instance in the cloud enterprise network with the reserved parameter `reserve`.
+  - `EXPRESS`, `CEN`, then this parameter needs to be passed in the ID of VPC that has been interconnected with the source database.
+
+  -> **NOTE:** when the value is `CEN`, you also need to pass in the ID of CEN instance in the cloud enterprise network with the reserved parameter `reserve`.
 * `source_endpoint_region` - (Optional, ForceNew) Source instance area, please refer to the [list of supported areas](https://help.aliyun.com/document_detail/141033.htm) for details. Note if the source is an Alibaba Cloud database, this parameter must be passed in.
 * `source_endpoint_ip` - (Optional, ForceNew) The IP of source endpoint. When `source_endpoint_instance_type` is `OTHER`, `EXPRESS`, `DG`, `CEN`, this parameter is available and must be passed in.
 * `source_endpoint_port` - (Optional, ForceNew) The port of source endpoint. When the source instance is a self-built database, this parameter is available and must be passed in.
@@ -189,7 +193,9 @@ The following arguments supported:
 * `destination_endpoint_instance_id` - (Optional, ForceNew) The ID of destination instance. If the target instance is a cloud database (such as RDS MySQL), you need to pass in the instance ID of the cloud database (such as the instance ID of RDS MySQL). If the target instance is a self-built database, the value of this parameter changes according to the value of `destination_endpoint_instance_type`. For example, the value of `destination_endpoint_instance_type` is:
   - `ECS`, then this parameter needs to be passed into the instance ID of ECS.
   - `DG`, then this parameter needs to be passed into the ID of database gateway.
-  - `EXPRESS`, `CEN`, then this parameter needs to be passed in the ID of VPC that has been interconnected with the source database. **Note**: when the value is `CEN`, you also need to pass in the ID of CEN instance in the cloud enterprise network with the reserved parameter `reserve`.
+  - `EXPRESS`, `CEN`, then this parameter needs to be passed in the ID of VPC that has been interconnected with the source database.
+
+  -> **NOTE:** when the value is `CEN`, you also need to pass in the ID of CEN instance in the cloud enterprise network with the reserved parameter `reserve`.
 * `destination_endpoint_region` - (Optional, ForceNew) The region of destination instance. For the target instance region, please refer to the [list of supported regions](https://help.aliyun.com/document_detail/141033.htm). Note: if the target is an Alibaba Cloud database, this parameter must be passed in.
 * `destination_endpoint_ip` - (Optional, ForceNew) The IP of source endpoint. When `destination_endpoint_instance_type` is `OTHER`, `EXPRESS`, `DG`, `CEN`, this parameter is available and must be passed in.
 * `destination_endpoint_port` - (Optional, ForceNew) The port of source endpoint. When the target instance is a self-built database, this parameter is available and must be passed in.

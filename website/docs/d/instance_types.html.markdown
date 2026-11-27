@@ -82,56 +82,91 @@ resource "alicloud_instance" "default" {
 
 The following arguments are supported:
 
-* `availability_zone` - (Optional, ForceNew) The zone where instance types are supported.
-* `cpu_core_count` - (Optional, ForceNew) Filter the results to a specific number of cpu cores.
-* `memory_size` - (Optional, ForceNew) Filter the results to a specific memory size in GB.
-* `sorted_by` - (Optional, ForceNew) Sort mode, valid values: `CPU`, `Memory`, `Price`.
-* `gpu_amount` - (Optional, ForceNew, Available since v1.69.0) The GPU amount of an instance type.
-* `gpu_spec` - (Optional, ForceNew, Available since v1.69.0) The GPU spec of an instance type.
-* `instance_type_family` - (Optional, ForceNew) Filter the results based on their family name. For example: 'ecs.n4'.
-* `instance_type` - (Optional, ForceNew, Available since v1.222.0) Instance specifications. For more information, see instance Specification Family, or you can call the describe instance types interface to get the latest specification table.
-* `instance_charge_type` - (Optional, ForceNew) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
-* `network_type` - (Optional, ForceNew) Filter the results by network type. Valid values: `Classic` and `Vpc`.
-* `spot_strategy` - (Optional, ForceNew) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
-* `eni_amount` - (Optional, ForceNew) Filter the result whose network interface number is no more than `eni_amount`.
-* `kubernetes_node_role` - (Optional, ForceNew) Filter the result which is used to create a [kubernetes cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes)
+* `availability_zone` - (Optional) The zone where instance types are supported.
+* `cpu_core_count` - (Optional) Filter the results to a specific number of cpu cores.
+* `memory_size` - (Optional) Filter the results to a specific memory size in GB.
+* `sorted_by` - (Optional) Sort mode, valid values: `CPU`, `Memory`, `Price`.
+* `gpu_amount` - (Optional, Available since v1.69.0) The GPU amount of an instance type.
+* `gpu_spec` - (Optional, Available since v1.69.0) The GPU spec of an instance type.
+* `instance_type_family` - (Optional) Filter the results based on their family name. For example: 'ecs.n4'.
+* `instance_type` - (Optional, Available since v1.222.0) Instance specifications. For more information, see instance Specification Family, or you can call the describe instance types interface to get the latest specification table.
+* `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.
+* `spot_strategy` - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`.
+* `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes)
  and [managed kubernetes cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `system_disk_category` - (Optional, ForceNew, Available since v1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`, `cloud_auto`.
-  **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
-* `image_id` - (Optional, ForceNew, Available since v1.163.0) The ID of the image.
-* `minimum_eni_ipv6_address_quantity` - (Optional, ForceNew, Available since v1.193.0) The minimum number of IPv6 addresses per ENI. **Note:** If an instance type supports fewer IPv6 addresses per ENI than the specified value, information about the instance type is not queried.
-* `minimum_eni_private_ip_address_quantity` - (Optional, ForceNew, Available since v1.223.1) The minimum expected IPv4 address upper limit of a single ENI when querying instance specifications. **Note:** If an instance type supports fewer IPv4 addresses per ENI than the specified value, information about the instance type is not queried.
+* `system_disk_category` - (Optional, Available since v1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`, `cloud_auto`.
+
+  -> **NOTE:** Its default value `cloud_efficiency` has been removed from the version v1.150.0.
+* `image_id` - (Optional, Available since v1.163.0) The ID of the image.
+* `minimum_eni_ipv6_address_quantity` - (Optional, Available since v1.193.0) The minimum number of IPv6 addresses per ENI.
+
+  -> **NOTE:** If an instance type supports fewer IPv6 addresses per ENI than the specified value, information about the instance type is not queried.
+* `minimum_eni_private_ip_address_quantity` - (Optional, Available since v1.223.1) The minimum expected IPv4 address upper limit of a single ENI when querying instance specifications.
+
+  -> **NOTE:** If an instance type supports fewer IPv4 addresses per ENI than the specified value, information about the instance type is not queried.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of instance type IDs.
-* `instance_types` - A list of image types. Each element contains the following attributes:
-  * `id` - ID of the instance type.
-  * `price` - The price of instance type. **Note:** `price` takes effect only if `sorted_by` is set to `Price`.
-  * `cpu_core_count` - Number of CPU cores.
-  * `memory_size` - Size of memory, measured in GB.
-  * `family` - The instance type family.
-  * `availability_zones` - List of availability zones that support the instance type.
-  * `nvme_support` - Indicates whether the cloud disk can be attached by using the nonvolatile memory express (NVMe) protocol.
-  * `gpu` - A list of GPU attributes of an instance type:
-    * `amount` - The amount of GPU of an instance type.
-    * `category` - The category of GPU of an instance type.
-  * `burstable_instance` - A list of the burstable instance attribution.
-    * `initial_credit` - The initial CPU credit of a burstable instance.
-    * `baseline_credit` - The compute performance benchmark CPU credit of a burstable instance.
-  * `eni_amount` - (Deprecated since v1.239.0) The maximum number of ENIs per instance. It sames as `eni_quantity`.
-  * `eni_quantity` - (Available since v1.239.0) The maximum number of ENIs per instance.
-  * `primary_eni_queue_number` - (Available since v1.239.0) The default number of queues per primary ENI.
-  * `secondary_eni_queue_number` - (Available since v1.239.0) The default number of queues per secondary ENI.
-  * `eni_ipv6_address_quantity` - (Available since v1.239.0) The maximum number of IPv6 addresses per ENI.
-  * `maximum_queue_number_per_eni` - (Available since v1.239.0) The maximum number of queues per ENI, including primary and secondary ENIs.
-  * `total_eni_queue_quantity` - (Available since v1.239.0) The maximum number of queues on ENIs that the instance type supports.
-  * `eni_private_ip_address_quantity` - (Available since v1.239.0) The maximum number of IPv4 addresses per ENI.
-  * `local_storage` - A list of local storage of an instance type.
-    * `capacity` - The capacity of a local storage in GB.
-    * `amount` - The number of local storage devices that an instance has been attached to.
-    * `category` - The category of local storage that an instance has been attached to.
+* `instance_types` - A list of image types.
+
+---
+
+### `instance_types`
+
+The instance_types supports the following attributes:
+
+* `id` - ID of the instance type.
+* `price` - The price of instance type.
+
+  -> **NOTE:** `price` takes effect only if `sorted_by` is set to `Price`.
+* `cpu_core_count` - Number of CPU cores.
+* `memory_size` - Size of memory, measured in GB.
+* `family` - The instance type family.
+* `availability_zones` - List of availability zones that support the instance type.
+* `nvme_support` - Indicates whether the cloud disk can be attached by using the nonvolatile memory express (NVMe) protocol.
+* `gpu` - A list of GPU attributes of an instance type.
+* `burstable_instance` - A list of the burstable instance attribution.
+* `eni_amount` - The maximum number of ENIs per instance. It sames as `eni_quantity`.
+* `eni_quantity` - (Available since v1.239.0) The maximum number of ENIs per instance.
+* `primary_eni_queue_number` - (Available since v1.239.0) The default number of queues per primary ENI.
+* `secondary_eni_queue_number` - (Available since v1.239.0) The default number of queues per secondary ENI.
+* `eni_ipv6_address_quantity` - (Available since v1.239.0) The maximum number of IPv6 addresses per ENI.
+* `maximum_queue_number_per_eni` - (Available since v1.239.0) The maximum number of queues per ENI, including primary and secondary ENIs.
+* `total_eni_queue_quantity` - (Available since v1.239.0) The maximum number of queues on ENIs that the instance type supports.
+* `eni_private_ip_address_quantity` - (Available since v1.239.0) The maximum number of IPv4 addresses per ENI.
+* `local_storage` - A list of local storage of an instance type.
+
+---
+
+### `instance_types.gpu`
+
+The gpu supports the following attributes:
+
+* `amount` - The amount of GPU of an instance type.
+* `category` - The category of GPU of an instance type.
+
+---
+
+### `instance_types.burstable_instance`
+
+The burstable_instance supports the following attributes:
+
+* `initial_credit` - The initial CPU credit of a burstable instance.
+* `baseline_credit` - The compute performance benchmark CPU credit of a burstable instance.
+
+---
+
+### `instance_types.local_storage`
+
+The local_storage supports the following attributes:
+
+* `capacity` - The capacity of a local storage in GB.
+* `amount` - The number of local storage devices that an instance has been attached to.
+* `category` - The category of local storage that an instance has been attached to.

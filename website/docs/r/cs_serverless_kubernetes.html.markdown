@@ -24,7 +24,7 @@ VPC, you can set `new_nat_gateway` to "true" to create one automatically.
 -> **NOTE:** The provider supports to download kube config, client certificate, client key and cluster ca certificate
 after creating cluster successfully, and you can put them into the specified location, like '~/.kube/config'.
 
--> **NOTE:** If you want to manage serverless Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
+-> **NOTE:** If you want to manage serverless Kubernetes, you can use [Kubernetes Provider](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs).
 
 -> **NOTE:** You need to activate several other products and confirm Authorization Policy used by Container Service before using this resource.
 Please refer to the `Authorization management` and `Cluster management` sections in the [Document Center](https://www.alibabacloud.com/help/doc-detail/86488.htm).
@@ -84,14 +84,14 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
 The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
-* `name_prefix` - (Optional, ForceNew) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
+* `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.  Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#operation_policy-cluster_auto_upgrade) for more information.  
 * `vpc_id` - (Optional, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC will be built.
 * `vswitch_ids` - (Optional, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet eip for API Server. Default to false. Only works for **Create** Operation.
 * `service_discovery_types` - (Optional, Available since v1.123.1) Service discovery type. Only works for **Create** Operation. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`.
-* `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
+* `deletion_protection` - (Optional) Whether enable the deletion protection or not.
   - `true`: Enable deletion protection.
   - `false`: Disable deletion protection.
 * `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
@@ -111,22 +111,27 @@ The following arguments are supported:
 * `sls_project_name` - (Optional, ForceNew, Deprecated since v1.229.1) If you use an existing SLS project, you must specify `sls_project_name`. Only works for **Create** Operation.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.229.1) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
-* `cluster_spec` - (Optional, ForceNew, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
+* `cluster_spec` - (Optional, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
   - `ack.standard`: Standard serverless clusters.
   - `ack.pro.small`: Professional serverless clusters.
 * `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 
   -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
 * `encryption_provider_key` - (Optional, Available since v1.286.0) The ID of the Key Management Service (KMS) key that is used to encrypt Kubernetes Secrets.
-  -> **Note:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
+
+  -> **NOTE:** To enable encryption, you must specify both `encryption_provider_key` and `disable_encryption = false`. When `disable_encryption` is set to `true`, changes to `encryption_provider_key` will be ignored.
+
 * `disable_encryption` - (Optional, Computed, Available since v1.286.0) Whether to disable encryption for Kubernetes Secrets. Default value is `false`. Set to `true` to disable encryption.
-  -> **Note:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
+
+  -> **NOTE:** When enabling encryption, you must explicitly set `disable_encryption = false` along with `encryption_provider_key`. When disabling encryption, you only need to set `disable_encryption = true`, and the `encryption_provider_key` will be ignored.
 * `maintenance_window` - (Optional, Available since v1.232.0) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
 
 The following arguments have been removed since v1.229.1: `vswitch_id`, `create_v2_cluster`, and `force_update`. Use `vswitch_ids` instead of `vswitch_id`.
 
 * `private_zone` - (Deprecated since v1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
+
+---
 
 ### `maintenance_window`
 
@@ -148,9 +153,13 @@ maintenance_window {
 }
 ```
 
+---
+
 ### `operation_policy`
 
 * `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
+
+---
 
 ### `operation_policy-cluster_auto_upgrade`
 
@@ -169,6 +178,8 @@ operation_policy {
   }
 }
 ```
+
+---
 
 ### `addons`
 
@@ -207,6 +218,8 @@ addons {
   name = "arms-prometheus"
 }
 ```
+
+---
 
 ### `delete_options`
 
@@ -257,16 +270,23 @@ The following attributes are exported:
 
 * `id` - The Cluster ID of the serverless cluster.
 * `rrsa_metadata` - Nested attribute containing RRSA related data for your cluster.
-  * `enabled` - Whether the RRSA feature has been enabled.
-  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
-  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
-  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
+
+---
+
+### `rrsa_metadata`
+
+The rrsa_metadata supports the following attributes:
+
+* `enabled` - Whether the RRSA feature has been enabled.
+* `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+* `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+* `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.58.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `delete` - (Defaults to 30 mins) Used when terminating the kubernetes cluster.

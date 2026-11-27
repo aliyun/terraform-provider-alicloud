@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "basic",
+      "blocks": [1],
+      "originalSha256": "d97db5e39b4d892898651440c079bbfa3e908d24aeb2d7a03fc32d3f8389dfee",
+      "ready": true,
+      "assertions": [
+        {"id": "apply-and-converge", "check": "lifecycle"},
+        {"id": "destroy-and-empty-state", "check": "cleanup"}
+      ]
+    }
+  ]
+}

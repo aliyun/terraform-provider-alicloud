@@ -47,6 +47,8 @@ It must be 2 to 256 characters in length and must start with a letter or Chinese
 * `security_group_name` - (Optional) Security group name
 The security group name. The length is 2~128 English or Chinese characters. It must start with an uppercase or lowcase letter or a Chinese character and cannot start with http:// or https. Can contain digits, colons (:), underscores (_), or hyphens (-)
 
+---
+
 ### `permissions`
 
 The permissions supports the following:
@@ -78,7 +80,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Security Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Security Group.

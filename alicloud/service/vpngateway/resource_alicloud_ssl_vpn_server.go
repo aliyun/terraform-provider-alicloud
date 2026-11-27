@@ -110,9 +110,7 @@ func resourceAliyunSslVpnServerCreate(d *schema.ResourceData, meta interface{}) 
 
 	var response *vpc.CreateSslVpnServerResponse
 	err := retry.Retry(3*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateSslVpnServer(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateCreateSslVpnServerResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
 				time.Sleep(10 * time.Second)
@@ -196,9 +194,7 @@ func resourceAliyunSslVpnServerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifySslVpnServer(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateModifySslVpnServerResponse())
 
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
@@ -226,9 +222,7 @@ func resourceAliyunSslVpnServerDelete(d *schema.ResourceData, meta interface{}) 
 	request.SslVpnServerId = d.Id()
 
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteSslVpnServer(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDeleteSslVpnServerResponse())
 
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {

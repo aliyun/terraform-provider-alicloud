@@ -122,23 +122,32 @@ The following arguments are supported:
   - `NoSpot`: A regular Pay-As-You-Go instance.
   - `SpotWithPriceLimit`: A price threshold for a spot instance.
   - `SpotAsPriceGo`: A price that is based on the highest Pay-As-You-Go instance.
-**Note:** `spot_strategy` takes effect only if `instance_charge_type` is set to `PostPaid`.
-* `spot_price_limit` - (Optional, ForceNew, Computed) The hourly price threshold of a instance. Three decimals is allowed at most. **Note:** `spot_price_limit` takes effect only if `spot_strategy` is set to `SpotWithPriceLimit`.
+
+  -> **NOTE:** `spot_strategy` takes effect only if `instance_charge_type` is set to `PostPaid`.
+* `spot_price_limit` - (Optional, ForceNew, Computed) The hourly price threshold of a instance. Three decimals is allowed at most.
+
+  -> **NOTE:** `spot_price_limit` takes effect only if `spot_strategy` is set to `SpotWithPriceLimit`.
 * `dedicated_host_id` - (Optional, ForceNew) The ID of the dedicated host on which to create the instance. If the `dedicated_host_id` is specified, the `spot_strategy` and `spot_price_limit`  are ignored. This is because preemptible instances cannot be created on dedicated hosts.
 * `launch_template_name` - (Optional, ForceNew) The name of the launch template. To use a launch template to create an instance, you must use the `launch_template_id` or `launch_template_name` parameter to specify the launch template.
 * `launch_template_id` - (Optional, ForceNew) The ID of the launch template.
 * `launch_template_version` - (Optional, ForceNew) The version of the launch template.
-* `period_unit` - (Optional, ForceNew) The duration unit that you will buy the resource. Valid values: `Week`, `Month`. **Note:** `period_unit` is valid only when `instance_charge_type` is set to `PrePaid`.
-* `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal for the instance. **Note:** `auto_renew` is valid only when `instance_charge_type` is set to `PrePaid`.
+* `period_unit` - (Optional, ForceNew) The duration unit that you will buy the resource. Valid values: `Week`, `Month`.
+
+  -> **NOTE:** `period_unit` is valid only when `instance_charge_type` is set to `PrePaid`.
+* `auto_renew` - (Optional, ForceNew) Whether to enable auto-renewal for the instance.
+
+  -> **NOTE:** `auto_renew` is valid only when `instance_charge_type` is set to `PrePaid`.
 * `auto_renew_period` - (Optional, ForceNew) Auto renewal period of an instance, in the unit of month. Valid values:
   - When `period_unit` is `Month`, Valid values: `1`, `2`, `3`, `6`, `12`.
   - When `period_unit` is `Week`, Valid values: `1`, `2`, `3`.
-**Note:** `auto_renew_period` is valid only when `instance_charge_type` is set to `PrePaid`.
+
+  -> **NOTE:** `auto_renew_period` is valid only when `instance_charge_type` is set to `PrePaid`.
 * `instance_charge_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `PrePaid`, `PostPaid`.
 * `period` - (Optional, ForceNew) The duration that you will buy the resource, in month. Valid values:
   - When `period_unit` is `Month`, Valid values: `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `12`, `24`, `36`, `48`, `60`.
   - When `period_unit` is `Week`, Valid values: `1`, `2`, `3`.
-**Note:** `period` is valid only when `instance_charge_type` is set to `PrePaid`.
+
+  -> **NOTE:** `period` is valid only when `instance_charge_type` is set to `PrePaid`.
 * `deletion_protection` - (Optional, ForceNew, Computed) Whether to enable release protection for the instance.
 * `deployment_set_id` - (Optional, ForceNew) The ID of the deployment set to which to deploy the instance.
 * `network_interfaces` - (Optional, ForceNew) A list of NetworkInterface. See [`network_interfaces`](#network_interfaces) below.
@@ -147,6 +156,8 @@ The following arguments are supported:
 * `boot_check_os_with_assistant`  - (Optional, Available since v1.177.0) Indicate how to check instance ready to use. Valid values:
   - `false`: Default value. Means that the instances are ready when their DescribeInstances status is Running, at which time guestOS(Ecs os) may not be ready yet.
   - `true`: Checking instance ready with Ecs assistant, which means guestOs boots successfully. Premise is that the specified image `image_id` has built-in Ecs assistant. Most of the public images have assistant installed already.
+
+---
 
 ### `data_disks`
 
@@ -166,6 +177,8 @@ The `data_disks` supports the following:
 * `auto_snapshot_policy_id` - (Optional, ForceNew) The ID of the automatic snapshot policy applied to the system disk.
 * `disk_description` - (Optional, ForceNew) The description of the data disk.
 
+---
+
 ### `network_interfaces`
 
 The `network_interfaces` supports the following:
@@ -175,6 +188,8 @@ The `network_interfaces` supports the following:
 * `description` - (Optional, ForceNew) The description of ENI.
 * `network_interface_name` - (Optional, ForceNew) The name of ENI.
 * `primary_ip_address` - (Optional, ForceNew) The primary private IP address of ENI.
+
+---
 
 ### `exclude_instance_filter`
 
@@ -192,7 +207,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when create the ECS Instance Set.
 * `update` - (Defaults to 30 mins) Used when update the ECS Instance Set.

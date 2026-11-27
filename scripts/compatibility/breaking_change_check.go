@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/frameworkschema"
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
 	log "github.com/sirupsen/logrus"
 	"github.com/waigani/diffparser"
@@ -300,12 +301,48 @@ func compareBreakingChange(oldContent, newContent string) bool {
 	}
 }
 
+// nestedFieldUnresolved reports whether a missing attribute is a field of an
+// object that the new revision no longer resolves, rather than a field that was
+// removed. Only a field read from an attr.Type list can be in that state: the
+// object's field list is a package-level variable, and a reference to a variable
+// declared in a sibling file cannot be followed by a single-file parse. Any
+// other field under the same parent proves that the object is still parsed, in
+// which case the removal is real.
+func nestedFieldUnresolved(fieldName string, oldAttr map[string]interface{}, newAttrs map[string]map[string]interface{}) bool {
+	if oldAttr["FromTypeList"] != true {
+		return false
+	}
+	dot := strings.LastIndex(fieldName, ".")
+	if dot < 0 {
+		return false
+	}
+	parent := fieldName[:dot] + "."
+	for name := range newAttrs {
+		if strings.HasPrefix(name, parent) {
+			return false
+		}
+	}
+	return true
+}
+
 func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
 	// First check for removed attributes
 	for filedName, oldAttr := range oldAttrs {
 		// Check if attribute was deleted
 		newAttr, attributeExists := newAttrs[filedName]
 		if !attributeExists {
+			// A field read from an attr.Type list is visible only while the
+			// object that lists it is statically resolvable, and that list is
+			// commonly a package-level variable. Moving the variable to a
+			// sibling file — which this single-file comparison does not read —
+			// therefore looks exactly like deleting every field it lists. The
+			// parent object still resolving in the new revision (one of its
+			// fields is present) is what separates a real removal from that
+			// blind spot; without it the removal cannot be confirmed.
+			if nestedFieldUnresolved(filedName, oldAttr, newAttrs) {
+				log.Warningf("[Warning]: cannot confirm '%v' was removed: the object that declares it is not resolvable in the new revision", filedName)
+				continue
+			}
 			res = true
 			log.Errorf("[Breaking Change]: Attribute '%v' should not been removed!", filedName)
 			continue
@@ -433,14 +470,9 @@ func ParseSchemaFromAST(source string) map[string]map[string]interface{} {
 		return attributeMap
 	}
 
-	// Find the resource function and extract Schema
-	ast.Inspect(file, func(n ast.Node) bool {
-		// Look for composite literals (map[string]*schema.Schema{...})
-		if compLit, ok := n.(*ast.CompositeLit); ok {
-			// Check if this is a Schema map
-			if isSchemaMap(compLit) {
-				extractSchemaFields(compLit, attributeMap)
-			}
+	ast.PreorderStack(file, nil, func(n ast.Node, stack []ast.Node) bool {
+		if compLit, ok := n.(*ast.CompositeLit); ok && isSchemaMap(compLit) {
+			extractSchemaFields(compLit, schemaPathPrefix(stack), attributeMap)
 		}
 		return true
 	})
@@ -462,8 +494,29 @@ func isSchemaMap(compLit *ast.CompositeLit) bool {
 	return false
 }
 
+// schemaPathPrefix uses enclosing schema entries to distinguish fields with the same name.
+func schemaPathPrefix(stack []ast.Node) string {
+	var prefix string
+	for i := 1; i < len(stack); i++ {
+		field, ok := stack[i].(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		container, ok := stack[i-1].(*ast.CompositeLit)
+		if !ok || !isSchemaMap(container) {
+			continue
+		}
+		if key, ok := field.Key.(*ast.BasicLit); ok {
+			if name := strings.Trim(key.Value, `"`); name != "" {
+				prefix += name + "."
+			}
+		}
+	}
+	return prefix
+}
+
 // extractSchemaFields extracts field information from schema map
-func extractSchemaFields(compLit *ast.CompositeLit, attributeMap map[string]map[string]interface{}) {
+func extractSchemaFields(compLit *ast.CompositeLit, prefix string, attributeMap map[string]map[string]interface{}) {
 	for _, elt := range compLit.Elts {
 		if kv, ok := elt.(*ast.KeyValueExpr); ok {
 			// Get field name
@@ -490,7 +543,7 @@ func extractSchemaFields(compLit *ast.CompositeLit, attributeMap map[string]map[
 				}
 			}
 
-			attributeMap[fieldName] = fieldProps
+			attributeMap[prefix+fieldName] = fieldProps
 		}
 	}
 }
@@ -538,157 +591,13 @@ func parseSchemas(source string) map[string]map[string]interface{} {
 	return attributeMap
 }
 
-// ParseFrameworkSchemaFromAST parses the plugin-framework schema shape:
-// attribute maps declared as map[string]schema.Attribute under any import
-// alias (the resource, ephemeral and action schema packages all share the
-// Attribute type name), including the nested maps inside blocks. Attribute
-// type names normalize to their SDKv2 equivalents so a migrated entity
-// compares against its flat-layout predecessor without phantom type breaks.
+// ParseFrameworkSchemaFromAST parses the plugin-framework schema shape. The
+// parsing lives in scripts/internal/frameworkschema because the docs
+// consistency gate reads the same declaration, and two independent parsers
+// would drift: a field the breaking check sees and the docs gate does not is
+// exactly the blindness both exist to prevent.
 func ParseFrameworkSchemaFromAST(source string) map[string]map[string]interface{} {
-	attributeMap := make(map[string]map[string]interface{})
-
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "", source, 0)
-	if err != nil {
-		log.Warningf("Failed to parse file: %v", err)
-		return attributeMap
-	}
-
-	ast.Inspect(file, func(n ast.Node) bool {
-		compLit, ok := n.(*ast.CompositeLit)
-		if !ok {
-			return true
-		}
-		if isFrameworkAttributeMap(compLit) {
-			extractFrameworkFields(compLit, attributeMap)
-		}
-		return true
-	})
-
-	return attributeMap
-}
-
-// isFrameworkAttributeMap checks if a composite literal is a framework
-// attribute map (map[string]schema.Attribute). The package identifier is not
-// inspected: the resource, ephemeral and action schema packages import under
-// different aliases but share the Attribute type name.
-func isFrameworkAttributeMap(compLit *ast.CompositeLit) bool {
-	mapType, ok := compLit.Type.(*ast.MapType)
-	if !ok {
-		return false
-	}
-	selExpr, ok := mapType.Value.(*ast.SelectorExpr)
-	if !ok {
-		return false
-	}
-	return selExpr.Sel.Name == "Attribute"
-}
-
-// extractFrameworkFields extracts attribute information from a framework
-// attribute map.
-func extractFrameworkFields(compLit *ast.CompositeLit, attributeMap map[string]map[string]interface{}) {
-	for _, elt := range compLit.Elts {
-		kv, ok := elt.(*ast.KeyValueExpr)
-		if !ok {
-			continue
-		}
-		basicLit, ok := kv.Key.(*ast.BasicLit)
-		if !ok {
-			continue
-		}
-		fieldName := strings.Trim(basicLit.Value, `"`)
-		if fieldName == "" {
-			continue
-		}
-
-		fieldProps := make(map[string]interface{})
-		fieldProps["Name"] = fieldName
-
-		if fieldComp, ok := kv.Value.(*ast.CompositeLit); ok {
-			extractFrameworkFieldProperties(fieldComp, fieldProps)
-		}
-
-		attributeMap[fieldName] = fieldProps
-	}
-}
-
-// frameworkTypeEquivalents maps plugin-framework attribute and block type
-// names to the SDKv2 schema.TypeXxx constants they play the role of.
-var frameworkTypeEquivalents = map[string]string{
-	"StringAttribute":       "TypeString",
-	"BoolAttribute":         "TypeBool",
-	"Int64Attribute":        "TypeInt",
-	"Float64Attribute":      "TypeFloat",
-	"NumberAttribute":       "TypeFloat",
-	"ListAttribute":         "TypeList",
-	"SetAttribute":          "TypeSet",
-	"MapAttribute":          "TypeMap",
-	"SingleNestedAttribute": "TypeMap",
-	"ObjectNestedAttribute": "TypeMap",
-	"ListNestedAttribute":   "TypeList",
-	"SetNestedAttribute":    "TypeSet",
-	"ListNestedBlock":       "TypeList",
-	"SetNestedBlock":        "TypeSet",
-	"SingleNestedBlock":     "TypeMap",
-}
-
-// extractFrameworkFieldProperties extracts Type, Optional, Required,
-// Computed etc from an attribute or block definition.
-func extractFrameworkFieldProperties(compLit *ast.CompositeLit, props map[string]interface{}) {
-	if selExpr, ok := compLit.Type.(*ast.SelectorExpr); ok {
-		if equivalent, ok := frameworkTypeEquivalents[selExpr.Sel.Name]; ok {
-			props["Type"] = equivalent
-		} else {
-			props["Type"] = selExpr.Sel.Name
-		}
-	}
-	for _, elt := range compLit.Elts {
-		kv, ok := elt.(*ast.KeyValueExpr)
-		if !ok {
-			continue
-		}
-		ident, ok := kv.Key.(*ast.Ident)
-		if !ok {
-			continue
-		}
-		switch ident.Name {
-		case "Optional", "Required", "Computed", "Sensitive":
-			if value, ok := kv.Value.(*ast.Ident); ok {
-				props[ident.Name] = value.Name == "true"
-			}
-		case "PlanModifiers":
-			// RequiresReplace is the framework counterpart of ForceNew.
-			if requiresReplace(kv.Value) {
-				props["ForceNew"] = true
-			}
-		}
-	}
-}
-
-// requiresReplace reports whether a PlanModifiers list contains a
-// RequiresReplace plan modifier.
-func requiresReplace(expr ast.Expr) bool {
-	compLit, ok := expr.(*ast.CompositeLit)
-	if !ok {
-		return false
-	}
-	for _, elt := range compLit.Elts {
-		switch e := elt.(type) {
-		case *ast.CallExpr:
-			if selExpr, ok := e.Fun.(*ast.SelectorExpr); ok && selExpr.Sel.Name == "RequiresReplace" {
-				return true
-			}
-		case *ast.Ident:
-			if e.Name == "RequiresReplace" {
-				return true
-			}
-		case *ast.SelectorExpr:
-			if e.Sel.Name == "RequiresReplace" {
-				return true
-			}
-		}
-	}
-	return false
+	return frameworkschema.Parse(source)
 }
 
 // ParseRetryErrorCodesFromContent extracts retry error codes from full file content

@@ -32,12 +32,12 @@ output "storage_bundle_id" {
 
 The following arguments are supported:
 
-* `backend_bucket_region_id` - (Required, ForceNew) The region id of the backend bucket.
-* `ids` - (Optional, ForceNew, Computed) A list of Storage Bundle IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Storage Bundle name.
+* `backend_bucket_region_id` - (Required) The region id of the backend bucket.
+* `ids` - (Optional, Computed) A list of Storage Bundle IDs.
+* `name_regex` - (Optional) A regex string to filter results by Storage Bundle name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `page_number` - (Optional, ForceNew) Page number.
-* `page_size` - (Optional, ForceNew) Page size. Default to 50.
+* `page_number` - (Optional) Page number.
+* `page_size` - (Optional) Page size. Default to 50.
 
 ## Attributes Reference
 
@@ -46,10 +46,17 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Storage Bundle IDs.
 * `names` - A list of Storage Bundle names.
 * `total_count` - Total count of Storage Bundle.
-* `bundles` - A list of Cloud Storage Gateway Storage Bundles. Each element contains the following attributes:
-  * `description` - Storage Bundle description.
-  * `location` - Storage Bundle location.
-  * `id` - The ID of the Storage Bundle.
-  * `storage_bundle_id` - The ID of the Storage Bundle.
-  * `storage_bundle_name` - The name of the Storage Bundle.
-  * `create_time` - Storage Bundle created time.
+* `bundles` - A list of Cloud Storage Gateway Storage Bundles.
+
+---
+
+### `bundles`
+
+The bundles supports the following attributes:
+
+* `description` - Storage Bundle description.
+* `location` - Storage Bundle location.
+* `id` - The ID of the Storage Bundle.
+* `storage_bundle_id` - The ID of the Storage Bundle.
+* `storage_bundle_name` - The name of the Storage Bundle.
+* `create_time` - Storage Bundle created time.

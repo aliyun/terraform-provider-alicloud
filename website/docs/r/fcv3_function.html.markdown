@@ -154,6 +154,8 @@ The following arguments are supported:
 * `timeout` - (Optional, Computed, Int) The maximum running time of the function, in seconds.
 * `vpc_config` - (Optional, Computed, List) VPC configuration. After this parameter is configured, the function can access the specified VPC resources. See [`vpc_config`](#vpc_config) below.
 
+---
+
 ### `code`
 
 The code supports the following:
@@ -162,6 +164,8 @@ The code supports the following:
 * `oss_bucket_name` - (Optional) The name of the OSS Bucket that stores the function code ZIP package.
 * `oss_object_name` - (Optional) The name of the OSS Object that stores the function code ZIP package.
 * `zip_file` - (Optional) The Base 64 encoding of the function code ZIP package.
+
+---
 
 ### `custom_container_config`
 
@@ -176,6 +180,8 @@ The custom_container_config supports the following:
 * `port` - (Optional, Int) The listening port of the HTTP Server when the custom container runs.
 * `registry_config` - (Optional, List) The configuration of the custom image registry. See [`registry_config`](#custom_container_config-registry_config) below.
 
+---
+
 ### `custom_container_config-health_check_config`
 
 The custom_container_config-health_check_config supports the following:
@@ -187,6 +193,8 @@ The custom_container_config-health_check_config supports the following:
 * `success_threshold` - (Optional, Int) The threshold for the number of successful health checks. When the threshold is reached, the system considers that the health check is successful. The value range is 1~120. The default value is 1.
 * `timeout_seconds` - (Optional, Int) Health check timeout. Value range 1~3. The default value is 1.
 
+---
+
 ### `custom_container_config-registry_config`
 
 The custom_container_config-registry_config supports the following:
@@ -195,6 +203,8 @@ The custom_container_config-registry_config supports the following:
 * `cert_config` - (Optional, List) The certificate configuration of the image registry. See [`cert_config`](#custom_container_config-registry_config-cert_config) below.
 * `network_config` - (Optional, List) The network configuration used to connect to the image registry. See [`network_config`](#custom_container_config-registry_config-network_config) below.
 
+---
+
 ### `custom_container_config-registry_config-auth_config`
 
 The custom_container_config-registry_config-auth_config supports the following:
@@ -202,12 +212,16 @@ The custom_container_config-registry_config-auth_config supports the following:
 * `password` - (Optional, Sensitive) The password of the image registry.
 * `user_name` - (Optional, Sensitive) The username of the image registry.
 
+---
+
 ### `custom_container_config-registry_config-cert_config`
 
 The custom_container_config-registry_config-cert_config supports the following:
 
 * `insecure` - (Optional, Bool) Specifies whether to skip certificate verification.
 * `root_ca_cert_base64` - (Optional) The Base64-encoded root CA certificate of the image registry.
+
+---
 
 ### `custom_container_config-registry_config-network_config`
 
@@ -217,6 +231,8 @@ The custom_container_config-registry_config-network_config supports the followin
 * `vswitch_id` - (Optional) The ID of the vSwitch that can connect to the image registry.
 * `vpc_id` - (Optional) The ID of the VPC that can connect to the image registry.
 
+---
+
 ### `custom_dns`
 
 The custom_dns supports the following:
@@ -225,12 +241,16 @@ The custom_dns supports the following:
 * `name_servers` - (Optional, List) IP Address List of DNS servers
 * `searches` - (Optional, List) DNS search domain list
 
+---
+
 ### `custom_dns-dns_options`
 
 The custom_dns-dns_options supports the following:
 
 * `name` - (Optional) Configuration Item Name
 * `value` - (Optional) Configuration Item Value
+
+---
 
 ### `custom_runtime_config`
 
@@ -240,6 +260,8 @@ The custom_runtime_config supports the following:
 * `command` - (Optional, List) Instance start command.
 * `health_check_config` - (Optional, List) Function custom health check configuration. See [`health_check_config`](#custom_runtime_config-health_check_config) below.
 * `port` - (Optional, Computed, Int) The listening port of the HTTP Server.
+
+---
 
 ### `custom_runtime_config-health_check_config`
 
@@ -252,6 +274,8 @@ The custom_runtime_config-health_check_config supports the following:
 * `success_threshold` - (Optional, Int) The threshold for the number of successful health checks. When the threshold is reached, the system considers that the health check is successful. The value range is 1~120. The default value is 1.
 * `timeout_seconds` - (Optional, Int) Health check timeout. Value range 1~3. The default value is 1.
 
+---
+
 ### `gpu_config`
 
 The gpu_config supports the following:
@@ -262,12 +286,16 @@ The gpu_config supports the following:
   - fc.gpu.ampere.1 indicates the GPU instance type of Ampere Architecture Series card (same as NVIDIA A10 card type).
   - fc.gpu.ada.1 Indicates the GPU instance Ada Lovelace architecture family card type.
 
+---
+
 ### `instance_lifecycle_config`
 
 The instance_lifecycle_config supports the following:
 
 * `initializer` - (Optional, List) Initializer handler method configuration See [`initializer`](#instance_lifecycle_config-initializer) below.
 * `pre_stop` - (Optional, List) PreStop handler method configuration See [`pre_stop`](#instance_lifecycle_config-pre_stop) below.
+
+---
 
 ### `instance_lifecycle_config-initializer`
 
@@ -277,6 +305,8 @@ The instance_lifecycle_config-initializer supports the following:
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
 
+---
+
 ### `instance_lifecycle_config-pre_stop`
 
 The instance_lifecycle_config-pre_stop supports the following:
@@ -284,12 +314,16 @@ The instance_lifecycle_config-pre_stop supports the following:
 * `handler` - (Optional) The execution entry of the callback method, which is similar to the request handler.
 * `timeout` - (Optional, Int) The timeout time of the callback method, in seconds.
 
+---
+
 ### `invocation_restriction`
 
 The invocation_restriction supports the following:
 
 * `disable` - (Optional, Available since v1.255.0) Whether invocation is disabled
 * `reason` - (Optional, Available since v1.255.0) Disable Reason
+
+---
 
 ### `log_config`
 
@@ -301,6 +335,8 @@ The log_config supports the following:
 * `logstore` - (Optional) The Logstore name of log service.
 * `project` - (Optional) The name of the log service Project.
 
+---
+
 ### `nas_config`
 
 The nas_config supports the following:
@@ -308,6 +344,8 @@ The nas_config supports the following:
 * `group_id` - (Optional, Computed, Int) Group ID
 * `mount_points` - (Optional, List) Mount point list See [`mount_points`](#nas_config-mount_points) below.
 * `user_id` - (Optional, Computed, Int) Account ID
+
+---
 
 ### `nas_config-mount_points`
 
@@ -317,11 +355,15 @@ The nas_config-mount_points supports the following:
 * `mount_dir` - (Optional) Local Mount Directory
 * `server_addr` - (Optional) NAS server address
 
+---
+
 ### `oss_mount_config`
 
 The oss_mount_config supports the following:
 
 * `mount_points` - (Optional, List) OSS mount point list See [`mount_points`](#oss_mount_config-mount_points) below.
+
+---
 
 ### `oss_mount_config-mount_points`
 
@@ -332,6 +374,8 @@ The oss_mount_config-mount_points supports the following:
 * `endpoint` - (Optional) OSS access endpoint
 * `mount_dir` - (Optional) Mount Directory
 * `read_only` - (Optional) Read-only
+
+---
 
 ### `vpc_config`
 
@@ -349,13 +393,9 @@ The following attributes are exported:
 * `code_size` - The code package size of the function returned by the system, in byte Example : 1024
 * `create_time` - The creation time of the function.
 * `custom_container_config` - The configuration of the custom container runtime. After the configuration is successful, the function can use the custom container image to execute the function. code and customContainerConfig.
-  * `acceleration_info` - (Deprecated since v1.242.0) Image Acceleration Information (Obsolete)
-    * `status` - Image Acceleration Status (Deprecated)
-  * `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
 * `function_arn` - ARN of function
 * `function_id` - The first ID of the resource
 * `invocation_restriction` - Invocation Restriction Detail
-  * `last_modified_time` - Last modified time of invocation restriction
 * `last_modified_time` - Last time the function was Updated
 * `last_update_status` - The status of the last function update operation. When the function is created successfully, the value is Successful. Optional values are Successful, Failed, and InProgress.
 * `last_update_status_reason` - The reason that caused the last function to update the Operation State to the current value
@@ -364,12 +404,44 @@ The following attributes are exported:
 * `state_reason` - The reason why the function is in the current state
 * `state_reason_code` - The status code of the reason the function is in the current state.
 * `tracing_config` - Tracing configuration
-  * `params` - Tracing parameters
-  * `type` - The tracing protocol type. Currently, only Jaeger is supported.
+
+---
+
+### `custom_container_config`
+
+The custom_container_config supports the following attributes:
+
+* `acceleration_info` - (Deprecated since v1.242.0) Image Acceleration Information (Obsolete)
+* `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
+
+---
+
+### `custom_container_config.acceleration_info`
+
+The acceleration_info supports the following attributes:
+
+* `status` - Image Acceleration Status (Deprecated)
+
+---
+
+### `invocation_restriction`
+
+The invocation_restriction supports the following attributes:
+
+* `last_modified_time` - Last modified time of invocation restriction
+
+---
+
+### `tracing_config`
+
+The tracing_config supports the following attributes:
+
+* `params` - Tracing parameters
+* `type` - The tracing protocol type. Currently, only Jaeger is supported.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Function.
 * `delete` - (Defaults to 5 mins) Used when delete the Function.

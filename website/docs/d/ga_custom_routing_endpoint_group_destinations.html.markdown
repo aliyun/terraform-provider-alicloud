@@ -31,25 +31,32 @@ output "ga_custom_routing_endpoint_group_destinations_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Custom Routing Endpoint Group Destination IDs.
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
-* `listener_id` - (Optional, ForceNew) The ID of the listener.
-* `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group.
-* `protocols` - (Optional, ForceNew) The backend service protocol of the endpoint group. Valid values: `TCP`, `UDP`, `TCP, UDP`.
-* `from_port` - (Optional, ForceNew) The start port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
-* `to_port` - (Optional, ForceNew) The end port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
+* `ids` - (Optional, Computed) A list of Custom Routing Endpoint Group Destination IDs.
+* `accelerator_id` - (Required) The ID of the GA instance.
+* `listener_id` - (Optional) The ID of the listener.
+* `endpoint_group_id` - (Optional) The ID of the endpoint group.
+* `protocols` - (Optional) The backend service protocol of the endpoint group. Valid values: `TCP`, `UDP`, `TCP, UDP`.
+* `from_port` - (Optional) The start port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
+* `to_port` - (Optional) The end port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `custom_routing_endpoint_group_destinations` - A list of Custom Routing Endpoint Group Destinations. Each element contains the following attributes:
-  * `id` - The id of the Global Accelerator Custom Routing Endpoint Group Destination. It formats as `<endpoint_group_id>:<custom_routing_endpoint_group_destination_id>`.  
-  * `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
-  * `custom_routing_endpoint_group_destination_id` - The ID of the Custom Routing Endpoint Group Destination.
-  * `accelerator_id` - The ID of the GA instance.
-  * `listener_id` - The ID of the listener.
-  * `protocols` - The backend service protocol of the endpoint group.
-  * `from_port` - The start port of the backend service port range of the endpoint group.
-  * `to_port` - The end port of the backend service port range of the endpoint group.
+* `custom_routing_endpoint_group_destinations` - A list of Custom Routing Endpoint Group Destinations.
+
+---
+
+### `custom_routing_endpoint_group_destinations`
+
+The custom_routing_endpoint_group_destinations supports the following attributes:
+
+* `id` - The id of the Global Accelerator Custom Routing Endpoint Group Destination. It formats as `<endpoint_group_id>:<custom_routing_endpoint_group_destination_id>`.
+* `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
+* `custom_routing_endpoint_group_destination_id` - The ID of the Custom Routing Endpoint Group Destination.
+* `accelerator_id` - The ID of the GA instance.
+* `listener_id` - The ID of the listener.
+* `protocols` - The backend service protocol of the endpoint group.
+* `from_port` - The start port of the backend service port range of the endpoint group.
+* `to_port` - The end port of the backend service port range of the endpoint group.

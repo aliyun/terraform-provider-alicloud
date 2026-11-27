@@ -65,10 +65,12 @@ output "ram_roles_id_0" {
 
 The following arguments are supported:
 
-* `ids` (Optional, ForceNew, List, Available since v1.42.0) - A list of Role IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Role name.
-* `policy_name` - (Optional, ForceNew) The name of the policy.
-* `policy_type` - (Optional, ForceNew) The type of the policy. Default value: `System`. Valid values: `System`, `Custom`. **Note:** `policy_type` takes effect only when `policy_name` is set.
+* `ids` (Optional, List, Available since v1.42.0) - A list of Role IDs.
+* `name_regex` - (Optional) A regex string to filter results by Role name.
+* `policy_name` - (Optional) The name of the policy.
+* `policy_type` - (Optional) The type of the policy. Default value: `System`. Valid values: `System`, `Custom`.
+
+  -> **NOTE:** `policy_type` takes effect only when `policy_name` is set.
 * `tags` - (Optional, ForceNew, Available since v1.262.1) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -77,13 +79,20 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - (Available since v1.42.0) A list of Role names.
-* `roles` - A list of Role. Each element contains the following attributes:
-  * `id` - The ID of the RAM role.
-  * `name` - The name of the RAM role.
-  * `assume_role_policy_document` - The policy that specifies the trusted entity to assume the RAM role.
-  * `document` - The policy that specifies the trusted entity to assume the RAM role.
-  * `description` - The description of the RAM role.
-  * `tags` - (Available since v1.262.1) The tags of the RAM role.
-  * `arn` - The Alibaba Cloud Resource Name (ARN) of the RAM role.
-  * `create_date` - The creation time.
-  * `update_date` - The update time.
+* `roles` - A list of Role.
+
+---
+
+### `roles`
+
+The roles supports the following attributes:
+
+* `id` - The ID of the RAM role.
+* `name` - The name of the RAM role.
+* `assume_role_policy_document` - The policy that specifies the trusted entity to assume the RAM role.
+* `document` - The policy that specifies the trusted entity to assume the RAM role.
+* `description` - The description of the RAM role.
+* `tags` - (Available since v1.262.1) The tags of the RAM role.
+* `arn` - The Alibaba Cloud Resource Name (ARN) of the RAM role.
+* `create_date` - The creation time.
+* `update_date` - The update time.

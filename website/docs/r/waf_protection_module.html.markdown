@@ -70,12 +70,15 @@ The following arguments are supported:
   * `normalized`: Positive Security Model.
 * `domain` - (Required, ForceNew) The domain name that is added to WAF.
 * `instance_id` - (Required, ForceNew) The ID of the WAF instance.
-* `mode` - (Required) The protection mode of the specified protection module. **NOTE:** The value of the Mode parameter varies based on the value of the `defense_type` parameter.
+* `mode` - (Required) The protection mode of the specified protection module.
+
   * The `defense_type` is `waf`. `0`: block mode. `1`: warn mode.
   * The `defense_type` is `dld`. `0`: warn mode. `1`: block mode.
   * The `defense_type` is `ac_cc`. `0`: prevention mode. `1`: protection-emergency mode.
   * The `defense_type` is `antifraud`. `0`: warn mode. `1`: block mode. `2`: strict interception mode.
   * The `defense_type` is `normalized`. `0`: warn mode. `1`: block mode.
+
+  -> **NOTE:** The value of the Mode parameter varies based on the value of the `defense_type` parameter.
 * `status` - (Optional) The status of the resource. Valid values: `0`, `1`.
   * `0`: disables the protection module.
   * `1`: enables the protection module.

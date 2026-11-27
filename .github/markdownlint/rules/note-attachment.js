@@ -33,7 +33,12 @@ module.exports = {
   tags: ["alicloud"],
   function: function noteAttachment(params, onError) {
     const lines = params.lines;
-    const noteRe = /^ *(->|~>) \*\*NOTE/;
+    // Marker recognition is deliberately lenient: any capitalization, any
+    // amount of whitespace after the arrow (including none), and WARNING
+    // alongside NOTE. The formatting checks below then apply to every
+    // recognized marker, so existing docs relying on the old narrow form
+    // surface as findings instead of slipping through.
+    const noteRe = /^ *(->|~>)\s*\*\*(NOTE|WARNING)\b/i;
     const listRe = /^(\s*)(?:[*+] |\d+\. |- )/;
     const fenceRe = /^\s{0,3}(```+|~~~+)/;
     const headingRe = /^#{1,6} /;

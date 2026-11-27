@@ -71,6 +71,8 @@ The following arguments are supported:
 * `sls_group_description` - (Optional) The Description of the Sls Group.
 * `sls_group_name` - (Required, ForceNew) The name of the resource. The name must be `2` to `32` characters in length, and can contain letters, digits and underscores (_). It must start with a letter.
 
+---
+
 ### `sls_group_config`
 
 The sls_group_config supports the following:
@@ -88,7 +90,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Sls Group.
 * `delete` - (Defaults to 2 mins) Used when delete the Sls Group.

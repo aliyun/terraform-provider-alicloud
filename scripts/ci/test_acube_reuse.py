@@ -79,6 +79,22 @@ class ReuseTest(unittest.TestCase):
         self.assertEqual(frozen, original)
         return record, reports
 
+    def test_expanded_package_accepts_complete_revalidated_pass_evidence(self):
+        frozen = self.frozen()
+        frozen['scope']['fullPackages'] = {PACKAGE: ['unresolved receiver']}
+        hits = {name: 41 for name in CASES}
+        for remaining in (CASES, CASES[1:], []):
+            with self.subTest(remaining=remaining):
+                reusable = {name: task for name, task in hits.items() if name not in remaining}
+                client = Client([reusable, reusable])
+                self.run_plan(client, frozen)
+                self.assertEqual([r['testCases'] for r in client.submissions], [remaining] if remaining else [])
+                if reusable:
+                    self.assertEqual(client.queries[1], {**client.queries[0], 'testCases': sorted(reusable)})
+        revoked = Client([hits, {}])
+        self.run_plan(revoked, frozen, expected_error='revoked/invalidated')
+        self.assertEqual(revoked.submissions, [])
+
     def test_all_hits_keep_original_task_references_without_submitting_or_inspecting_whole_batch(self):
         for capability in ({'accTestCaseReuse': 'exact-source-v1'},
                            {'accTestContentReuse': 'whole-source-and-comments-v1'}):
@@ -171,7 +187,7 @@ class ReuseTest(unittest.TestCase):
         self.assertEqual(client.submissions[0]['testCases'], ['TestAccTwo'])
         self.assertEqual(record['reusedCases'], {'TestAccOne': '42'})
         self.assertEqual(record['receipt']['taskId'], 43)
-        self.assertEqual(record['reuseValidation'], 'invalid')
+        self.assertEqual(record['reuseValidation'], 'unconfirmed')
 
     def test_ci_summary_counts_cases_not_receipts_for_all_partial_and_no_hits(self):
         for hits, counts in [({'TestAccOne': 42, 'TestAccTwo': 42}, (2, 0)),
@@ -192,6 +208,62 @@ class ReuseTest(unittest.TestCase):
                 self.assertIn(text, summary.read_text())
                 self.assertIn(PACKAGE, summary.read_text())
                 self.assertIn('复用核验', summary.read_text())
+
+    def test_budget_retains_verified_hits_and_only_submits_remainder(self):
+        for reason in ('time-budget', 'scan-limit'):
+            with self.subTest(reason=reason):
+                lookups = [m.ReuseMatches({'TestAccOne': 42}, reason)]
+                if reason == 'time-budget':
+                    lookups.append(m.ReuseMatches({}, reason))
+                client = Client(lookups + [{'TestAccOne': 42}])
+                record, reports = self.run_plan(client)
+                self.assertEqual(client.submissions[0]['testCases'], ['TestAccTwo'])
+                self.assertEqual(record['reuseQueryStatus'], reason)
+                self.assertEqual(record['reusedCases'], {'TestAccOne': '42'})
+                self.assertEqual(record['reuseValidation'], 'passed')
+                self.assertEqual(client.queries[-1]['testCases'], ['TestAccOne'])
+
+    def test_time_budget_queries_smaller_scopes_at_admission_and_revalidation(self):
+        cases = [f'TestAccCase{i:02d}' for i in range(64)]
+        task_ids = {case: 41 + i for i, case in enumerate(cases)}
+        frozen = self.frozen()
+        frozen['packages'][PACKAGE] = cases
+
+        class TimeLimitedClient(Client):
+            def call(self, method, path, body=None):
+                if path != '/acctest/reusable-cases':
+                    return super().call(method, path, body)
+                self.queries.append(copy.deepcopy(body))
+                selected = body['testCases']
+                hits = {name: task_ids[name] for name in selected[:19]}
+                return m.ReuseMatches(hits, 'time-budget') if len(selected) > 19 else hits
+
+        client = TimeLimitedClient([])
+        record, reports = self.run_plan(client, frozen)
+        self.assertEqual(client.submissions, [])
+        expected = {case: str(task) for case, task in task_ids.items()}
+        self.assertEqual(record['reuseQueryStatus'], 'complete')
+        self.assertEqual(record['reusedCases'], expected)
+        self.assertEqual(reports[0]['currentReusedCases'], expected)
+        scopes = [query['testCases'] for query in client.queries]
+        self.assertEqual(scopes.count(cases), 2)
+        self.assertTrue(all(set(scope).isdisjoint(cases[:19]) for scope in scopes if scope != cases))
+        self.assertTrue(all({**query, 'testCases': cases} == record['candidateRequest'] for query in client.queries))
+
+    def test_unavailable_query_reports_not_submitted_instead_of_unknown_execution(self):
+        client = Client([ValueError('ACube HTTP 503')])
+        with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
+            summary = Path(root) / 'summary.md'
+            with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}):
+                with self.assertRaises(ValueError):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', Path(root))
+            report = json.loads((Path(root) / 'diagnostics/acc-summary.json').read_text())
+            self.assertEqual(report['executed'], 0)
+            self.assertEqual(report['unknown'], 2)
+            self.assertIsNone(report['toRun'])
+            self.assertIn('尚未提交补跑', summary.read_text())
+            self.assertIn('503', summary.read_text())
+        self.assertEqual(client.submissions, [])
 
     def test_poll_error_does_not_report_zero_failures(self):
         client = Client([{'TestAccOne': 42}] * 2)
@@ -262,8 +334,60 @@ class ReuseTest(unittest.TestCase):
                 self.assertIn('已确认复用=未确认', summary.read_text())
                 self.assertEqual(len(client.submissions), submitted)
 
+    def test_empty_partial_query_reports_limited_search_but_runs_remaining_cases(self):
+        for reason in ('time-budget', 'scan-limit'):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as root:
+                output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+                lookups = [m.ReuseMatches({}, reason)]
+                if reason == 'time-budget':
+                    lookups.extend([m.ReuseMatches({}, reason)] * 2)
+                client = Client(lookups)
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), contextlib.redirect_stdout(io.StringIO()):
+                    m.execute(client, self.frozen(), 'acctest', 'run-123', output)
+                report = json.loads((output / 'diagnostics/acc-summary.json').read_text())
+                self.assertEqual((report['reused'], report['toRun'], report['passed']), (0, 2, 2))
+                self.assertEqual(client.submissions[0]['testCases'], CASES)
+                self.assertIn('查询提前结束，未确认命中', summary.read_text())
+                self.assertNotIn('无需复用', summary.read_text())
+
+    def test_partial_revalidation_is_incomplete_not_revoked(self):
+        for reason in ('time-budget', 'scan-limit'):
+            lookups = [dict.fromkeys(CASES, 41), m.ReuseMatches({}, reason)]
+            if reason == 'time-budget':
+                lookups.extend([m.ReuseMatches({}, reason)] * 2)
+            client = Client(lookups)
+            record, reports = self.run_plan(client, expected_error='revalidation incomplete')
+            self.assertEqual(client.submissions, [])
+            self.assertEqual(record['reusedCases'], dict.fromkeys(CASES, '41'))
+            self.assertEqual(record['reuseValidation'], 'unconfirmed')
+            self.assertEqual(record['reuseRevalidationStatus'], reason)
+            self.assertIn(reason, reports[0]['error'])
+            self.assertNotIn('revoked/invalidated', reports[0]['error'])
+
+    def test_split_deadline_retains_verified_hits(self):
+        client = Client([m.ReuseMatches({'TestAccOne': 42}, 'time-budget')])
+        with patch.object(m, 'REUSE_SPLIT_WINDOW_SECONDS', 0):
+            matches = m.reusable_cases(client, {'testCases': CASES})
+        self.assertEqual(matches, {'TestAccOne': '42'})
+        self.assertEqual(matches.reason, 'time-budget')
+
+    def test_split_scan_limit_preserves_prior_hits(self):
+        client = Client([m.ReuseMatches({'TestAccOne': 42}, 'time-budget'), m.ReuseScanLimitReached()])
+        matches = m.reusable_cases(client, {'testCases': CASES})
+        self.assertEqual(matches, {'TestAccOne': '42'})
+        self.assertEqual(matches.reason, 'scan-limit')
+
+    def test_query_blocked_notice_keeps_table_separate_and_error_on_one_line(self):
+        for error, expected in [('first line\nsecond line', 'first line second line'), ('', '复用查询未完成')]:
+            with self.subTest(error=error), tempfile.TemporaryDirectory() as root:
+                output, summary = Path(root) / 'output', Path(root) / 'summary.md'
+                with patch.dict(os.environ, {'AONE_CI_SUMMARY_MD': str(summary)}), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(ValueError):
+                        m.execute(Client([ValueError(error)]), self.frozen(), 'acctest', 'run-123', output)
+                self.assertIn('- ' + PACKAGE + '：' + expected + '\n\n| 包 |', summary.read_text())
+
     def test_resume_summary_retains_original_split_without_counting_execution_twice(self):
-        client = Client([{'TestAccOne': 42}, {'TestAccOne': 42}, {'TestAccOne': 42, 'TestAccTwo': 43}])
+        client = Client([{'TestAccOne': 42}, {'TestAccOne': 42}, {'TestAccOne': 42}])
         with tempfile.TemporaryDirectory() as root, contextlib.redirect_stdout(io.StringIO()):
             output = Path(root)
             for _ in range(2):

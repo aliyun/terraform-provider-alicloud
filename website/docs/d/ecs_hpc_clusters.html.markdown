@@ -41,8 +41,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Hpc Cluster names.
-* `clusters` - A list of Ecs Hpc Clusters. Each element contains the following attributes:
-  * `description` - The description of ECS Hpc Cluster.
-  * `hpc_cluster_id` - The ID of the Hpc Cluster.
-  * `id` - The ID of the Hpc Cluster.
-  * `name` - The name of ECS Hpc Cluster.
+* `clusters` - A list of Ecs Hpc Clusters.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `description` - The description of ECS Hpc Cluster.
+* `hpc_cluster_id` - The ID of the Hpc Cluster.
+* `id` - The ID of the Hpc Cluster.
+* `name` - The name of ECS Hpc Cluster.

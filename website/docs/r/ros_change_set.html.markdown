@@ -65,6 +65,8 @@ The following arguments are supported:
 * `timeout_in_minutes` - (Optional, ForceNew) Timeout In Minutes.
 * `use_previous_parameters` - (Optional, ForceNew) The use previous parameters.
 
+---
+
 ### `parameters`
 
 The parameters supports the following:
@@ -81,7 +83,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 11 mins) Used when creating the ROS ChangeSet (until it reaches the initial `CREATE_COMPLETE` status).
 

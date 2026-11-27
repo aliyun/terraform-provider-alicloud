@@ -44,17 +44,45 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `product` - A product. It contains the following attributes:
-  * `code` - The code of the product.
-  * `name` - The name of the product.
-  * `description` - The description of the product.
-  * `skus` - A list of one element containing sku attributes of an object. Each element contains the following attributes:
-    * `sku_code` - The sku code of this product sku.
-    * `sku_name` - The sku name of this product sku.
-    * `package_versions` - The list of package version details of this product sku, Each element contains the following attributes:
-      * `package_name` - The package name of this product sku package.
-      * `package_version` - The package version of this product sku package. Currently, the API products can return package_version, but others can not for ensure.
-    * `images` - The list of custom ECS images, Each element contains the following attributes:
-      * `image_id` - The Ecs image id.
-      * `image_name` - The Ecs image display name.
-      * `region_id` - The Ecs image region.
+* `product` - A product.
+
+---
+
+### `product`
+
+The product supports the following attributes:
+
+* `code` - The code of the product.
+* `name` - The name of the product.
+* `description` - The description of the product.
+* `skus` - A list of one element containing sku attributes of an object.
+
+---
+
+### `product.skus`
+
+The skus supports the following attributes:
+
+* `sku_code` - The sku code of this product sku.
+* `sku_name` - The sku name of this product sku.
+* `package_versions` - The list of package version details of this product sku,
+* `images` - The list of custom ECS images,
+
+---
+
+### `product.skus.package_versions`
+
+The package_versions supports the following attributes:
+
+* `package_name` - The package name of this product sku package.
+* `package_version` - The package version of this product sku package. Currently, the API products can return package_version, but others can not for ensure.
+
+---
+
+### `product.skus.images`
+
+The images supports the following attributes:
+
+* `image_id` - The Ecs image id.
+* `image_name` - The Ecs image display name.
+* `region_id` - The Ecs image region.

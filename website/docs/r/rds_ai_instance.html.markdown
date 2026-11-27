@@ -103,12 +103,16 @@ The following arguments are supported:
 * `status` - (Optional) The status of the instance. Valid values: `Running`, `Stopped`.
 * `storage_config_list` - (Optional, Set) A list of storage configurations. See [`storage_config_list`](#storage_config_list) below.
 
+---
+
 ### `auth_config_list`
 
 The auth_config_list supports the following:
 
 * `name` - (Optional) The configuration item name. For more information, see [How to use it](https://www.alibabacloud.com/help/en/rds/apsaradb-rds-for-postgresql/authentication).
 * `value` - (Optional) The value of the configuration item.
+
+---
 
 ### `storage_config_list`
 
@@ -125,7 +129,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
@@ -16,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdkschema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -49,8 +51,20 @@ func (p *alicloudProvider) Schema(ctx context.Context, req provider.SchemaReques
 }
 
 func (p *alicloudProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	if err := ctx.Err(); err != nil {
+		resp.Diagnostics.AddError("Provider configuration canceled", err.Error())
+		return
+	}
 	meta := p.primary.Meta()
-
+	if c, ok := meta.(*client.AliyunClient); ok {
+		ctx = c.ProviderContext(ctx)
+	}
+	ctx = client.RequestContext(ctx, "", "Configure")
+	tflog.Info(ctx, "Configuring Framework Provider with shared client")
+	if err := ctx.Err(); err != nil {
+		resp.Diagnostics.AddError("Provider configuration canceled", err.Error())
+		return
+	}
 	resp.ResourceData = meta
 	resp.DataSourceData = meta
 	resp.EphemeralResourceData = meta
@@ -67,11 +81,11 @@ func (p *alicloudProvider) Resources(ctx context.Context) []func() resource.Reso
 	var problems []string
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.Resource { return sp.Resources },
-		func(d conns.Resource) func() resource.Resource {
+		func(service string, d conns.Resource) func() resource.Resource {
 			problems = appendUnlessMetaCapable(problems, "resource", d.TypeName, "ResourceBase", d.Factory())
 			chain := intercept.ChainOf(d.TypeName, d.Interceptors)
 			return func() resource.Resource {
-				return fwadapt.WrapResource(d.TypeName, d.Factory(), chain)
+				return fwadapt.WrapResource(d.TypeName, d.Factory(), chain, intercept.BootstrapContext(service))
 			}
 		})
 	mustRegister(problems)
@@ -82,11 +96,11 @@ func (p *alicloudProvider) DataSources(ctx context.Context) []func() datasource.
 	var problems []string
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.DataSource { return sp.DataSources },
-		func(d conns.DataSource) func() datasource.DataSource {
+		func(service string, d conns.DataSource) func() datasource.DataSource {
 			problems = appendUnlessMetaCapable(problems, "data source", d.TypeName, "DataSourceBase", d.Factory())
 			chain := intercept.ChainOf(d.TypeName, d.Interceptors)
 			return func() datasource.DataSource {
-				return fwadapt.WrapDataSource(d.TypeName, d.Factory(), chain)
+				return fwadapt.WrapDataSource(d.TypeName, d.Factory(), chain, intercept.BootstrapContext(service))
 			}
 		})
 	mustRegister(problems)
@@ -96,14 +110,14 @@ func (p *alicloudProvider) DataSources(ctx context.Context) []func() datasource.
 func (p *alicloudProvider) Functions(ctx context.Context) []func() function.Function {
 	return collect(
 		func(sp conns.ServicePackage) []conns.Function { return sp.Functions },
-		func(d conns.Function) func() function.Function { return d.Factory })
+		func(_ string, d conns.Function) func() function.Function { return d.Factory })
 }
 
 func (p *alicloudProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
 	var problems []string
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.EphemeralResource { return sp.EphemeralResources },
-		func(d conns.EphemeralResource) func() ephemeral.EphemeralResource {
+		func(_ string, d conns.EphemeralResource) func() ephemeral.EphemeralResource {
 			problems = appendUnlessMetaCapable(problems, "ephemeral resource", d.TypeName, "EphemeralResourceBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "ephemeral resource", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
@@ -116,7 +130,7 @@ func (p *alicloudProvider) ListResources(ctx context.Context) []func() list.List
 	var problems []string
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.ListResource { return sp.ListResources },
-		func(d conns.ListResource) func() list.ListResource {
+		func(_ string, d conns.ListResource) func() list.ListResource {
 			problems = appendUnlessMetaCapable(problems, "list resource", d.TypeName, "ListResourceBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "list resource", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
@@ -129,7 +143,7 @@ func (p *alicloudProvider) Actions(ctx context.Context) []func() action.Action {
 	var problems []string
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.Action { return sp.Actions },
-		func(d conns.Action) func() action.Action {
+		func(_ string, d conns.Action) func() action.Action {
 			problems = appendUnlessMetaCapable(problems, "action", d.TypeName, "ActionBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "action", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
@@ -138,11 +152,11 @@ func (p *alicloudProvider) Actions(ctx context.Context) []func() action.Action {
 	return factories
 }
 
-func collect[D, T any](category func(conns.ServicePackage) []D, constructor func(D) func() T) []func() T {
+func collect[D, T any](category func(conns.ServicePackage) []D, constructor func(string, D) func() T) []func() T {
 	var result []func() T
 	for _, sp := range providerregistry.ServicePackages() {
 		for _, d := range category(sp) {
-			result = append(result, constructor(d))
+			result = append(result, constructor(sp.Name, d))
 		}
 	}
 	return result

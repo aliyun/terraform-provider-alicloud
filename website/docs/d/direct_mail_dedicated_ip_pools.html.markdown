@@ -42,12 +42,26 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - (Computed, List, Available since v2.2.0) A list of Dedicated Ip Pool IDs.
-* `pools` - (Computed, List, Available since v2.2.0) A list of Dedicated Ip Pool Entries. Each element contains the following attributes:
-  * `create_time` - (Computed, String, Available since v2.2.0) The creation time.
-  * `id` - (Computed, String, Available since v2.2.0) The ID of the IP pool.
-  * `ip_count` - (Computed, Int, Available since v2.2.0) The number of source IP addresses.
-  * `name` - (Computed, String, Available since v2.2.0) The name of the IP pool.
-  * `ips` - (Computed, List, Available since v2.2.0) The list of IP addresses in the pool:
-    * `id` - (Computed, String, Available since v2.2.0) The ID of the purchased instance.
-    * `ip` - (Computed, String, Available since v2.2.0) The IP address.
-    * `zone_id` - (Computed, String, Available since v2.2.0) The zone ID.
+* `pools` - (Computed, List, Available since v2.2.0) A list of Dedicated Ip Pool Entries.
+
+---
+
+### `pools`
+
+The pools supports the following attributes:
+
+* `create_time` - (Computed, String, Available since v2.2.0) The creation time.
+* `id` - (Computed, String, Available since v2.2.0) The ID of the IP pool.
+* `ip_count` - (Computed, Int, Available since v2.2.0) The number of source IP addresses.
+* `name` - (Computed, String, Available since v2.2.0) The name of the IP pool.
+* `ips` - (Computed, List, Available since v2.2.0) The list of IP addresses in the pool.
+
+---
+
+### `pools.ips`
+
+The ips supports the following attributes:
+
+* `id` - (Computed, String, Available since v2.2.0) The ID of the purchased instance.
+* `ip` - (Computed, String, Available since v2.2.0) The IP address.
+* `zone_id` - (Computed, String, Available since v2.2.0) The zone ID.

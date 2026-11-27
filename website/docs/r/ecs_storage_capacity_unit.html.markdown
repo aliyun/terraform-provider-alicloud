@@ -29,7 +29,7 @@ Basic Usage
 resource "alicloud_ecs_storage_capacity_unit" "default" {
   capacity                   = 20
   description                = "tftestdescription"
-  storage_capacity_unit_name = "tftestname"
+  storage_capacity_unit_name = "tf-example-name"
 }
 ```
 
@@ -45,7 +45,9 @@ The following arguments are supported:
   * When PeriodUnit is set to Month, Valid values: `1`, `2`, `3`, `6`.
   * When PeriodUnit is set to Year, Valid values: `1`, `3`, `5`.
 * `period_unit` - (Optional, Computed) The unit of the validity period of the Storage Capacity Unit. Default value: `Month`. Valid values: `Month`, `Year`.
-* `start_time` - (Optional, ForceNew, Computed) The time when the Storage Capacity Unit takes effect. It cannot be earlier than or more than six months later than the time when the Storage Capacity Unit is created. Specify the time in the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time must be in UTC. **NOTE:** This parameter is empty by default. The Storage Capacity Unit immediately takes effect after it is created.
+* `start_time` - (Optional, ForceNew, Computed) The time when the Storage Capacity Unit takes effect. It cannot be earlier than or more than six months later than the time when the Storage Capacity Unit is created. Specify the time in the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time must be in UTC.
+
+  -> **NOTE:** This parameter is empty by default. The Storage Capacity Unit immediately takes effect after it is created.
 * `storage_capacity_unit_name` - (Optional, Computed) The name of the Storage Capacity Unit.
 
 ## Attributes Reference

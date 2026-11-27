@@ -41,22 +41,29 @@ output "cloud_sso_group_id_2" {
 
 The following arguments are supported:
 
-* `directory_id` - (Required, ForceNew)  The ID of the Directory.
-* `ids` - (Optional, ForceNew, Computed)  A list of Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group name.
+* `directory_id` - (Required)  The ID of the Directory.
+* `ids` - (Optional, Computed)  A list of Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `provision_type` - (Optional, ForceNew) The ProvisionType of the Group. Valid values: `Manual`, `Synchronized`.
+* `provision_type` - (Optional) The ProvisionType of the Group. Valid values: `Manual`, `Synchronized`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group names.
-* `groups` - A list of Cloud Sso Groups. Each element contains the following attributes:
-  * `create_time` - The Created Time of the Directory.
-  * `description` - The Description of the Directory.
-  * `directory_id` -  The ID of the Directory.
-  * `group_id` - The Group ID of the group.
-  * `group_name` - The Name of the group.
-  * `id` - The ID of the Group.
-  * `provision_type` - The Provision Type of the Group. Valid values: `Manual`, `Synchronized`.
+* `groups` - A list of Cloud Sso Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `create_time` - The Created Time of the Directory.
+* `description` - The Description of the Directory.
+* `directory_id` -  The ID of the Directory.
+* `group_id` - The Group ID of the group.
+* `group_name` - The Name of the group.
+* `id` - The ID of the Group.
+* `provision_type` - The Provision Type of the Group. Valid values: `Manual`, `Synchronized`.

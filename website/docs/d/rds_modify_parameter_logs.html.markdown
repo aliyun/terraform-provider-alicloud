@@ -29,20 +29,27 @@ data "alicloud_rds_modify_parameter_logs" "example" {
 
 The following arguments are supported:
 
-* `db_instance_id` - (Required, ForceNew) The db instance id.
-* `end_time` - (Required, ForceNew) The end time.
+* `db_instance_id` - (Required) The db instance id.
+* `end_time` - (Required) The end time.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `start_time` - (Required, ForceNew) The start time.
+* `start_time` - (Required) The start time.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `logs` - A list of Rds Modify Parameter Logs. Each element contains the following attributes:
-  * `modify_time` - The time when the parameter was reconfigured. This value is a UNIX timestamp. Unit: milliseconds.
-  * `new_parameter_value` - The new value of the parameter.
-  * `old_parameter_value` - The original value of the parameter.
-  * `parameter_name` - The name of the parameter.
-  * `status` - The status of the new value specified for the parameter. Valid values:
-    * **Applied**: The new value has taken effect.
-    * **Syncing**: The new value is being applied and has not taken effect.
+* `logs` - A list of Rds Modify Parameter Logs.
+
+---
+
+### `logs`
+
+The logs supports the following attributes:
+
+* `modify_time` - The time when the parameter was reconfigured. This value is a UNIX timestamp. Unit: milliseconds.
+* `new_parameter_value` - The new value of the parameter.
+* `old_parameter_value` - The original value of the parameter.
+* `parameter_name` - The name of the parameter.
+* `status` - The status of the new value specified for the parameter. Valid values:
+  * **Applied**: The new value has taken effect.
+  * **Syncing**: The new value is being applied and has not taken effect.

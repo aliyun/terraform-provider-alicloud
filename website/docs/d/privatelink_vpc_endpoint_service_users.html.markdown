@@ -32,14 +32,21 @@ output "first_privatelink_vpc_endpoint_service_user_id" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `service_id` - (Required, ForceNew) The Id of Vpc Endpoint Service.
-* `user_id` - (Optional, ForceNew) The Id of Ram User.
+* `service_id` - (Required) The Id of Vpc Endpoint Service.
+* `user_id` - (Optional) The Id of Ram User.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Service User IDs.
-* `users` - A list of Privatelink Vpc Endpoint Service Users. Each element contains the following attributes:
-  * `id` - The ID of the Vpc Endpoint Service User.
-  * `user_id` - The Id of Ram User.
+* `users` - A list of Privatelink Vpc Endpoint Service Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `id` - The ID of the Vpc Endpoint Service User.
+* `user_id` - The Id of Ram User.

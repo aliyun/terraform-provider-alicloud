@@ -72,7 +72,7 @@ The following arguments are supported:
 * `system_snapshot_id` - (Required) The ID of the system snapshot.
 * `status` - (Optional) The Shared status of the Custom Image. Valid values: `Share`, `UnShare`.
 
- **NOTE:** The `status` will be automatically change to `UnShare` when the resource is deleted, please operate with caution.
+  -> **NOTE:** The `status` will be automatically change to `UnShare` when the resource is deleted, please operate with caution.
 
 ## Attributes Reference
 

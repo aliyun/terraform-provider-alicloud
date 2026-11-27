@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	legacyclient "github.com/aliyun/terraform-provider-alicloud/alicloud/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -64,15 +65,29 @@ func dataSourceRegionsRead(d *schema.ResourceData, meta interface{}) error {
 	request.RegionId = client.RegionId
 	currentRegion := client.RegionId
 
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeRegions(request)
-	})
+	// Neither branch sends AcceptLanguage: the legacy path matches the old
+	// ecsClient call (the old SDK request carries no AcceptLanguage field), and
+	// the V4 path follows the shared gateway configuration, which injects
+	// AcceptLanguage=en-US for every migrated product. As a result local_name
+	// stays in the local language under v1 signing and switches to English
+	// under v4 signing — an inherent property of the EO migration.
+	response, err := client.LegacySdkRpc(request, "/", ecs.CreateDescribeRegionsResponse())
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request)
-	resp, _ := raw.(*ecs.DescribeRegionsResponse)
-	if resp == nil || len(resp.Regions.Region) == 0 {
+	addDebug(request.GetActionName(), response, request)
+	resp := &ecs.DescribeRegionsResponse{}
+	if err := legacyclient.LegacyRpcResponse(response, resp); err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	// The rehydrated envelope is trusted only after the top-level Regions key
+	// is confirmed present: without this check a payload with a different
+	// shape decodes into an empty list and would be reported to the user as
+	// "no matching regions found" instead of a structure mismatch.
+	if _, ok := response["Regions"]; !ok {
+		return WrapErrorf(fmt.Errorf("missing Regions in response"), DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	if len(resp.Regions.Region) == 0 {
 		return fmt.Errorf("no matching regions found")
 	}
 	name, nameOk := d.GetOk("name")

@@ -104,7 +104,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.265.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 8 mins) Used when create the Account.
 * `delete` - (Defaults to 8 mins) Used when delete the Account.

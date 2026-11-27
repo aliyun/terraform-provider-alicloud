@@ -81,6 +81,8 @@ The following arguments are supported:
 * `bucket` - (Required, ForceNew) The name of the bucket
 * `rule` - (Optional, List) The container that holds the response header rules. See [`rule`](#rule) below.
 
+---
+
 ### `rule`
 
 The rule supports the following:
@@ -89,11 +91,15 @@ The rule supports the following:
 * `hide_headers` - (Optional, Set) The container that holds the response headers that need to be hidden. See [`hide_headers`](#rule-hide_headers) below.
 * `name` - (Optional) The response header rule name.
 
+---
+
 ### `rule-filters`
 
 The rule-filters supports the following:
 
 * `operation` - (Optional, List) The operation to which the rule applies.
+
+---
 
 ### `rule-hide_headers`
 
@@ -109,7 +115,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Response Header.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Response Header.

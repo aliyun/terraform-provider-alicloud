@@ -156,11 +156,15 @@ The following arguments are supported:
 * `table_mappings` - (Required, List) Synchronize object transformation mapping list See [`table_mappings`](#table_mappings) below.
 * `transformation_rules` - (Optional, List) Definition list of synchronization object conversion rules See [`transformation_rules`](#transformation_rules) below.
 
+---
+
 ### `destination_data_source_settings`
 
 The destination_data_source_settings supports the following:
 
 * `data_source_name` - (Optional, ForceNew) Destination data source name
+
+---
 
 ### `job_settings`
 
@@ -175,12 +179,16 @@ The job_settings supports the following:
 * `ddl_handling_settings` - (Optional, List) List of DDL processing settings for synchronization tasks See [`ddl_handling_settings`](#job_settings-ddl_handling_settings) below.
 * `runtime_settings` - (Optional, List) Run-time setting parameter list See [`runtime_settings`](#job_settings-runtime_settings) below.
 
+---
+
 ### `job_settings-column_data_type_settings`
 
 The job_settings-column_data_type_settings supports the following:
 
 * `destination_data_type` - (Optional) The destination type of the mapping relationship
 * `source_data_type` - (Optional) The source type of the mapping type
+
+---
 
 ### `job_settings-cycle_schedule_settings`
 
@@ -192,6 +200,8 @@ The job_settings-cycle_schedule_settings supports the following:
 
   OfflineIncremental: offline increment
 * `schedule_parameters` - (Optional) Scheduling Parameters
+
+---
 
 ### `job_settings-ddl_handling_settings`
 
@@ -216,6 +226,8 @@ The job_settings-ddl_handling_settings supports the following:
 
   DropTable (delete table)
 
+---
+
 ### `job_settings-runtime_settings`
 
 The job_settings-runtime_settings supports the following:
@@ -239,6 +251,8 @@ The job_settings-runtime_settings supports the following:
   runtime.realtime.concurrent (real-time task concurrency)
 * `value` - (Optional) Runtime setting value
 
+---
+
 ### `resource_settings`
 
 The resource_settings supports the following:
@@ -247,12 +261,16 @@ The resource_settings supports the following:
 * `realtime_resource_settings` - (Optional, List) Real-time Resource Group See [`realtime_resource_settings`](#resource_settings-realtime_resource_settings) below.
 * `schedule_resource_settings` - (Optional, List) Scheduling Resource Groups See [`schedule_resource_settings`](#resource_settings-schedule_resource_settings) below.
 
+---
+
 ### `resource_settings-offline_resource_settings`
 
 The resource_settings-offline_resource_settings supports the following:
 
 * `requested_cu` - (Optional, Float) Offline resource group cu
 * `resource_group_identifier` - (Optional) Offline resource group name
+
+---
 
 ### `resource_settings-realtime_resource_settings`
 
@@ -261,12 +279,16 @@ The resource_settings-realtime_resource_settings supports the following:
 * `requested_cu` - (Optional, Float) Real-time resource group cu
 * `resource_group_identifier` - (Optional) Real-time resource group name
 
+---
+
 ### `resource_settings-schedule_resource_settings`
 
 The resource_settings-schedule_resource_settings supports the following:
 
 * `requested_cu` - (Optional, Float) Scheduling resource group cu
 * `resource_group_identifier` - (Optional) Scheduling resource group name
+
+---
 
 ### `source_data_source_settings`
 
@@ -275,6 +297,8 @@ The source_data_source_settings supports the following:
 * `data_source_name` - (Optional, ForceNew) Data source name of a single source
 * `data_source_properties` - (Optional, ForceNew, List) Single Source Data Source Properties See [`data_source_properties`](#source_data_source_settings-data_source_properties) below.
 
+---
+
 ### `source_data_source_settings-data_source_properties`
 
 The source_data_source_settings-data_source_properties supports the following:
@@ -282,12 +306,16 @@ The source_data_source_settings-data_source_properties supports the following:
 * `encoding` - (Optional, ForceNew) Data Source Encoding
 * `timezone` - (Optional, ForceNew) Data Source Time Zone
 
+---
+
 ### `table_mappings`
 
 The table_mappings supports the following:
 
 * `source_object_selection_rules` - (Optional, List) Each rule can select different types of source objects to be synchronized, such as source database and source data table. See [`source_object_selection_rules`](#table_mappings-source_object_selection_rules) below.
 * `transformation_rules` - (Optional, List) A list of conversion rule definitions for a synchronization object. Each element in the list defines a conversion rule. See [`transformation_rules`](#table_mappings-transformation_rules) below.
+
+---
 
 ### `table_mappings-source_object_selection_rules`
 
@@ -301,6 +329,8 @@ The table_mappings-source_object_selection_rules supports the following:
   Table (Table)
 
   Database
+
+---
 
 ### `table_mappings-transformation_rules`
 
@@ -329,6 +359,8 @@ The table_mappings-transformation_rules supports the following:
   Table (Table)
 
   Schema(schema)
+
+---
 
 ### `transformation_rules`
 
@@ -364,7 +396,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Di Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Di Job.

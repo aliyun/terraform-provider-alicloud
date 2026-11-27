@@ -125,6 +125,8 @@ The following arguments are supported:
 * `route_config` - (Optional) The configuration of domain route, mapping the path and Function Compute function.See [`route_config`](#route_config) below.
 * `cert_config` - (Optional) The configuration of HTTPS certificate.See [`cert_config`](#cert_config) below.
 
+---
+
 ### `route_config`
 
 The route_config supports the following:
@@ -134,6 +136,8 @@ The route_config supports the following:
 * `function_name` - (Required) The name of the Function Compute function that requests are routed to.
 * `qualifier` - (Optional) The version or alias of the Function Compute service that requests are routed to. For example, qualifier v1 indicates that the requests are routed to the version 1 Function Compute service. For detail information about version and alias, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/96464.htm).
 * `methods` - (Optional) The requests of the specified HTTP methos are routed from. Valid method: GET, POST, DELETE, HEAD, PUT and PATCH. For example, "GET, HEAD" methods indicate that only requests from GET and HEAD methods are routed.
+
+---
 
 ### `cert_config`
 

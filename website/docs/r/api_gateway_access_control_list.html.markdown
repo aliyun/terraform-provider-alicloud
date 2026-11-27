@@ -55,8 +55,11 @@ The following arguments are supported:
 
 * `access_control_list_name` - (Required, ForceNew) Access control list name.
 * `acl_entrys` - (Optional, Deprecated from v1.228.0) Information list of access control policies. You can add at most 50 IP addresses or CIDR blocks to an ACL in each call. If the IP address or CIDR block that you want to add to an ACL already exists, the IP address or CIDR block is not added. The entries that you add must be CIDR blocks. See [`acl_entrys`](#acl_entrys) below.
-**NOTE:** Field 'acl_entrys' has been deprecated from provider version 1.228.0, and it will be removed in the future version. Please use the new resource 'alicloud_api_gateway_acl_entry_attachment'.
+
+  -> **NOTE:** Field 'acl_entrys' has been deprecated from provider version 1.228.0, and it will be removed in the future version. Please use the new resource 'alicloud_api_gateway_acl_entry_attachment'.
 * `address_ip_version` - (Optional, ForceNew, Computed) The IP version. Valid values: ipv4 and ipv6.
+
+---
 
 ### `acl_entrys`
 
@@ -73,7 +76,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Control List.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Control List.

@@ -102,6 +102,8 @@ The following arguments are supported:
 * `protocol_type` - (Required) The health check protocol. Valid values: `HTTP`, `HTTPS`, `PING`, `TCP`.
 * `timeout` - (Required) The timeout period. Unit: milliseconds. Valid values: `2000`, `3000`, `5000`, `10000`.
 
+---
+
 ### `isp_city_node`
 
 The isp_city_node supports the following:

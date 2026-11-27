@@ -32,11 +32,11 @@ output "first_group_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` to get more details of the security groups.
-* `ids` - (Optional, ForceNew) A list of Security Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Security Group name.
+* `ids` - (Optional) A list of Security Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Security Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `security_group_id` - (Optional, ForceNew) The ID of the Security Group.
-* `security_group_name` - (Optional, ForceNew) The name of the Security Group.
+* `security_group_id` - (Optional) The ID of the Security Group.
+* `security_group_name` - (Optional) The name of the Security Group.
 
 ## Attributes Reference
 
@@ -45,6 +45,8 @@ The following attributes are exported:
 * `ids` - A list of Security Group IDs.
 * `names` - A list of Security Group names.
 * `groups` - A list of Security Groups.
+
+---
 
 ### `groups`
 
@@ -57,6 +59,8 @@ The groups supports the following attributes:
 * `permissions` - A collection of rules for a security group instance.
 * `security_group_id` - The ID of the Security Group.
 * `security_group_name` - Security group name.
+
+---
 
 ### `groups.permissions`
 

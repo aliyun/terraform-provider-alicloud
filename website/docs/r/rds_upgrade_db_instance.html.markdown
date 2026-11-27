@@ -204,14 +204,16 @@ The following arguments are supported:
   * **Before**: ApsaraDB RDS collects the statistics of the new instance before the switchover to ensure service stability. If the original instance contains a large amount of data, the upgrade may require a long period of time.
   * **After**: ApsaraDB RDS collects the statistics of the new instance after the switchover to accelerate the upgrade. If you access tables for which no statistics are generated, the query plans that you specify may be inaccurately executed. In addition, your database service may be unavailable during peak hours.
   
-  -> **NOTE** If you set the SwitchOver parameter to false, the value Before specifies that ApsaraDB RDS collects the statistics of the new instance before the new instance starts to process read and write requests, and the value After specifies that ApsaraDB RDS collects the statistics of the new instance after the new instance starts to process read and write requests.
+  -> **NOTE:** If you set the SwitchOver parameter to false, the value Before specifies that ApsaraDB RDS collects the statistics of the new instance before the new instance starts to process read and write requests, and the value After specifies that ApsaraDB RDS collects the statistics of the new instance after the new instance starts to process read and write requests.
 * `target_major_version` - (Required, ForceNew) The major engine version of the new instance. The value of this parameter must be the major engine version on which an upgrade check is performed.
 
-  -> **NOTE** You can call the [UpgradeDBInstanceMajorVersionPrecheck](https://www.alibabacloud.com/help/doc-detail/330050.htm) operation to perform an upgrade check on a major engine version.
+  -> **NOTE:** You can call the [UpgradeDBInstanceMajorVersionPrecheck](https://www.alibabacloud.com/help/doc-detail/330050.htm) operation to perform an upgrade check on a major engine version.
 * `tcp_connection_type` - (Optional, Available since v1.171.0) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
 * `pg_hba_conf` - (Optional, Available since v1.155.0) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
+
+---
 
 ### `parameters`
 
@@ -219,6 +221,8 @@ The parameters mapping supports the following:
 
 * `name` - (Required) The parameter name.
 * `value` - (Required) The parameter value.
+
+---
 
 ### `pg_hba_conf`
 
@@ -247,7 +251,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 300 mins) Used when create the Upgrade DB Instance.
 * `update` - (Defaults to 30 mins) Used when update the Upgrade DB Instance.

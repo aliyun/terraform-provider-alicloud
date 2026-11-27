@@ -34,6 +34,8 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
 * `collation_time_zones` - (Optional) An array that consists of the character set collations and time zones. See [`collation_time_zones`](#collation_time_zones) below.
 
+---
+
 ### `collation_time_zones`
 
 * `description` - (Optional) The description.
@@ -47,6 +49,13 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of time zones.
 * `collation_time_zones` - An array that consists of the character set collations and time zones that are available for
   use in ApsaraDB RDS.
-  * `description` - The code of the instance type.
-  * `standard_time_offset` - The offset of the UTC time. The offset is in the following format: (UTC+<i>HH:mm</i>).
-  * `time_zone` - The time zone that is available for use in ApsaraDB RDS.
+
+---
+
+### `collation_time_zones`
+
+The collation_time_zones supports the following attributes:
+
+* `description` - The code of the instance type.
+* `standard_time_offset` - The offset of the UTC time. The offset is in the following format: (UTC+<i>HH:mm</i>).
+* `time_zone` - The time zone that is available for use in ApsaraDB RDS.

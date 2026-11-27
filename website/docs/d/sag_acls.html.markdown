@@ -43,6 +43,13 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Sag Acl IDs.
 * `names` - A list of Sag Acls names.
-* `acls` - A list of Sag Acls. Each element contains the following attributes:
-  * `id` - The ID of the ACL. For example "acl-xxx".
-  * `name` - The name of the Acl.
+* `acls` - A list of Sag Acls.
+
+---
+
+### `acls`
+
+The acls supports the following attributes:
+
+* `id` - The ID of the ACL. For example "acl-xxx".
+* `name` - The name of the Acl.

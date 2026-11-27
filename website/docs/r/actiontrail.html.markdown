@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_actiontrail
 
--> **DEPRECATED:**  This resource has been renamed to [alicloud_actiontrail_trail](https://www.terraform.io/docs/providers/alicloud/r/actiontrail_trail) from version 1.95.0.
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_actiontrail_trail](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/actiontrail_trail) from version 1.95.0.
 
 Provides a Actiontrail Trail resource.
 
@@ -96,7 +96,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.256.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Trail.
 * `delete` - (Defaults to 5 mins) Used when delete the Trail.

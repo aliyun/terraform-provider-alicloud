@@ -142,11 +142,11 @@ The following arguments are supported:
 
   -> **NOTE:** Restrictions on attaching ECS instances:
 
-   - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
-   - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
-   - The attached ECS instances must in the running state.
-   - The attached ECS instances has not been attached to other scaling groups.
-   - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
+  - The attached ECS instances and the scaling group must have the same region and network type(`Classic` or `VPC`).
+  - The attached ECS instances and the instance with active scaling configurations must have the same instance type.
+  - The attached ECS instances must in the running state.
+  - The attached ECS instances has not been attached to other scaling groups.
+  - The attached ECS instances supports Subscription and Pay-As-You-Go payment methods.
 
 ## Attributes Reference
 

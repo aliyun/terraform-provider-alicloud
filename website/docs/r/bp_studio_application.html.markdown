@@ -74,6 +74,8 @@ The following arguments are supported:
 * `configuration` - (Optional, ForceNew) The configuration of the application.
 * `variables` - (Optional, ForceNew) The variables of the application.
 
+---
+
 ### `instances`
 
 The instances supports the following:
@@ -91,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 120 mins) Used when create the Application.
 * `delete` - (Defaults to 120 mins) Used when delete the Application.

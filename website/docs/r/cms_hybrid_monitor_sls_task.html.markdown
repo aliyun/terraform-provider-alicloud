@@ -118,6 +118,8 @@ The following arguments are supported:
 * `sls_process_config` - (Required) The configurations of the logs that are imported from Log Service. See [`sls_process_config`](#sls_process_config) below.
 * `task_name` - (Required, ForceNew) The name of the metric import task, enter the name of the metric for logs imported from Log Service.
 
+---
+
 ### `sls_process_config`
 
 The sls_process_config supports the following:
@@ -126,6 +128,8 @@ The sls_process_config supports the following:
 * `filter` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filter`](#sls_process_config-filter) below.
 * `group_by` - (Optional) The dimension based on which data is aggregated. This parameter is equivalent to the GROUP BY clause in SQL. See [`group_by`](#sls_process_config-group_by) below.
 * `statistics` - (Optional) The method that is used to aggregate logs imported from Log Service. See [`statistics`](#sls_process_config-statistics) below.
+
+---
 
 ### `sls_process_config-statistics`
 
@@ -136,8 +140,12 @@ The statistics supports the following:
 * `parameter_one` - (Optional) The value of the function that is used to aggregate logs imported from Log Service.
   - If you set the `function` parameter to `distribution`, this parameter specifies the lower limit of the statistical interval. For example, if you want to calculate the number of HTTP requests whose status code is 2XX, set this parameter to 200.
   - If you set the `function` parameter to `percentile`, this parameter specifies the percentile at which the expected value is. For example, 0.5 specifies P50.
-* `parameter_two` - (Optional) The value of the function that is used to aggregate logs imported from Log Service. **Note:** This parameter is required only if the `function` parameter is set to `distribution`. This parameter specifies the upper limit of the statistical interval.
+* `parameter_two` - (Optional) The value of the function that is used to aggregate logs imported from Log Service.
+
+  -> **NOTE:** This parameter is required only if the `function` parameter is set to `distribution`. This parameter specifies the upper limit of the statistical interval.
 * `sls_key_name` - (Optional) The name of the key that is used to aggregate logs imported from Log Service.
+
+---
 
 ### `sls_process_config-group_by`
 
@@ -146,12 +154,16 @@ The group_by supports the following:
 * `alias` - (Optional) The alias of the aggregation result.
 * `sls_key_name` - (Optional) The name of the key that is used to aggregate logs imported from Log Service.
 
+---
+
 ### `sls_process_config-filter`
 
 The filter supports the following:
 
 * `filters` - (Optional) The conditions that are used to filter logs imported from Log Service. See [`filters`](#sls_process_config-filter-filters) below.
 * `relation` - (Optional) The relationship between multiple filter conditions. Valid values: `and`(default value), `or`.
+
+---
 
 ### `sls_process_config-filter-filters`
 
@@ -161,12 +173,16 @@ The filters supports the following:
 * `sls_key_name` - (Optional) The name of the key that is used to filter logs imported from Log Service.
 * `value` - (Optional) The value of the key that is used to filter logs imported from Log Service.
 
+---
+
 ### `sls_process_config-express`
 
 The express supports the following:
 
 * `alias` - (Optional) The alias of the extended field that specifies the result of basic operations that are performed on aggregation results.
 * `express` - (Optional) The extended field that specifies the result of basic operations that are performed on aggregation results.
+
+---
 
 ### `attach_labels`
 
@@ -183,7 +199,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Hybrid Monitor Sls Task.
 * `delete` - (Defaults to 2 mins) Used when delete the Hybrid Monitor Sls Task.

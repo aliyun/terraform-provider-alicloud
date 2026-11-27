@@ -32,25 +32,32 @@ output "cen_transit_router_prefix_list_association_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Cen Transit Router Prefix List Association IDs.
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_table_id` - (Required, ForceNew) The ID of the route table of the transit router.
-* `prefix_list_id` - (Optional, ForceNew) The ID of the prefix list.
-* `owner_uid` - (Optional, ForceNew) The ID of the Alibaba Cloud account to which the prefix list belongs.
-* `status` - (Optional, ForceNew) The status of the prefix list. Valid Value: `Active`, `Updating`.
+* `ids` - (Optional, Computed) A list of Cen Transit Router Prefix List Association IDs.
+* `transit_router_id` - (Required) The ID of the transit router.
+* `transit_router_table_id` - (Required) The ID of the route table of the transit router.
+* `prefix_list_id` - (Optional) The ID of the prefix list.
+* `owner_uid` - (Optional) The ID of the Alibaba Cloud account to which the prefix list belongs.
+* `status` - (Optional) The status of the prefix list. Valid Value: `Active`, `Updating`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `associations` - A list of Cen Transit Router Prefix List Associations. Each element contains the following attributes:
-  * `id` - The ID of the Cen Transit Router Prefix List Association. It formats as `<prefix_list_id>:<transit_router_id>:<transit_router_table_id>:<next_hop>`.
-  * `prefix_list_id` - The ID of the prefix list.
-  * `transit_router_id` - The ID of the transit router.
-  * `transit_router_table_id` - The ID of the route table of the transit router.
-  * `next_hop` - The ID of the next hop connection.
-  * `next_hop_type` - The type of the next hop.
-  * `next_hop_instance_id` - The ID of the network instance associated with the next hop connection.
-  * `owner_uid` - The ID of the Alibaba Cloud account to which the prefix list belongs.
-  * `status` - The status of the prefix list.
+* `associations` - A list of Cen Transit Router Prefix List Associations.
+
+---
+
+### `associations`
+
+The associations supports the following attributes:
+
+* `id` - The ID of the Cen Transit Router Prefix List Association. It formats as `<prefix_list_id>:<transit_router_id>:<transit_router_table_id>:<next_hop>`.
+* `prefix_list_id` - The ID of the prefix list.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_table_id` - The ID of the route table of the transit router.
+* `next_hop` - The ID of the next hop connection.
+* `next_hop_type` - The type of the next hop.
+* `next_hop_instance_id` - The ID of the network instance associated with the next hop connection.
+* `owner_uid` - The ID of the Alibaba Cloud account to which the prefix list belongs.
+* `status` - The status of the prefix list.

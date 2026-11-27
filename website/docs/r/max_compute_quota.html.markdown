@@ -126,6 +126,8 @@ If PaymentType is PayAsYouGo, you do not need to fill in
   -> **NOTE:** -- Add: If the configuration contains a second-level Quota that does not exist, a second-level Quota is added. -- Delete: If the configuration does not contain the existing secondary Quota, it will be deleted. -- Modify: If the configuration is inconsistent with the existing secondary Quota configuration parameters, the secondary Quota configuration will be updated. -- The default secondary Quota must be configured and cannot be deleted.
   See [`sub_quota_info_list`](#sub_quota_info_list) below.
 
+---
+
 ### `sub_quota_info_list`
 
 The sub_quota_info_list supports the following:
@@ -136,6 +138,8 @@ The sub_quota_info_list supports the following:
 
 * `parameter` - (Optional, List) Parameter See [`parameter`](#sub_quota_info_list-parameter) below.
 * `type` - (Optional, Computed) The secondary Quota type. The default value is: FUXI_OFFLINE
+
+---
 
 ### `sub_quota_info_list-parameter`
 
@@ -164,7 +168,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 31 mins) Used when create the Quota.
 * `update` - (Defaults to 5 mins) Used when update the Quota.

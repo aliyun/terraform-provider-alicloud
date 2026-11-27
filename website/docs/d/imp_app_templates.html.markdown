@@ -36,28 +36,42 @@ output "imp_app_template_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of App Template IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by App Template name.
+* `ids` - (Optional, Computed)  A list of App Template IDs.
+* `name_regex` - (Optional) A regex string to filter results by App Template name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) Application template usage status. Valid values: ["attached", "unattached"].
+* `status` - (Optional) Application template usage status. Valid values: ["attached", "unattached"].
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of App Template names.
-* `templates` - A list of Imp App Templates. Each element contains the following attributes:
-  * `app_template_creator` - Apply template creator.
-  * `app_template_id` - The first ID of the resource.
-  * `app_template_name` - The name of the resource.
-  * `component_list` - List of components.
-  * `config_list` - List of config. Each element contains the following attributes:
-    * `key` - Config key.
-    * `value` - Config Value.
-  * `create_time` - Creation time.
-  * `id` - The ID of the App Template.
-  * `integration_mode` - Integration mode (Integrated SDK:paasSDK, Model Room: standardRoom).
-  * `scene` - Application Template scenario, e-commerce business, classroom classroom.
-  * `sdk_info` - SDK information.
-  * `standard_room_info` - Model room information.
-  * `status` - Application template usage status.
+* `templates` - A list of Imp App Templates.
+
+---
+
+### `templates`
+
+The templates supports the following attributes:
+
+* `app_template_creator` - Apply template creator.
+* `app_template_id` - The first ID of the resource.
+* `app_template_name` - The name of the resource.
+* `component_list` - List of components.
+* `config_list` - List of config.
+* `create_time` - Creation time.
+* `id` - The ID of the App Template.
+* `integration_mode` - Integration mode (Integrated SDK:paasSDK, Model Room: standardRoom).
+* `scene` - Application Template scenario, e-commerce business, classroom classroom.
+* `sdk_info` - SDK information.
+* `standard_room_info` - Model room information.
+* `status` - Application template usage status.
+
+---
+
+### `templates.config_list`
+
+The config_list supports the following attributes:
+
+* `key` - Config key.
+* `value` - Config Value.

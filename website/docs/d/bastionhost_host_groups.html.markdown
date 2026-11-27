@@ -40,10 +40,10 @@ output "bastionhost_host_group_id_2" {
 
 The following arguments are supported:
 
-* `host_group_name` - (Optional, ForceNew) Specify the New Host Group Name, Supports up to 128 Characters.
-* `ids` - (Optional, ForceNew, Computed)  A list of Host Group IDs.
-* `instance_id` - (Required, ForceNew) Specify the New Host Group Where the Bastion Host ID of.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Host Group name.
+* `host_group_name` - (Optional) Specify the New Host Group Name, Supports up to 128 Characters.
+* `ids` - (Optional, Computed)  A list of Host Group IDs.
+* `instance_id` - (Required) Specify the New Host Group Where the Bastion Host ID of.
+* `name_regex` - (Optional) A regex string to filter results by Host Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -51,9 +51,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Host Group names.
-* `groups` - A list of Bastionhost Host Groups. Each element contains the following attributes:
-  * `comment` - Specify the New Host Group of Notes, Supports up to 500 Characters.
-  * `host_group_id` - Host Group ID.
-  * `host_group_name` - Specify the New Host Group Name, Supports up to 128 Characters.
-  * `id` - The ID of the Host Group.
-  * `instance_id` - Specify the New Host Group Where the Bastion Host ID of.
+* `groups` - A list of Bastionhost Host Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `comment` - Specify the New Host Group of Notes, Supports up to 500 Characters.
+* `host_group_id` - Host Group ID.
+* `host_group_name` - Specify the New Host Group Name, Supports up to 128 Characters.
+* `id` - The ID of the Host Group.
+* `instance_id` - Specify the New Host Group Where the Bastion Host ID of.

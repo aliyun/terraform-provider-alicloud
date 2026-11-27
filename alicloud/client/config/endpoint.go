@@ -1,15 +1,18 @@
 package config
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/location"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -98,7 +101,44 @@ func LoadEndpoint(region string, serviceCode ServiceCode) string {
 }
 
 // NOTE: The productCode must be lowed.
+// LoadEndpoint resolves a product endpoint without a caller context. It keeps
+// the historical entry points working and delegates to the context-aware
+// resolver.
 func (c *Config) LoadEndpoint(productCode string, regionID string) error {
+	return c.loadEndpoint(context.Background(), productCode, regionID, nil)
+}
+
+// LoadEndpointWithContext bounds Location discovery with the caller's context.
+func (c *Config) LoadEndpointWithContext(ctx context.Context, productCode string, regionID string, discoverFns ...func(context.Context, string, string) (string, error)) error {
+	var discover func(context.Context, string, string) (string, error)
+	if len(discoverFns) > 0 {
+		discover = discoverFns[0]
+	}
+	return c.loadEndpoint(ctx, productCode, regionID, discover)
+}
+
+func (c *Config) loadEndpoint(ctx context.Context, productCode string, regionID string, discover func(context.Context, string, string) (string, error)) error {
+	endpoint, err := c.resolveEndpointForRegion(ctx, productCode, regionID, discover)
+	if err != nil {
+		return err
+	}
+	// Every caller of this chain passes a lower-case product code (see the
+	// NOTE on LoadEndpoint), so this single key keeps the historical
+	// per-branch write keys equivalent.
+	c.Endpoints.Store(productCode, endpoint)
+	return nil
+}
+
+// resolveEndpointForRegion walks the endpoint rules for one region —
+// environment overrides first, then the irregular product rules, then a
+// Location probe bounded by ctx, then the regular rules as a fallback — and
+// returns the resolved host. Caching stays with the callers: the shared
+// per-product entry for the provider's own region, and the region-scoped
+// composite entry for a request targeting another region.
+func (c *Config) resolveEndpointForRegion(ctx context.Context, productCode string, regionID string, discover func(context.Context, string, string) (string, error)) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	// Firstly, load endpoint from environment variables
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("ALIBABA_CLOUD_ENDPOINT_%s", strings.ToUpper(productCode))))
 	if endpoint == "" {
@@ -106,8 +146,7 @@ func (c *Config) LoadEndpoint(productCode string, regionID string) error {
 		endpoint = strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
 	}
 	if endpoint != "" {
-		c.Endpoints.Store(productCode, endpoint)
-		return nil
+		return endpoint, nil
 	}
 
 	// Secondly, load endpoint from known rules
@@ -124,12 +163,17 @@ func (c *Config) LoadEndpoint(productCode string, regionID string) error {
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, regionID)
 		}
-		c.Endpoints.Store(productCode, endpointFmt)
-		return nil
+		return endpointFmt, nil
 	}
 
 	// Thirdly, load endpoint from location
-	endpoint, err := c.describeEndpointForService(productCode, regionID)
+	if discover == nil {
+		discover = c.describeEndpointForServiceWithContext
+	}
+	endpoint, err := discover(ctx, productCode, regionID)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return "", ctxErr
+	}
 	if err == nil {
 		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && c.isInternationalAccount() {
 			endpoint = v
@@ -137,8 +181,9 @@ func (c *Config) LoadEndpoint(productCode string, regionID string) error {
 		if v, ok := regularProductEndpointReplace[endpoint]; ok {
 			endpoint = v
 		}
-		c.Endpoints.Store(strings.ToLower(productCode), endpoint)
-	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
+		return endpoint, nil
+	}
+	if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
 		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && c.isInternationalRegion() {
 			endpointFmt = v
 		}
@@ -154,11 +199,10 @@ func (c *Config) LoadEndpoint(productCode string, regionID string) error {
 		if v, ok := regularProductEndpointReplace[endpointFmt]; ok {
 			endpointFmt = v
 		}
-		c.Endpoints.Store(productCode, endpointFmt)
 		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpointFmt)
-		return nil
+		return endpointFmt, nil
 	}
-	return err
+	return "", err
 }
 
 // Load current path endpoint file endpoints.xml, if failed, it will load from environment variables TF_ENDPOINT_PATH
@@ -186,7 +230,72 @@ func (c *Config) loadEndpointFromLocal() error {
 	return nil
 }
 
+// LoadAPIEndpoint resolves a product endpoint without a caller context.
 func (c *Config) LoadAPIEndpoint(productCode string, regionID string, accountID func() (string, error)) (string, error) {
+	return c.loadAPIEndpoint(context.Background(), productCode, regionID, accountID, nil)
+}
+
+// LoadAPIEndpointWithContext applies the configured endpoint rules with bounded discovery.
+func (c *Config) LoadAPIEndpointWithContext(ctx context.Context, productCode string, regionID string, accountID func() (string, error), discoverFns ...func(context.Context, string, string) (string, error)) (string, error) {
+	var discover func(context.Context, string, string) (string, error)
+	if len(discoverFns) > 0 {
+		discover = discoverFns[0]
+	}
+	return c.loadAPIEndpoint(ctx, productCode, regionID, accountID, discover)
+}
+
+// RegionalEndpointCacheKey is the cache key of a product endpoint resolved
+// for one specific region. The "@" separator keeps it from ever colliding
+// with the plain product-code keys every other endpoint reader and writer
+// uses, so region-scoped entries can live in the same shared map without
+// being observed by the per-product lookups.
+func RegionalEndpointCacheKey(productCode, regionID string) string {
+	return productCode + "@" + regionID
+}
+
+// LoadAPIEndpointForRegion resolves the endpoint of a product for a region
+// other than the provider's own. Unlike LoadAPIEndpointWithContext it
+// neither reads nor writes the shared per-product cache entry, because that
+// entry holds the endpoint of whichever region resolved first — a
+// same-region call usually warms it during apply — while a cross-region
+// request signs with its own region, so a warm shared cache would sign one
+// region against another region's host. The environment override and the
+// per-region rule chain still apply, and resolved endpoints are cached under
+// RegionalEndpointCacheKey.
+func (c *Config) LoadAPIEndpointForRegion(ctx context.Context, productCode string, regionID string, accountID func() (string, error), discoverFns ...func(context.Context, string, string) (string, error)) (string, error) {
+	var discover func(context.Context, string, string) (string, error)
+	if len(discoverFns) > 0 {
+		discover = discoverFns[0]
+	}
+	return c.loadAPIEndpointForRegion(ctx, productCode, regionID, accountID, discover)
+}
+
+func (c *Config) loadAPIEndpointForRegion(ctx context.Context, productCode string, regionID string, accountID func() (string, error), discover func(context.Context, string, string) (string, error)) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	key := RegionalEndpointCacheKey(productCode, regionID)
+	if v, ok := c.Endpoints.Load(key); ok && v.(string) != "" {
+		return c.formatEndpointWithAccountID(productCode, v.(string), accountID)
+	}
+	endpoint, err := c.resolveEndpointForRegion(ctx, productCode, regionID, discover)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return "", ctxErr
+		}
+		return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %w.", productCode, err)
+	}
+	if endpoint == "" {
+		return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	c.Endpoints.Store(key, endpoint)
+	return c.formatEndpointWithAccountID(productCode, endpoint, accountID)
+}
+
+func (c *Config) loadAPIEndpoint(ctx context.Context, productCode string, regionID string, accountID func() (string, error), discover func(context.Context, string, string) (string, error)) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	configEndpoints := productCodeToConfigEndpoints[productCode]
 	if configEndpoints == "" {
 		configEndpoints = productCode
@@ -203,11 +312,17 @@ func (c *Config) LoadAPIEndpoint(productCode string, regionID string, accountID 
 		if v, ok := c.Endpoints.Load(productCode); ok && v.(string) != "" {
 			return c.formatEndpointWithAccountID(productCode, v.(string), accountID)
 		}
-		if err := c.LoadEndpoint(productCode, regionID); err != nil {
-			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
+		if err := c.loadEndpoint(ctx, productCode, regionID, discover); err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return "", ctxErr
+			}
+			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %w.", productCode, err)
 		}
 	} else {
 		return c.formatEndpointWithAccountID(productCode, v.(string), accountID)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
 	if v, ok := c.Endpoints.Load(productCode); ok && v.(string) != "" {
 		return c.formatEndpointWithAccountID(productCode, v.(string), accountID)
@@ -229,14 +344,44 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 	}
 }
 
+type locationContextTransport struct {
+	ctx  context.Context
+	base http.RoundTripper
+}
+
+func (t locationContextTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	if err := t.ctx.Err(); err != nil {
+		return nil, err
+	}
+	return t.base.RoundTrip(request.WithContext(t.ctx))
+}
+
+// LocationCodeForProduct returns the Location service code for a product.
+func LocationCodeForProduct(productCode string) string {
+	locationCode := productCodeToLocationCode[productCode]
+	if locationCode == "" {
+		return productCode
+	}
+	return locationCode
+}
+
+// describeEndpointForService keeps the historical probe entry point and
+// delegates to the context-aware resolver.
 func (c *Config) describeEndpointForService(productCode string, regionID string) (string, error) {
+	return c.describeEndpointForServiceWithContext(context.Background(), productCode, regionID)
+}
+
+func (c *Config) describeEndpointForServiceWithContext(ctx context.Context, productCode string, regionID string) (string, error) {
 	locationCode := productCodeToLocationCode[productCode]
 	if locationCode == "" {
 		locationCode = productCode
 	}
 	args := location.CreateDescribeEndpointsRequest()
 	args.ServiceCode = locationCode
-	args.Id = c.RegionId
+	// Location must describe the endpoints of the region the request targets,
+	// not the provider's client region, or a cross-region probe returns the
+	// client region's host.
+	args.Id = regionID
 	args.Domain = c.LocationEndpoint
 	if args.Domain == "" {
 		args.Domain = LoadEndpoint(regionID, LOCATIONCode)
@@ -250,24 +395,66 @@ func (c *Config) describeEndpointForService(productCode string, regionID string)
 		return "", fmt.Errorf("unable to initialize the location client: %#v", err)
 
 	}
-	locationClient.SetReadTimeout(time.Duration(c.ClientReadTimeout) * time.Millisecond)
-	locationClient.SetConnectTimeout(time.Duration(c.ClientConnectTimeout) * time.Millisecond)
+	defer locationClient.Shutdown()
+	readTimeout := time.Duration(c.ClientReadTimeout) * time.Millisecond
+	connectTimeout := time.Duration(c.ClientConnectTimeout) * time.Millisecond
+	locationClient.SetReadTimeout(readTimeout)
+	locationClient.SetConnectTimeout(connectTimeout)
+	if deadline, ok := ctx.Deadline(); ok {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return "", ctx.Err()
+		}
+		if readTimeout <= 0 || remaining < readTimeout {
+			readTimeout = remaining
+			locationClient.SetReadTimeout(remaining)
+		}
+		if connectTimeout <= 0 || remaining < connectTimeout {
+			connectTimeout = remaining
+			locationClient.SetConnectTimeout(remaining)
+		}
+	}
 	locationClient.SourceIp = c.SourceIp
 	locationClient.SecureTransport = c.SecureTransport
-	defer locationClient.Shutdown()
+	if ctx.Done() != nil {
+		transport := c.getTransport()
+		transport.DialContext = sdk.Timeout(connectTimeout)
+		transport.Proxy = http.ProxyFromEnvironment
+		locationClient.SetTransport(locationContextTransport{ctx: ctx, base: transport})
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
+	waitRetry := func() error {
+		done := make(chan struct{})
+		go func() {
+			wait()
+			close(done)
+		}()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-done:
+			return nil
+		}
+	}
 	var endpointResult string
-	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return retry.NonRetryableError(ctxErr)
+		}
 		endpointsResponse, err := locationClient.DescribeEndpoints(args)
 		if err != nil {
 			if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
-				wait()
+				if waitErr := waitRetry(); waitErr != nil {
+					return retry.NonRetryableError(waitErr)
+				}
 				args.Domain = "location-readonly.aliyuncs.com"
 				return retry.RetryableError(err)
 			}
 			re := regexp.MustCompile("^Post [\"]*https://.*")
 			if err.Error() != "" && re.MatchString(err.Error()) {
-				wait()
+				if waitErr := waitRetry(); waitErr != nil {
+					return retry.NonRetryableError(waitErr)
+				}
 				args.Domain = "location-readonly.aliyuncs.com"
 				return retry.RetryableError(err)
 			}

@@ -91,8 +91,8 @@ The following arguments are supported:
 * `ssl_enabled` - (Optional, Available since v1.121.0) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional, Available since v1.121.0) The network type of the endpoint address.
 * `ssl_auto_rotate` - (Optional, Available since v1.132.0) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.  
-* `ssl_certificate_url` - (Available since v1.132.0) Specifies SSL certificate download link.  
-    **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).  
+
+  -> **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).
     For a PolarDB for PostgreSQL cluster or a PolarDB-O cluster, this parameter is not required, by default, SSL encryption is enabled for all endpoints.
 * `db_endpoint_description` - (Optional, Available since v1.201.0) The name of the endpoint.
 * `connection_prefix` - (Optional, Available since v1.217.0) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
@@ -106,6 +106,7 @@ The following attributes are exported:
 * `ssl_connection_string` - (Available since v1.121.0) The SSL connection string.
 * `ssl_expire_time` - (Available since v1.121.0) The time when the SSL certificate expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `db_endpoint_id` - (Available since v1.161.0) The ID of the cluster endpoint.
+* `ssl_certificate_url` - (Available since v1.132.0) Specifies SSL certificate download link.
 
 ## Import
 

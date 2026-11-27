@@ -45,6 +45,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `actiontrails` - (Deprecated since v1.95.0) Field `actiontrails` has been deprecated from version 1.95.0. Use `trails` instead. Each element contains the following attributes:
 * `trails` - A list of ActionTrail Trails. Each element contains the following attributes:
 
+---
+
 ### `actiontrails`
 
 The actiontrails supports the following attributes:
@@ -60,6 +62,8 @@ The actiontrails supports the following attributes:
 * `status` - The status of the ActionTrail Trail.
 * `id` - The id of the ActionTrail Trail. It is the same as trail name.
 * `trail_region` - The regions to which the trail is applied.
+
+---
 
 ### `trails`
 

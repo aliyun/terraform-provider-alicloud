@@ -81,21 +81,28 @@ output "account_id" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required, ForceNew) The DBCluster id.
-* `ids` - (Optional, ForceNew, Computed)  A list of Account IDs. Its element value is same as Account Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Account name.
+* `db_cluster_id` - (Required) The DBCluster id.
+* `ids` - (Optional, Computed)  A list of Account IDs. Its element value is same as Account Name.
+* `name_regex` - (Optional) A regex string to filter results by Account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
+* `status` - (Optional) The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Account names.
-* `accounts` - A list of Click House Accounts. Each element contains the following attributes:
-	* `account_description` - In Chinese, English letter. May contain Chinese and English characters, lowercase letters, numbers, and underscores (_), the dash (-). Cannot start with http:// and https:// at the beginning. Length is from 2 to 256 characters.
-	* `account_name` - Account name: lowercase letters, numbers, underscores, lowercase letter; length no more than 16 characters.
-	* `account_type` - The Valid Account type: `Normal`, `Super`.
-	* `db_cluster_id` - The DBCluster id.
-	* `id` - The ID of the Account. Its value is same as Queue Name.
-	* `status` - The status of the resource.
+* `accounts` - A list of Click House Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_description` - In Chinese, English letter. May contain Chinese and English characters, lowercase letters, numbers, and underscores (_), the dash (-). Cannot start with http:// and https:// at the beginning. Length is from 2 to 256 characters.
+* `account_name` - Account name: lowercase letters, numbers, underscores, lowercase letter; length no more than 16 characters.
+* `account_type` - The Valid Account type: `Normal`, `Super`.
+* `db_cluster_id` - The DBCluster id.
+* `id` - The ID of the Account. Its value is same as Queue Name.
+* `status` - The status of the resource.

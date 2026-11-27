@@ -52,18 +52,25 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group names.
-* `groups` - A list of Groups. Each element contains the following attributes:
-  * `id` - The ID of the Group.
-  * `group_id` - The ID of the application group.
-  * `group_name` - The name of the application group.
-  * `group_type` - The type of the application group.
-  * `replicas` - The total number of instances.
-  * `package_type` - The type of the deployment package.
-  * `package_version` - The deployment package version.
-  * `package_version_id` - The ID of the deployment package version.
-  * `package_url` - The URL of the deployment package.
-  * `image_url` - The image URL.
-  * `web_container` - The Tomcat container version required by the deployment package.
-  * `jdk` - The JDK version required by the deployment package.
-  * `running_instances` - The number of running instances.
-  * `edas_container_version` - The version of the application runtime environment in the High-Speed Service Framework (HSF), such as an Ali-Tomcat container.
+* `groups` - A list of Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The ID of the Group.
+* `group_id` - The ID of the application group.
+* `group_name` - The name of the application group.
+* `group_type` - The type of the application group.
+* `replicas` - The total number of instances.
+* `package_type` - The type of the deployment package.
+* `package_version` - The deployment package version.
+* `package_version_id` - The ID of the deployment package version.
+* `package_url` - The URL of the deployment package.
+* `image_url` - The image URL.
+* `web_container` - The Tomcat container version required by the deployment package.
+* `jdk` - The JDK version required by the deployment package.
+* `running_instances` - The number of running instances.
+* `edas_container_version` - The version of the application runtime environment in the High-Speed Service Framework (HSF), such as an Ali-Tomcat container.

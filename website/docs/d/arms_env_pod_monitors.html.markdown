@@ -137,9 +137,9 @@ output "arms_env_pod_monitors_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Env Pod Monitor IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Env Pod Monitor name.
-* `environment_id` - (Required, ForceNew) The environment ID.
+* `ids` - (Optional, List) A list of ARMS Env Pod Monitor IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Env Pod Monitor name.
+* `environment_id` - (Required) The environment ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -147,11 +147,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Env Pod Monitor names.
-* `monitors` - A list of ARMS Env Pod Monitors. Each element contains the following attributes:
-  * `id` - The ID of the PodMonitor. It formats as `<environment_id>:<namespace>:<env_pod_monitor_name>`.
-  * `config_yaml` - The YAML configuration string.
-  * `env_pod_monitor_name` - The name of the PodMonitor.
-  * `environment_id` - The environment ID.
-  * `namespace` - The namespace.
-  * `region_id` - The region ID.
-  * `status` - The status of the PodMonitor.
+* `monitors` - A list of ARMS Env Pod Monitors.
+
+---
+
+### `monitors`
+
+The monitors supports the following attributes:
+
+* `id` - The ID of the PodMonitor. It formats as `<environment_id>:<namespace>:<env_pod_monitor_name>`.
+* `config_yaml` - The YAML configuration string.
+* `env_pod_monitor_name` - The name of the PodMonitor.
+* `environment_id` - The environment ID.
+* `namespace` - The namespace.
+* `region_id` - The region ID.
+* `status` - The status of the PodMonitor.

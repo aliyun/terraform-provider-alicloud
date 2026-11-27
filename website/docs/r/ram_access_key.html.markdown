@@ -101,7 +101,7 @@ PXFv3m3WfUlnG/om78UjQqyVACRZqqAGmuPq+TSkRUCpt9h+A39LQWkojHqyob3cyLgy6z9Q557O
 9uK3lQozbw2gH9zC0RqnePl+rsWIUU/ga16fH6pWc1uJiEBt8UZGypQ/E56/343epmYAe0a87sHx
 8iDV+dNtDVKfPRENiLOOc19MmS+phmUyrbHqI91c0pmysYcJZCD3a502X1gpjFbPZcRtiTmGnUKd
 OIu60YPNE4+h7u2CfYyFPu3AlUaGNMBlvy6PEpU=
-	  EOF
+   EOF
 }
 
 output "encrypted_secret" {
@@ -139,7 +139,7 @@ at the cost of preventing the use of the secret key in automation.
 
 -> **NOTE:** Available since v1.246.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Key.

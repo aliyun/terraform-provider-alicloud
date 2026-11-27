@@ -51,20 +51,27 @@ output "cms_dataset_id_1" {
 
 The following arguments are supported:
 
-* `dataset_name_regex` - (Optional, ForceNew) A regex string to filter results by Dataset name.
-* `ids` - (Optional, ForceNew, Computed) A list of Dataset IDs. Its element value is formatted as `<workspace>:<dataset_name>`.
+* `dataset_name_regex` - (Optional) A regex string to filter results by Dataset name.
+* `ids` - (Optional, Computed) A list of Dataset IDs. Its element value is formatted as `<workspace>:<dataset_name>`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `workspace` - (Required, ForceNew) The name of the workspace to which the datasets belong.
+* `workspace` - (Required) The name of the workspace to which the datasets belong.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `datasets` - A list of Cms Datasets. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `dataset_name` - The name of the resource.
-  * `description` - The description of the dataset.
-  * `id` - The ID of the resource. It is formatted as `<workspace>:<dataset_name>`.
-  * `region_id` - The region ID of the resource.
-  * `update_time` - The last modified time of the resource.
-  * `workspace` - The name of the workspace to which the dataset belongs.
+* `datasets` - A list of Cms Datasets.
+
+---
+
+### `datasets`
+
+The datasets supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `dataset_name` - The name of the resource.
+* `description` - The description of the dataset.
+* `id` - The ID of the resource. It is formatted as `<workspace>:<dataset_name>`.
+* `region_id` - The region ID of the resource.
+* `update_time` - The last modified time of the resource.
+* `workspace` - The name of the workspace to which the dataset belongs.

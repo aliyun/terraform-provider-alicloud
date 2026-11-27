@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_slb
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer) from version 1.123.1.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/slb_load_balancer) from version 1.123.1.
 
 Provides an Application Load Balancer resource.
 
@@ -21,6 +21,14 @@ For more details about guaranteed-performance instance, see [Guaranteed-performa
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraformslbconfig"
 }
@@ -73,12 +81,13 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `address_type` - (Optional, ForceNew, Available since v1.55.3) The network type of the SLB instance. Valid values: ["internet", "intranet"]. If load balancer launched in VPC, this value must be "intranet".
   - internet: After an Internet SLB instance is created, the system allocates a public IP address so that the instance can forward requests from the Internet.
   - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
-* `internet_charge_type` - (Optional, ForceNew) Valid
+* `internet_charge_type` - (Optional) Valid
   values are `PayByBandwidth`, `PayByTraffic`. If this value is "PayByBandwidth", then argument "internet" must be "true". Default is "PayByTraffic". If load balancer launched in VPC, this value must be "PayByTraffic".
   Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".
 * `bandwidth` - (Optional) Valid
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
 * `vswitch_id` - (Optional, ForceNew) The vSwitch ID to launch in. If `address_type` is internet, it will be ignore.
+* `vpc_id` - (String, Optional, ForceNew, Available since v2.4.0) The ID of the VPC to which the SLB instance belongs. If specified, it must be the VPC that `vswitch_id` belongs to. If not specified, Terraform uses the VPC of `vswitch_id` for a VPC SLB instance. This value is read back from the API and is empty for classic network instances.
 * `specification` - (Optional, Deprecated from v1.123.1) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
  Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/en/slb/product-overview/announcements-and-updates)" instance, it is must be specified and it valid values are: "slb.s1.small", "slb.s2.small", "slb.s2.medium",
  "slb.s3.small", "slb.s3.medium", "slb.s3.large" and "slb.s4.large".

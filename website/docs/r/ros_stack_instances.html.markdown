@@ -15,7 +15,7 @@ For information about ROS Stack Instances and how to use it, see [What is Stack 
 
 -> **NOTE:** Available since v1.279.0.
 
--> **Note:** Stack Groups and Stack Instances rely on asynchronous batch operations. Partial failures do not trigger automatic rollback. See the [Important Notes](#important-notes) section for operational guidance.
+-> **NOTE:** Stack Groups and Stack Instances rely on asynchronous batch operations. Partial failures do not trigger automatic rollback. See the [Important Notes](#important-notes) section for operational guidance.
 
 ## Example Usage
 
@@ -110,6 +110,8 @@ The following arguments are supported:
 
 * `deployment_options` - (Optional, ForceNew) List of deployment options for service-managed permissions. Currently only supports `IgnoreExisting`, which skips existing stack instances during deployment. This parameter cannot be modified after creation. Example: `["IgnoreExisting"]`.
 
+---
+
 ### `deployment_targets`
 
 The `deployment_targets` block supports the following:
@@ -117,12 +119,16 @@ The `deployment_targets` block supports the following:
 * `account_ids` - (Optional) List of Alibaba Cloud account IDs for service-managed permissions. Maximum 50 accounts.
 * `rd_folder_ids` - (Optional) List of Resource Directory folder IDs. Maximum 20 folders.
 
+---
+
 ### `parameter_overrides`
 
 The `parameter_overrides` block supports the following:
 
 * `parameter_key` - (Required) The key of the parameter to override.
 * `parameter_value` - (Optional) The value of the parameter to override. This field is sensitive and will be masked in logs.
+
+---
 
 ### `operation_preferences`
 
@@ -144,6 +150,8 @@ The following attributes are exported:
 
   -> **NOTE:** The `stack_instances` attribute may be empty if the deployment targets contain no valid accounts or if all deployments failed.
 
+---
+
 ### `stack_instances`
 
 The `stack_instances` block exports the following:
@@ -162,7 +170,7 @@ The `stack_instances` block exports the following:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the Stack Instances.
 * `update` - (Defaults to 60 mins) Used when updating the Stack Instances.

@@ -80,29 +80,36 @@ output "ecd_image_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Image IDs.
-* `image_type` - (Optional, ForceNew) The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Image name.
+* `ids` - (Optional, Computed)  A list of Image IDs.
+* `image_type` - (Optional) The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
+* `name_regex` - (Optional) A regex string to filter results by Image name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
-* `os_type` - (Optional, ForceNew, Available in 1.170.0+) The operating system type of the image. Valid values: `Windows` and `Linux`.
-* `desktop_instance_type` - (Optional, ForceNew, Available in 1.170.0+) The desktop type of the image.
+* `status` - (Optional) The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
+* `os_type` - (Optional, Available in 1.170.0+) The operating system type of the image. Valid values: `Windows` and `Linux`.
+* `desktop_instance_type` - (Optional, Available in 1.170.0+) The desktop type of the image.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Image names.
-* `images` - A list of Ecd Images. Each element contains the following attributes:
-  * `create_time` - The creation time of the image.
-  * `data_disk_size` - The size of data disk of the image.
-  * `description` - The description of the image.
-  * `gpu_category` - The Gpu Category of the image.
-  * `id` - The ID of the Image.
-  * `image_id` - The image id of the image.
-  * `image_name` - The image name.
-  * `image_type` - The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
-  * `os_type` - The os type of the image.
-  * `progress` - The progress of the image.
-  * `size` - The size of the image.
-  * `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
+* `images` - A list of Ecd Images.
+
+---
+
+### `images`
+
+The images supports the following attributes:
+
+* `create_time` - The creation time of the image.
+* `data_disk_size` - The size of data disk of the image.
+* `description` - The description of the image.
+* `gpu_category` - The Gpu Category of the image.
+* `id` - The ID of the Image.
+* `image_id` - The image id of the image.
+* `image_name` - The image name.
+* `image_type` - The image type of the image. Valid values: `SYSTEM`, `CUSTOM`.
+* `os_type` - The os type of the image.
+* `progress` - The progress of the image.
+* `size` - The size of the image.
+* `status` - The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.

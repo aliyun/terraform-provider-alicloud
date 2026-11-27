@@ -39,9 +39,9 @@ output "actiontrail_history_delivery_job_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of History Delivery Job IDs.
+* `ids` - (Optional, Computed)  A list of History Delivery Job IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
+* `status` - (Optional) The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
 * `enable_details` - (Optional) Whether to enable details for the jobs. Default value: `false`.
 
 ## Attributes Reference
@@ -49,6 +49,8 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `jobs` - A list of Actiontrail History Delivery Jobs. Each element contains the following attributes:
+
+---
 
 ### `jobs`
 
@@ -64,6 +66,8 @@ The jobs supports the following attributes:
 * `trail_name` - The name of the trail.
 * `updated_time` - The time when the task was updated.
 * `job_status` - Detail status of delivery job.
+
+---
 
 ### `jobs.job_status`
 

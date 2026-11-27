@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass disk_device_mapping -- stock attribute not touched by this change; members are create-time device mappings written back from the DescribeImages echo (Read d.Set's the response order, including computed members like progress/snapshot_id), and the ForceNew list makes any reorder a full image replacement, so a convergent two-apply reorder cannot be constructed within this client-call migration
+
 func TestAccAliCloudECSImageBasic(t *testing.T) {
 	var v ecs.Image
 

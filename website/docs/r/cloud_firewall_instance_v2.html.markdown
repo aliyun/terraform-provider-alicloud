@@ -48,12 +48,20 @@ The following arguments are supported:
 * `cfw_log` - (Optional, Bool) Whether to use log audit. Valid values:
   - `true`: Enabled.
   - `false`: Disabled.
-* `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
-* `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** The billing method of an existing instance cannot be converted through the API. Changing this value on an existing instance is rejected unless the instance has already been converted to the target billing method in the Cloud Firewall console; in that case the state is aligned with the converted instance without destroying or recreating it. A change of this value combined with a change of `product_type` or `spec` is rejected during planning, so no replacement is planned.
-* `period` - (Optional) The prepaid period. **NOTE:** If `payment_type` is set to `Subscription`, `period` is required.
+* `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`.
+
+  -> **NOTE:** The `modify_type` is required when you execute an update operation.
+* `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`.
+
+  -> **NOTE:** The billing method of an existing instance cannot be converted through the API. Changing this value on an existing instance is rejected unless the instance has already been converted to the target billing method in the Cloud Firewall console; in that case the state is aligned with the converted instance without destroying or recreating it. A change of this value combined with a change of `product_type` or `spec` is rejected during planning, so no replacement is planned.
+* `period` - (Optional) The prepaid period.
+
+  -> **NOTE:** If `payment_type` is set to `Subscription`, `period` is required.
 * `product_code` - (Required, ForceNew) The product code. Valid values: `cfw`.
 * `product_type` - (Required, ForceNew) The product type. Valid values: `cfw_elasticity_public_cn`, `cfw_elasticity_public_intl`, `cfw_sub_public_cn`, `cfw_sub_public_intl`.
-* `renewal_duration` - (Optional, Int) The auto-renewal duration. **NOTE:** `renewal_duration` takes effect only if `payment_type` is set to `Subscription`, and `renewal_status` is set to `AutoRenewal`.
+* `renewal_duration` - (Optional, Int) The auto-renewal duration.
+
+  -> **NOTE:** `renewal_duration` takes effect only if `payment_type` is set to `Subscription`, and `renewal_status` is set to `AutoRenewal`.
 * `renewal_duration_unit` - (Optional) The unit of the auto-renewal period. Valid values:
   - `M`: Month.
   - `Y`: Year.
@@ -62,7 +70,9 @@ The following arguments are supported:
   - `ManualRenewal`: Manual renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 * `sdl` - (Optional, Bool) Data leakage protection status. Valid values: `true`, `false`.
-* `spec` - (Required, ForceNew) The edition of the Cloud Firewall instance. Valid values: `payg_version`, `premium_version`, `enterprise_version`,`ultimate_version`. **NOTE:** Changing `spec` replaces the instance; an in-place edition change of an existing instance is not supported through this resource.
+* `spec` - (Required, ForceNew) The edition of the Cloud Firewall instance. Valid values: `payg_version`, `premium_version`, `enterprise_version`,`ultimate_version`.
+
+  -> **NOTE:** Changing `spec` replaces the instance; an in-place edition change of an existing instance is not supported through this resource.
 
 ## Attributes Reference
 
@@ -77,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Instance V2.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance V2.

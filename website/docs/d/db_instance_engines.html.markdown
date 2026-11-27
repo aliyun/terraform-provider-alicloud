@@ -46,10 +46,24 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of engines.
-* `instance_engines` - A list of Rds available resource. Each element contains the following attributes:
-  * `zone_ids` - A list of Zone to launch the DB instance.
-    * `id` - The Zone to launch the DB instance
-    * `sub_zone_ids` - A list of sub zone ids which in the id - e.g If `id` is `cn-beijing-MAZ5(a,b)`, `sub_zone_ids` will be `["cn-beijing-a", "cn-beijing-b"]`.
-  * `engine` - Database type.
-  * `engine_version` - DB Instance version.
-  * `category` - DB Instance category.
+* `instance_engines` - A list of Rds available resource.
+
+---
+
+### `instance_engines`
+
+The instance_engines supports the following attributes:
+
+* `zone_ids` - A list of Zone to launch the DB instance.
+* `engine` - Database type.
+* `engine_version` - DB Instance version.
+* `category` - DB Instance category.
+
+---
+
+### `instance_engines.zone_ids`
+
+The zone_ids supports the following attributes:
+
+* `id` - The Zone to launch the DB instance
+* `sub_zone_ids` - A list of sub zone ids which in the id - e.g If `id` is `cn-beijing-MAZ5(a,b)`, `sub_zone_ids` will be `["cn-beijing-a", "cn-beijing-b"]`.

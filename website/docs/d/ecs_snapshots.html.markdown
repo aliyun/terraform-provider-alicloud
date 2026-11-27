@@ -113,21 +113,21 @@ output "ecs_snapshots_id_0" {
 
 The following arguments are supported:
 
-* `category` - (Optional, ForceNew) The category of the snapshot. Valid Values: `flash` and `standard`.
-* `dry_run` - (Optional, ForceNew) Specifies whether to check the validity of the request without actually making the request.
-* `encrypted` - (Optional, ForceNew) Specifies whether the snapshot is encrypted.
-* `ids` - (Optional, ForceNew, Computed)  A list of Snapshot IDs.
-* `kms_key_id` - (Optional, ForceNew) The kms key id.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Snapshot name.
+* `category` - (Optional) The category of the snapshot. Valid Values: `flash` and `standard`.
+* `dry_run` - (Optional) Specifies whether to check the validity of the request without actually making the request.
+* `encrypted` - (Optional) Specifies whether the snapshot is encrypted.
+* `ids` - (Optional, Computed)  A list of Snapshot IDs.
+* `kms_key_id` - (Optional) The kms key id.
+* `name_regex` - (Optional) A regex string to filter results by Snapshot name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The resource group id.
-* `snapshot_link_id` - (Optional, ForceNew) The snapshot link id.
-* `snapshot_name` - (Optional, ForceNew) The name of the snapshot.
-* `snapshot_type` - (Optional, ForceNew) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
-* `type` - (Optional, ForceNew) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
-* `source_disk_type` - (Optional, ForceNew) The type of the disk for which the snapshot was created. Valid Values: `System`, `Data`.
-* `status` - (Optional, ForceNew) The status of the snapshot. Valid Values: `accomplished`, `failed`, `progressing` and `all`.
-* `usage` - (Optional, ForceNew) A resource type that has a reference relationship. Valid Values: `image`, `disk`, `image_disk` and `none`.
+* `resource_group_id` - (Optional) The resource group id.
+* `snapshot_link_id` - (Optional) The snapshot link id.
+* `snapshot_name` - (Optional) The name of the snapshot.
+* `snapshot_type` - (Optional) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
+* `type` - (Optional) The type of the snapshot. Valid Values: `auto`, `user` and `all`. Default to: `all`.
+* `source_disk_type` - (Optional) The type of the disk for which the snapshot was created. Valid Values: `System`, `Data`.
+* `status` - (Optional) The status of the snapshot. Valid Values: `accomplished`, `failed`, `progressing` and `all`.
+* `usage` - (Optional) A resource type that has a reference relationship. Valid Values: `image`, `disk`, `image_disk` and `none`.
 * `tags` - (Optional) A mapping of tags to assign to the snapshot.
 
 ## Attributes Reference
@@ -135,30 +135,37 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot names.
-* `snapshots` - A list of Ecs Snapshots. Each element contains the following attributes:
-  * `category` - The category of the snapshot.
-  * `description` - The description of the snapshot.
-  * `disk_id` - The ID of the source disk.
-  * `encrypted` - Indicates whether the snapshot was encrypted.
-  * `id` - The ID of the Snapshot.
-  * `instant_access` - Indicates whether the instant access feature is enabled.
-  * `instant_access_retention_days` - Indicates the validity period of the instant access feature.
-  * `product_code` - The product code of the Alibaba Cloud Marketplace image.
-  * `progress` - The progress of the snapshot creation task.
-  * `remain_time` - The amount of remaining time required to create the snapshot.
-  * `resource_group_id` - The ID of the resource group to which the snapshot belongs.
-  * `retention_days` - The retention period of the automatic snapshot.
-  * `snapshot_id` - The ID of the snapshot.
-  * `snapshot_name` - The name of the snapshot.
-  * `snapshot_type` - The type of the snapshot.
-  * `snapshot_sn` - The serial number of the snapshot.
-  * `source_disk_size` - The capacity of the source disk.
-  * `source_disk_type` - The type of the source disk.
-  * `source_storage_type` - The category of the source disk.
-  * `status` - The status of the snapshot.
-  * `tags` - The tags of the snapshot.
-  * `usage` - Indicates whether the snapshot was used to create images or cloud disks.
-  * `name` - The name of the snapshot.
-  * `creation_time` - The time when the snapshot was created.
-  * `type` - The type of the snapshot.
-  * `source_disk_id` - The ID of the source disk.
+* `snapshots` - A list of Ecs Snapshots.
+
+---
+
+### `snapshots`
+
+The snapshots supports the following attributes:
+
+* `category` - The category of the snapshot.
+* `description` - The description of the snapshot.
+* `disk_id` - The ID of the source disk.
+* `encrypted` - Indicates whether the snapshot was encrypted.
+* `id` - The ID of the Snapshot.
+* `instant_access` - Indicates whether the instant access feature is enabled.
+* `instant_access_retention_days` - Indicates the validity period of the instant access feature.
+* `product_code` - The product code of the Alibaba Cloud Marketplace image.
+* `progress` - The progress of the snapshot creation task.
+* `remain_time` - The amount of remaining time required to create the snapshot.
+* `resource_group_id` - The ID of the resource group to which the snapshot belongs.
+* `retention_days` - The retention period of the automatic snapshot.
+* `snapshot_id` - The ID of the snapshot.
+* `snapshot_name` - The name of the snapshot.
+* `snapshot_type` - The type of the snapshot.
+* `snapshot_sn` - The serial number of the snapshot.
+* `source_disk_size` - The capacity of the source disk.
+* `source_disk_type` - The type of the source disk.
+* `source_storage_type` - The category of the source disk.
+* `status` - The status of the snapshot.
+* `tags` - The tags of the snapshot.
+* `usage` - Indicates whether the snapshot was used to create images or cloud disks.
+* `name` - The name of the snapshot.
+* `creation_time` - The time when the snapshot was created.
+* `type` - The type of the snapshot.
+* `source_disk_id` - The ID of the source disk.

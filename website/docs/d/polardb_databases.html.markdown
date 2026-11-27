@@ -78,13 +78,27 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - database name of the cluster.
-* `databases` - A list of PolarDB cluster databases. Each element contains the following attributes:
-  * `character_set_name` - The character set name of database.
-  * `db_description` - Database description.
-  * `db_name` - Database name.
-  * `db_status` - The status of database.
-  * `engine` - The engine of database.
-  * `accounts` - A list of accounts of database. Each element contains the following attributes.
-      * `account_name` - Account name.
-      * `account_status` - Account status.
-      * `privilege_status` - The privilege status of account.
+* `databases` - A list of PolarDB cluster databases.
+
+---
+
+### `databases`
+
+The databases supports the following attributes:
+
+* `character_set_name` - The character set name of database.
+* `db_description` - Database description.
+* `db_name` - Database name.
+* `db_status` - The status of database.
+* `engine` - The engine of database.
+* `accounts` - A list of accounts of database. Each element contains the following attributes.
+
+---
+
+### `databases.accounts`
+
+The accounts supports the following attributes:
+
+* `account_name` - Account name.
+* `account_status` - Account status.
+* `privilege_status` - The privilege status of account.

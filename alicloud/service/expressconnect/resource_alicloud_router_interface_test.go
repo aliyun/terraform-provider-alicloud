@@ -798,3 +798,48 @@ func describeVpcExistsForTest(client *connectivity.AliyunClient, id string) erro
 	}
 	return nil
 }
+
+func TestAccAliCloudVPCRouterInterfaceVbrHealthCheck(t *testing.T) {
+	const resourceID = "alicloud_router_interface.default"
+	name := fmt.Sprintf("tf-testAcc-vbr-%d", tfacctest.RandIntRange(10000, 99999))
+	config := acctest.ResourceTestAccConfig(resourceID, name, AlicloudExpressConnectRouterInterfaceBasicDependence11648)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      testAccCheckRouterInterfaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config(map[string]interface{}{
+					"router_type":            "VBR",
+					"router_id":              "${alicloud_express_connect_virtual_border_router.default.id}",
+					"opposite_region":        "cn-hangzhou",
+					"role":                   "InitiatingSide",
+					"specification":          "Mini.2",
+					"instance_charge_type":   "PostPaid",
+					"name":                   name,
+					"health_check_source_ip": "172.16.0.240",
+					"health_check_target_ip": "192.168.0.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr(resourceID, "health_check_source_ip", "172.16.0.240"), resource.TestCheckResourceAttr(resourceID, "health_check_target_ip", "192.168.0.1")),
+			},
+			{
+				Config: config(map[string]interface{}{
+					"health_check_source_ip": "172.16.0.241",
+					"health_check_target_ip": "192.168.0.2",
+				}),
+				Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr(resourceID, "health_check_source_ip", "172.16.0.241"), resource.TestCheckResourceAttr(resourceID, "health_check_target_ip", "192.168.0.2")),
+			},
+			{
+				Config: config(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"period":               1,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}

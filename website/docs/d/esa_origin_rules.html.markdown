@@ -78,28 +78,35 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Origin Rule names.
-* `rules` - A list of Origin Rules. Each element contains the following attributes:
-  * `id` - The ID of the Origin Rule.
-  * `config_id` - The ID of the Configuration.
-  * `config_type` - The type of the Configuration.
-  * `site_version` - The version of the site.
-  * `rule_enable` - Rule switch.
-  * `rule_name` - Rule name.
-  * `rule` - Rule content.
-  * `sequence` - The rule execution order prioritizes lower numerical values.
-  * `origin_host` - The Host header carried in the origin request.
-  * `origin_scheme` - The protocol used for origin requests.
-  * `origin_sni` - The SNI carried in the origin request.
-  * `origin_http_port` - The origin server port used for origin requests over HTTP.
-  * `origin_https_port` - The origin server port used for origin requests over HTTPS.
-  * `origin_read_timeout` - The read timeout, in seconds, for the origin server.
-  * `dns_record` - Overrides the DNS record for the origin request.
-  * `origin_verify` - Specifies whether to verify the origin server certificate.
-  * `origin_mtls` - Specifies whether mTLS is enabled.
-  * `follow302_enable` - Specifies whether to follow 302 redirects from the origin.
-  * `follow302_max_tries` - The maximum number of 302 redirects to follow.
-  * `follow302_target_host` - The host to use for the origin request after following a 302 redirect.
-  * `follow302_retain_header` - Specifies whether to retain the original request header when following a redirect.
-  * `follow302_retain_args` - Specifies whether to retain the original request parameters when following a redirect.
-  * `range` - Specifies whether to use range-based requests to retrieve files from the origin.
-  * `range_chunk_size` - The size of each chunk for range requests.
+* `rules` - A list of Origin Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `id` - The ID of the Origin Rule.
+* `config_id` - The ID of the Configuration.
+* `config_type` - The type of the Configuration.
+* `site_version` - The version of the site.
+* `rule_enable` - Rule switch.
+* `rule_name` - Rule name.
+* `rule` - Rule content.
+* `sequence` - The rule execution order prioritizes lower numerical values.
+* `origin_host` - The Host header carried in the origin request.
+* `origin_scheme` - The protocol used for origin requests.
+* `origin_sni` - The SNI carried in the origin request.
+* `origin_http_port` - The origin server port used for origin requests over HTTP.
+* `origin_https_port` - The origin server port used for origin requests over HTTPS.
+* `origin_read_timeout` - The read timeout, in seconds, for the origin server.
+* `dns_record` - Overrides the DNS record for the origin request.
+* `origin_verify` - Specifies whether to verify the origin server certificate.
+* `origin_mtls` - Specifies whether mTLS is enabled.
+* `follow302_enable` - Specifies whether to follow 302 redirects from the origin.
+* `follow302_max_tries` - The maximum number of 302 redirects to follow.
+* `follow302_target_host` - The host to use for the origin request after following a 302 redirect.
+* `follow302_retain_header` - Specifies whether to retain the original request header when following a redirect.
+* `follow302_retain_args` - Specifies whether to retain the original request parameters when following a redirect.
+* `range` - Specifies whether to use range-based requests to retrieve files from the origin.
+* `range_chunk_size` - The size of each chunk for range requests.

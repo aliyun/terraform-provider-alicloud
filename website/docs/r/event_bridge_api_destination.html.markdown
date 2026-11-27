@@ -67,6 +67,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the API destination.
 * `http_api_parameters` - (Required, Set) The parameters that are configured for the API destination. See [`http_api_parameters`](#http_api_parameters) below.
 
+---
+
 ### `http_api_parameters`
 
 The http_api_parameters supports the following:
@@ -83,7 +85,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Api Destination.
 * `update` - (Defaults to 5 mins) Used when update the Api Destination.

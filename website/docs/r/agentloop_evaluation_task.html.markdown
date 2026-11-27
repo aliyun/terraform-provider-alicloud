@@ -116,6 +116,8 @@ The following arguments are supported:
 * `task_mode` - (Optional, ForceNew) The mode of the Evaluation Task, for example `batch` (a persistent evaluation task).
 * `task_name` - (Required, ForceNew) The name of the Evaluation Task. It can be up to 256 characters in length and must be unique among the undeleted tasks in the Agent Space.
 
+---
+
 ### `evaluators`
 
 An evaluator works in one of the following modes:
@@ -134,6 +136,8 @@ The evaluators supports the following:
 * `type` - (Optional, Computed) The type of the evaluator. Valid values: `LLM`, `AGENT`, `CODE`. Defaults to `LLM`. `CODE` is only supported in reference mode.
 * `variable_mapping` - (Optional, Map) The variable mapping of the evaluator. It is required for inline `LLM` and `AGENT` evaluators. In reference mode, each key must be a variable defined by the referenced evaluator.
 
+---
+
 ### `run_strategies`
 
 A strategy block that is present is enabled unless its `enabled` is explicitly set to `false`.
@@ -143,6 +147,8 @@ The run_strategies supports the following:
 * `backfill` - (Optional, List) The backfill strategy. See [`backfill`](#run_strategies-backfill) below.
 * `continuous` - (Optional, List) The continuous strategy. See [`continuous`](#run_strategies-continuous) below.
 
+---
+
 ### `run_strategies-backfill`
 
 The backfill supports the following:
@@ -151,6 +157,8 @@ The backfill supports the following:
 * `end_time` - (Optional, Int) The end time of the backfill range, as a Unix timestamp in milliseconds. To start a backfill manually, provide both `start_time` and `end_time`.
 * `immediate` - (Optional) Whether to run the backfill immediately. Default value: `false`.
 * `start_time` - (Optional, Int) The start time of the backfill range, as a Unix timestamp in milliseconds. To start a backfill manually, provide both `start_time` and `end_time`.
+
+---
 
 ### `run_strategies-continuous`
 
@@ -172,7 +180,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Evaluation Task.
 * `delete` - (Defaults to 5 mins) Used when delete the Evaluation Task.

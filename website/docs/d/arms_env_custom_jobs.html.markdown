@@ -72,9 +72,9 @@ output "arms_env_custom_jobs_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Env Custom Job IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Env Custom Job name.
-* `environment_id` - (Required, ForceNew) The ID of the environment instance.
+* `ids` - (Optional, List) A list of ARMS Env Custom Job IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Env Custom Job name.
+* `environment_id` - (Required) The ID of the environment instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -82,10 +82,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Env Custom Job names.
-* `jobs` - A list of ARMS Env Custom Jobs. Each element contains the following attributes:
-  * `id` - The ID of the custom job. It formats as `<environment_id>:<env_custom_job_name>`.
-  * `config_yaml` - The YAML configuration string.
-  * `env_custom_job_name` - The name of the custom job.
-  * `environment_id` - The ID of the environment instance.
-  * `region_id` - The region ID.
-  * `status` - The status of the custom job.
+* `jobs` - A list of ARMS Env Custom Jobs.
+
+---
+
+### `jobs`
+
+The jobs supports the following attributes:
+
+* `id` - The ID of the custom job. It formats as `<environment_id>:<env_custom_job_name>`.
+* `config_yaml` - The YAML configuration string.
+* `env_custom_job_name` - The name of the custom job.
+* `environment_id` - The ID of the environment instance.
+* `region_id` - The region ID.
+* `status` - The status of the custom job.

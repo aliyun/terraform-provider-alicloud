@@ -107,6 +107,8 @@ The following arguments are supported:
 * `match_rules` - (Optional, ForceNew, List) Matching rules, or relationships between multiple rules. See [`match_rules`](#match_rules) below.
 * `rule_name` - (Required, ForceNew) The event notification rule name.
 
+---
+
 ### `endpoint`
 
 The endpoint supports the following:
@@ -114,16 +116,15 @@ The endpoint supports the following:
 * `endpoint_type` - (Optional, ForceNew) Message receiving terminal endpoint type
 * `endpoint_value` - (Optional, ForceNew) Message Receiving Terminal Endpoint
 
+---
+
 ### `match_rules`
 
 Event Matching Rules-Atomic Objects.
 -> **Note:** Full Name Matching Rule: If this item is filled in, other items cannot be filled in.
 Prefix match and suffix match: either of these two items can be filled in. If both items are filled in, the front and suffix match.
 
-* `match_state` - (Optional, ForceNew)  Match state. valid values: `true`, `false`.
-* `match_name` - (Optional, ForceNew) Full name matching rule.
-* `prefix` - (Optional, ForceNew) Prefix matching rule.
-* `suffix` - (Optional, ForceNew) Suffix matching rule.
+Each atomic object accepts the following keys: `match_state` (match state, valid values: `true` and `false`), `name` (full name matching rule), `prefix` (prefix matching rule) and `suffix` (suffix matching rule).
 
 ## Attributes Reference
 

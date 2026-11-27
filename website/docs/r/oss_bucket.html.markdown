@@ -633,9 +633,9 @@ The following arguments are supported:
 * `website` - (Optional) A website configuration. See [`website`](#website) below.
 * `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm). See [`logging`](#logging) below.
 * `logging_isenable` - (Optional, Deprecated from 1.37.0.) The flag of using logging enable container. Defaults true.
-* `referer_config` - (Optional, Deprecated since 1.220.0) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). This property has been deprecated since 1.220.0, please use the resource `alicloud_oss_bucket_referer` instead. See [`referer_config`](#referer_config) below.
+* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). See [`referer_config`](#referer_config) below.
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm). See [`lifecycle_rule`](#lifecycle_rule) below.
-* `policy` - (Optional, Available since 1.41.0, Deprecated since 1.220.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm). This property has been deprecated since 1.220.0, please use the resource `alicloud_oss_bucket_policy` instead.
+* `policy` - (Optional, Available since 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA", "Archive", "ColdArchive" and "DeepColdArchive". Defaults to "Standard". "ColdArchive" is available since 1.203.0. "DeepColdArchive" is available since 1.209.0.
 * `redundancy_type` - (Optional, ForceNew, Available since 1.91.0) The [redundancy type](https://www.alibabacloud.com/help/doc-detail/90589.htm) to enable. Can be "LRS", and "ZRS". Defaults to "LRS".
 * `server_side_encryption_rule` - (Optional, Available since 1.45.0) A configuration of server-side encryption. See [`server_side_encryption_rule`](#server_side_encryption_rule) below.
@@ -647,6 +647,8 @@ The following arguments are supported:
 * `access_monitor` - (Optional, Available since 1.208.1) A access monitor status of a bucket. See [`access_monitor`](#access_monitor) below.
 * `resource_group_id` - (Optional, Available since 1.219.0) The ID of the resource group to which the bucket belongs.
 
+---
+
 ### `cors_rule`
 
 The cors_rule configuration block supports the following:
@@ -657,12 +659,16 @@ The cors_rule configuration block supports the following:
 * `expose_headers` - (Optional) Specifies expose header in the response.
 * `max_age_seconds` - (Optional) Specifies time in seconds that browser can cache the response for a preflight request.
 
+---
+
 ### `website`
 
 The website configuration block supports the following:
 
 * `index_document` - (Required) Alicloud OSS returns this index document when requests are made to the root domain or any of the subfolders.
 * `error_document` - (Optional) An absolute path to the document to return in case of a 4XX error.
+
+---
 
 ### `logging`
 
@@ -671,12 +677,16 @@ The logging configuration block supports the following:
 * `target_bucket` - (Required) The name of the bucket that will receive the log objects.
 * `target_prefix` - (Optional) To specify a key prefix for log objects.
 
+---
+
 ### `referer_config`
 
 The referer_config configuration block supports the following:
 
 * `allow_empty` - (Optional, Type: bool) Allows referer to be empty. Defaults false.
 * `referers` - (Required, Type: list) The list of referer.
+
+---
 
 ### `lifecycle_rule`
 
@@ -695,6 +705,8 @@ The lifecycle_rule configuration block supports the following:
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
+---
+
 ### `lifecycle_rule-expiration`
 
 The expiration configuration block supports the following:
@@ -705,6 +717,8 @@ The expiration configuration block supports the following:
 * `expired_object_delete_marker` - (Optional, Type: bool, Available since 1.121.2) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
 `NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
+
+---
 
 ### `lifecycle_rule-transitions`
 
@@ -717,6 +731,8 @@ The transitions configuration block supports the following:
 * `return_to_std_when_visit` - (Optional, Type: bool, Available since 1.208.1) Specifies whether to convert the storage class of non-Standard objects back to Standard after the objects are accessed. It takes effect only when the IsAccessTime parameter is set to true. If set to `true`, converts the storage class of the objects to Standard; if set to `false`, does not convert the storage class of the objects to Standard.
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
+---
+
 ### `lifecycle_rule-abort_multipart_upload`
 
 The abort_multipart_upload configuration block supports the following:
@@ -726,11 +742,15 @@ The abort_multipart_upload configuration block supports the following:
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one abort_multipart_upload configuration.
 
+---
+
 ### `lifecycle_rule-noncurrent_version_expiration`
 
 The noncurrent_version_expiration configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions expire.
+
+---
 
 ### `lifecycle_rule-noncurrent_version_transition`
 
@@ -741,6 +761,8 @@ The noncurrent_version_transition configuration block supports the following:
 * `is_access_time` - (Optional, Type: bool, Available since 1.208.1) Specifies whether the lifecycle rule applies to objects based on their last access time. If set to `true`, the rule applies to objects based on their last access time; if set to `false`, the rule applies to objects based on their last modified time. If configure the rule based on the last access time, please enable `access_monitor` first.
 * `return_to_std_when_visit` - (Optional, Type: bool, Available since 1.208.1) Specifies whether to convert the storage class of non-Standard objects back to Standard after the objects are accessed. It takes effect only when the IsAccessTime parameter is set to true. If set to `true`, converts the storage class of the objects to Standard; if set to `false`, does not convert the storage class of the objects to Standard.
 
+---
+
 ### `lifecycle_rule-filter`
 
 The filter configuration block supports the following:
@@ -749,6 +771,8 @@ The filter configuration block supports the following:
 * `object_size_greater_than` - (Optional) Minimum object size (in bytes) to which the rule applies.
 * `object_size_less_than` - (Optional) Maximum object size (in bytes) to which the rule applies.
 
+---
+
 ### `lifecycle_rule-filter-not`
 
 The not configuration block supports the following:
@@ -756,12 +780,16 @@ The not configuration block supports the following:
 * `prefix` - (Optional) The prefix in the names of the objects to which the lifecycle rule does not apply.
 * `tag` - (Optional) The tag of the objects to which the lifecycle rule does not apply. See [`tag`](#lifecycle_rule-filter-not-tag) below.
 
+---
+
 ### `lifecycle_rule-filter-not-tag`
 
 The tag configuration block supports the following:
 
 * `key` - (Required) The key of the tag that is specified for the objects.
 * `value` - (Required) The value of the tag that is specified for the objects.
+
+---
 
 ### `server_side_encryption_rule`
 
@@ -771,17 +799,23 @@ The server_side_encryption_rule configuration block supports the following:
 * `kms_master_key_id` - (Optional, Available since 1.92.0) The alibaba cloud KMS master key ID used for the SSE-KMS encryption.
 * `kms_data_encryption` - (Optional, Available since 1.246.0) The algorithm used to encrypt objects. If this element is not specified, objects are encrypted with AES256. This element is valid only when the value of SSEAlgorithm is set to KMS. Valid values: `SM4`.
 
+---
+
 ### `versioning`
 
 The versioning configuration block supports the following:
 
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
+---
+
 ### `transfer_acceleration`
 
 The transfer_acceleration configuration block supports the following:
 
 * `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
+
+---
 
 ### `access_monitor`
 

@@ -39,8 +39,11 @@ jobs:
           eval "$range"
           result=0
           git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+            ':(glob)ci/provider-gates/**' ':(glob)ci/templates/provider-*.yaml' \
             ':(glob)scripts/ci/**' \
             ':(glob)scripts/local-ci-check.sh' \
+            ':(glob)scripts/local-example-check.sh' \
+            ':(glob)scripts/example-check/**' \
             ':(glob)scripts/vetcheck.sh' \
             ':(glob)scripts/gofmtcheck.sh' \
             ':(glob)scripts/goimportscheck.sh' \
@@ -76,8 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           unset AONE_CI_SUMMARY_MD AONE_CI_SUMMARY
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
           python3 -m unittest discover -s scripts/ci -p test_aone_range.py
           python3 -m unittest discover -s scripts/ci -p test_acube_integration.py
+          python3 -m unittest discover -s scripts/ci -p test_acube_verdict.py
           python3 -m unittest discover -s scripts/ci -p test_review_ci.py
           python3 -m unittest discover -s scripts/ci -p test_acube_layout.py
           python3 -m unittest discover -s scripts/ci -p test_aone_go_checks.py
@@ -86,7 +92,33 @@ jobs:
           python3 -m unittest discover -s scripts/ci -p test_multi_commit_pr.py
           python3 -m unittest discover -s scripts/ci -p test_check_scope.py
           python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          python3 -m unittest discover -s scripts/example-check -p 'test_*.py'
           go test ./scripts/compatibility ./scripts/title
+      - name: Provider template freshness
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          changes=$(git diff --name-only "$DIFF_BASE" "$DIFF_HEAD" -- .aoneci ci/provider-gates 'ci/templates/provider-*.yaml')
+          if [[ -z "$changes" ]]; then exit 0; fi
+          if [[ ! -f ci/provider-gates/render.py ]]; then
+            if git cat-file -e "$DIFF_BASE:ci/provider-gates/render.py" 2>/dev/null; then
+              echo "Provider template generator removed. Restore ci/provider-gates/render.py, or retire the freshness check and its five generated templates together." >&2
+              exit 1
+            fi
+            exit 0
+          fi
+          if ! python3 -c 'import yaml; assert yaml.__version__ == "6.0.2"' 2>/dev/null; then
+            deps=$(mktemp -d)
+            trap 'rm -rf "$deps"' EXIT
+            python3 -m pip install --disable-pip-version-check --target "$deps" 'PyYAML==6.0.2' || {
+              echo "Cannot load PyYAML 6.0.2. Install it in the CI runner image or enable the configured Python package mirror, then retry." >&2
+              exit 1
+            }
+            export PYTHONPATH="$deps${PYTHONPATH:+:$PYTHONPATH}"
+          fi
+          python3 ci/provider-gates/render.py --check
+          python3 -m unittest discover -s ci/provider-gates -p 'test_*.py'
   ProviderLayout:
     needs: CheckScope
     when: ${{ jobs.CheckScope.outputs.applicable == 'yes' && envs.VERIFIED_RELEASE_RETURN != 'yes' }}
@@ -153,12 +185,13 @@ jobs:
       - uses: checkout
         inputs:
           fetch-depth: '32'
-      - name: Vet changed Go packages
+      - name: Vet and run changed unit tests
         run: |
           set -euo pipefail
           range=$(python3 scripts/ci/aone-range.py)
           eval "$range"
           python3 scripts/ci/run-vet-check.py
+          CI_CHECK_BASE="$DIFF_BASE" go run scripts/ci/changed-unit-tests.go
 
   ProductionBuild:
     needs: CheckScope

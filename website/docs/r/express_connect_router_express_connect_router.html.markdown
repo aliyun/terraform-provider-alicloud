@@ -68,6 +68,8 @@ The following arguments are supported:
   - A string consisting of letters, numbers, hyphens (-), and underscores (_), and the string length can be 0 to 64 characters.
 * `tags` - (Optional, Map) The tag of the resource.
 
+---
+
 ### `regions`
 
 The regions supports the following:
@@ -85,12 +87,16 @@ The following attributes are exported:
 * `disabled_route_entries` - (Computed, List, Available since v2.3.0) The route entries that are currently disabled on the Express Connect Router. See [`disabled_route_entries`](#disabled_route_entries) below.
 * `granted_instances` - (Computed, List, Available since v2.3.0) The network instances granted to the Express Connect Router. See [`granted_instances`](#granted_instances) below.
 
+---
+
 ### `disabled_route_entries`
 
 The disabled_route_entries supports the following:
 
 * `destination_cidr_block` - (Computed, String, Available since v2.3.0) The destination CIDR block of the disabled route entry.
 * `nexthop_instance_id` - (Computed, String, Available since v2.3.0) The ID of the next hop instance of the disabled route entry.
+
+---
 
 ### `granted_instances`
 
@@ -112,7 +118,7 @@ These actions are in addition to the base resource actions (`expressconnectroute
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Express Connect Router.
 * `delete` - (Defaults to 5 mins) Used when delete the Express Connect Router.

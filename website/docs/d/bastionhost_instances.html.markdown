@@ -32,25 +32,32 @@ output "instance" {
 The following arguments are supported:
 
 * `description_regex` - (Optional) A regex string to filter results by the instance description.
-* `ids` - (Optional, ForceNew) Matched instance IDs to filter data source result.
+* `ids` - (Optional) Matched instance IDs to filter data source result.
 * `output_file` - (Optional) File name to persist data source output.
-* `descriptions` - (Optional) Descriptions to filter data source result.
 * `tags` - (Optional) A map of tags assigned to the bastionhost instance.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of apis. Each element contains the following attributes:
-  * `id` - The instance's id.
-  * `description` - The instance's remark.
-  * `user_vswitch_id` - The instance's vSwitch ID.
-  * `private_domain` - The instance's private domain name.
-  * `public_domain` - The instance's public domain name.
-  * `instance_status` - The instance's status.
-  * `public_network_access` - The instance's public network access configuration.
-  * `security_group_ids` - The instance's security group configuration.
-  * `license_code` - The instance's license code.
-  * `tags` - A map of tags assigned to the bastionhost instance.
-  * `storage` - The storage of Cloud Bastionhost instance in TB.
-  * `bandwidth` - The bandwidth of Cloud Bastionhost instance.
+* `descriptions` - A list of descriptions of the matched instances.
+* `instances` - A list of apis.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The instance's id.
+* `description` - The instance's remark.
+* `user_vswitch_id` - The instance's vSwitch ID.
+* `private_domain` - The instance's private domain name.
+* `public_domain` - The instance's public domain name.
+* `instance_status` - The instance's status.
+* `public_network_access` - The instance's public network access configuration.
+* `security_group_ids` - The instance's security group configuration.
+* `license_code` - The instance's license code.
+* `tags` - A map of tags assigned to the bastionhost instance.
+* `storage` - The storage of Cloud Bastionhost instance in TB.
+* `bandwidth` - The bandwidth of Cloud Bastionhost instance.

@@ -94,7 +94,8 @@ The following arguments are supported:
 * `project_name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
 * `dashboard_name` - (Required, ForceNew) The name of the Log Dashboard.
 * `char_list` - (Required) Configuration of charts in the dashboard.
-  **Note:** From version 1.164.0, `char_list` can set parameter "action".
+
+  -> **NOTE:** From version 1.164.0, `char_list` can set parameter "action".
 * `display_name` - (Optional) Dashboard alias.
 * `attribute` - (Optional, Available since v1.183.0) Dashboard attribute.
 

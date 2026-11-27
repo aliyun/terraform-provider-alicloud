@@ -77,6 +77,8 @@ The following arguments are supported:
 * `rules` - (Required, List) The list of forwarding rules. Rule details. For each rule, other parameters are required except comments. See [`rules`](#rules) below.
 * `site_id` - (Required, ForceNew) Site ID.
 
+---
+
 ### `rules`
 
 The rules supports the following:
@@ -112,12 +114,19 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<application_id>`.
 * `application_id` - Layer 4 application ID.
 * `rules` - The list of forwarding rules. Rule details. For each rule, other parameters are required except comments.
-  * `rule_id` - Rule ID.
 * `status` - Status of the transport layer application, modification and deletion are not allowed.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `rule_id` - Rule ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 25 mins) Used when create the Transport Layer Application.
 * `delete` - (Defaults to 5 mins) Used when delete the Transport Layer Application.

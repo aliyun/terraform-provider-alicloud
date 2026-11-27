@@ -30,28 +30,35 @@ output "config_delivery_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Delivery IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by delivery channel name.
+* `ids` - (Optional, Computed)  A list of Delivery IDs.
+* `name_regex` - (Optional) A regex string to filter results by delivery channel name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the delivery method. Valid values: `0`: The delivery method is disabled. `1`: The delivery destination is enabled.
+* `status` - (Optional) The status of the delivery method. Valid values: `0`: The delivery method is disabled. `1`: The delivery destination is enabled.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Config Delivery names.
-* `deliveries` - A list of Config Deliveries. Each element contains the following attributes:
-  * `account_id` - The Aliyun User Id.
-  * `configuration_item_change_notification` - Open or close delivery configuration change history.
-  * `configuration_snapshot` - Open or close timed snapshot of shipping resources.
-  * `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role to be assumed by the delivery method.
-  * `delivery_channel_condition` - The rule attached to the delivery method.
-  * `delivery_channel_id` - The ID of the delivery method.
-  * `delivery_channel_name` - The name of the delivery method.
-  * `delivery_channel_target_arn` - The ARN of the delivery destination.
-  * `delivery_channel_type` - The type of the delivery method.
-  * `description` - The description of the delivery method.
-  * `id` - The ID of the Delivery.
-  * `non_compliant_notification` - Open or close non-compliance events of delivery resources.
-  * `oversized_data_oss_target_arn` - The oss ARN of the delivery channel when the value data oversized limit.
-  * `status` - The status of the delivery method. Valid values: `0`: The delivery method is disabled. `1`: The delivery destination is enabled.
+* `deliveries` - A list of Config Deliveries.
+
+---
+
+### `deliveries`
+
+The deliveries supports the following attributes:
+
+* `account_id` - The Aliyun User Id.
+* `configuration_item_change_notification` - Open or close delivery configuration change history.
+* `configuration_snapshot` - Open or close timed snapshot of shipping resources.
+* `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role to be assumed by the delivery method.
+* `delivery_channel_condition` - The rule attached to the delivery method.
+* `delivery_channel_id` - The ID of the delivery method.
+* `delivery_channel_name` - The name of the delivery method.
+* `delivery_channel_target_arn` - The ARN of the delivery destination.
+* `delivery_channel_type` - The type of the delivery method.
+* `description` - The description of the delivery method.
+* `id` - The ID of the Delivery.
+* `non_compliant_notification` - Open or close non-compliance events of delivery resources.
+* `oversized_data_oss_target_arn` - The oss ARN of the delivery channel when the value data oversized limit.
+* `status` - The status of the delivery method. Valid values: `0`: The delivery method is disabled. `1`: The delivery destination is enabled.

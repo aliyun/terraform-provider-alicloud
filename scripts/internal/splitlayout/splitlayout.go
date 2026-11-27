@@ -18,6 +18,7 @@
 package splitlayout
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -108,6 +109,14 @@ type Resolved struct {
 	ImplPath string
 	TestPath string
 	Kind     Kind
+	// Factory is the constructor the registration names. The resolution is
+	// file-grained: the package tolerates one file declaring several entities'
+	// constructors, and then every entity of that file resolves to the same
+	// ImplPath while its schema lives in one constructor's declaration — a
+	// caller that parses the whole file gets the union of the entities'
+	// attributes. The factory lets such a caller detect the collision instead
+	// of trusting the file alone (see FrameworkFactoriesDeclaredIn).
+	Factory string
 }
 
 // IsResource reports whether the resolved registration names a managed
@@ -197,11 +206,24 @@ var registerKinds = map[string]struct {
 }
 
 // registerEntries parses one register.go source and returns the entries
-// declared in one dialect.
+// declared in one dialect, folding a parse failure into no entries. The
+// lookup scans tolerate an unparsable register because a broken register
+// fails the compile first and the scans only pick entries; the one caller
+// that must tell a parse failure from "declares nothing" — the
+// file-granularity guard — uses registerEntriesErr instead.
 func registerEntries(registerSrc []byte, framework bool) []Entry {
+	entries, _ := registerEntriesErr(registerSrc, framework)
+	return entries
+}
+
+// registerEntriesErr is registerEntries with the parse failure kept as an
+// error instead of an empty result: the caller can fail closed on "the
+// register could not be read" rather than treat it as "no entries declared",
+// which are different verdicts for a guard.
+func registerEntriesErr(registerSrc []byte, framework bool) ([]Entry, error) {
 	f, err := parser.ParseFile(token.NewFileSet(), "register.go", registerSrc, parser.SkipObjectResolution)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parsing register.go: %w", err)
 	}
 	var entries []Entry
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -246,7 +268,7 @@ func registerEntries(registerSrc []byte, framework bool) []Entry {
 		}
 		return true
 	})
-	return entries
+	return entries, nil
 }
 
 // SDKRegisterEntries parses one register.go source and returns its SDKv2
@@ -399,6 +421,7 @@ func resolve(product, stem string, framework bool) ([]Resolved, error) {
 			ImplPath: implPath,
 			TestPath: testPath,
 			Kind:     e.Kind,
+			Factory:  e.Factory,
 		})
 	}
 	return out, nil
@@ -415,11 +438,93 @@ func FindByTypeName(typeName string) *Resolved {
 // managed resource, data source, ephemeral, list resource or action — to its
 // split-layout paths. It returns nil when the name is not registered as
 // framework-native in any service package.
+//
+// A name alone can name two entities: a product may register the same type
+// name as a managed resource and as a data source (the SAE NLB pair), and this
+// lookup returns whichever entry the register order happens to reach first. A
+// caller that knows the kind from the diff it is checking must use
+// FrameworkFindByKindAndTypeName so the kind selects the entity.
 func FrameworkFindByTypeName(typeName string) *Resolved {
 	return findByTypeName(typeName, true)
 }
 
+// FrameworkFindByKindAndTypeName reverse-resolves a full framework type name
+// together with the kind of entity it names. Matching both is what keeps a
+// same-named resource and data source apart: the (KindResource, name) pair
+// resolves to the file declaring the resource factory and the
+// (KindDataSource, name) pair to the data source one, whichever order the
+// register declares them in. It returns nil when no register declares that
+// (kind, type name) pair, or when the matching factory is not declared in any
+// implementation file.
+func FrameworkFindByKindAndTypeName(kind Kind, typeName string) *Resolved {
+	return findByKind(typeName, true, &kind)
+}
+
+// FrameworkFactoriesDeclaredIn returns the framework registrations whose
+// Factory constructors are declared in the given source. The resolution is
+// file-grained, so a caller that scopes anything to "the implementation file
+// of one entity" — the consistency gate parses the whole file for the
+// entity's schema — must first confirm the file declares only that entity:
+// with two or more entries returned, the entities' schemas are interleaved in
+// one file and cannot be isolated from each other. The entries are counted
+// per distinct factory, not per registration: alias registrations reuse one
+// factory for several type names (alicloud_disk/alicloud_ecs_disk, the
+// sslcertificateservice legacy aliases), and a file declaring one constructor
+// still exposes exactly that one schema no matter how many type names point
+// at it. An empty result means the file declares no framework factory at
+// all; an error means the guard could not prove either way — the source or
+// the product's register failed to parse or read — and the caller must fail
+// closed on it rather than treat the outcome as "no conflict".
+func FrameworkFactoriesDeclaredIn(filename string, src []byte) ([]Entry, error) {
+	funcs, err := declaredFuncs(filename, src)
+	if err != nil {
+		return nil, err
+	}
+	// The scan is scoped to the file's own product. A register entry counts
+	// only when its factory is declared in the registering product's package:
+	// the ServicePackage literal references the constructor as a
+	// package-local identifier, and a function name is unique inside one
+	// package, so only the register of the product this file belongs to can
+	// hold entries whose factories this file declares. Matching names across
+	// every product's register instead would let another product's same-named
+	// factory — Go function names are not repo-unique — inflate the result and
+	// fail a perfectly isolated entity, the same wrong-entity class this
+	// package exists to eliminate. A file outside any product directory cannot
+	// declare a registered framework factory at all, so it scans no register.
+	product, ok := ServiceProduct(filename)
+	if !ok {
+		return nil, nil
+	}
+	registerSrc, err := os.ReadFile(PackageDir(product) + "/register.go")
+	if err != nil {
+		return nil, err
+	}
+	// A register that fails to parse must surface as an error, not as "no
+	// entries": the caller counts factories off this result, and a broken
+	// register folding into emptiness would turn the guard into a silent pass.
+	entries, err := registerEntriesErr(registerSrc, true)
+	if err != nil {
+		return nil, fmt.Errorf("reading the framework registrations of %s: %w", PackageDir(product), err)
+	}
+	var declared []Entry
+	for _, e := range entries {
+		if funcs[e.Factory] {
+			declared = append(declared, e)
+		}
+	}
+	return declared, nil
+}
+
 func findByTypeName(typeName string, framework bool) *Resolved {
+	return findByKind(typeName, framework, nil)
+}
+
+// findByKind reverse-resolves a type name across every register in one
+// dialect, optionally constrained to one kind. The kind is optional because
+// the name-only lookups are the SDKv2 contract and the base-revision reader
+// has no kind to offer; a caller that does know the kind must pass it so a
+// same-named resource and data source resolve to their own implementations.
+func findByKind(typeName string, framework bool, kind *Kind) *Resolved {
 	registers, err := RegisterPaths()
 	if err != nil {
 		return nil
@@ -429,35 +534,50 @@ func findByTypeName(typeName string, framework bool) *Resolved {
 		if err != nil {
 			continue
 		}
+		product, _ := IsServiceRegister(register)
 		for _, e := range registerEntries(src, framework) {
 			if e.TypeName != typeName {
 				continue
 			}
-			product, _ := IsServiceRegister(register)
-			impls, err := filepath.Glob(PackageDir(product) + "/*.go")
-			if err != nil {
+			if kind != nil && e.Kind != *kind {
 				continue
 			}
-			for _, impl := range impls {
-				if strings.HasSuffix(impl, "_test.go") || strings.HasSuffix(impl, "register.go") {
-					continue
-				}
-				src, err := os.ReadFile(impl)
-				if err != nil {
-					continue
-				}
-				funcs, err := declaredFuncs(impl, src)
-				if err != nil {
-					continue
-				}
-				if funcs[e.Factory] {
-					return &Resolved{
-						TypeName: e.TypeName,
-						ImplPath: impl,
-						TestPath: strings.TrimSuffix(impl, ".go") + "_test.go",
-						Kind:     e.Kind,
-					}
-				}
+			if r := locateFactory(product, e); r != nil {
+				return r
+			}
+		}
+	}
+	return nil
+}
+
+// locateFactory scans a product's non-test, non-register source files for the
+// top-level declaration of one registration's Factory constructor and joins
+// the registration and the declaring file into a Resolved. It returns nil when
+// the constructor is not declared in any of them.
+func locateFactory(product string, e Entry) *Resolved {
+	impls, err := filepath.Glob(PackageDir(product) + "/*.go")
+	if err != nil {
+		return nil
+	}
+	for _, impl := range impls {
+		if strings.HasSuffix(impl, "_test.go") || strings.HasSuffix(impl, "register.go") {
+			continue
+		}
+		src, err := os.ReadFile(impl)
+		if err != nil {
+			continue
+		}
+		funcs, err := declaredFuncs(impl, src)
+		if err != nil {
+			continue
+		}
+		if funcs[e.Factory] {
+			return &Resolved{
+				TypeName: e.TypeName,
+				ImplPath: impl,
+				TestPath: strings.TrimSuffix(impl, ".go") + "_test.go",
+				Kind:     e.Kind,
+				Factory:  e.Factory,
 			}
 		}
 	}

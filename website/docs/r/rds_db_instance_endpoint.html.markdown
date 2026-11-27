@@ -111,6 +111,8 @@ The following arguments are supported:
 * `db_instance_endpoint_description` - (Optional) The user-defined description of the endpoint.
 * `node_items` - (Required) The information about the node that is configured for the endpoint.  It contains two sub-fields(node_id and weight). See [`node_items`](#node_items) below.
 
+---
+
 ### `node_items`
 
 The node_items mapping supports the following:
@@ -131,7 +133,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Use when opening exclusive agent (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating exclusive agent (until it reaches the initial `Running` status).

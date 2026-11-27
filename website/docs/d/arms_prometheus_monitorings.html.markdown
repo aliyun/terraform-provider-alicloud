@@ -41,11 +41,11 @@ output "arms_prometheus_monitorings_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Prometheus Monitoring IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Prometheus Monitoring name.
-* `cluster_id` - (Required, ForceNew) The ID of the Prometheus instance.
-* `type` - (Optional, ForceNew) The type of the monitoring configuration. Valid values: `serviceMonitor`, `podMonitor`, `customJob`, `probe`.
-* `status` - (Optional, ForceNew) The status of the monitoring configuration. Valid values: `run`, `stop`.
+* `ids` - (Optional, List) A list of Prometheus Monitoring IDs.
+* `name_regex` - (Optional) A regex string to filter results by Prometheus Monitoring name.
+* `cluster_id` - (Required) The ID of the Prometheus instance.
+* `type` - (Optional) The type of the monitoring configuration. Valid values: `serviceMonitor`, `podMonitor`, `customJob`, `probe`.
+* `status` - (Optional) The status of the monitoring configuration. Valid values: `run`, `stop`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -53,10 +53,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prometheus Monitoring names.
-* `prometheus_monitorings` - A list of Prometheus Monitorings. Each element contains the following attributes:
-  * `id` - The ID of the Prometheus Monitoring. It formats as `<cluster_id>:<monitoring_name>:<type>`.
-  * `cluster_id` - The ID of the Prometheus instance.
-  * `monitoring_name` - The name of the monitoring configuration.
-  * `type` - The type of the monitoring configuration.
-  * `config_yaml` - The monitoring configuration. The value is a YAML string.
-  * `status` - The status of the monitoring configuration.
+* `prometheus_monitorings` - A list of Prometheus Monitorings.
+
+---
+
+### `prometheus_monitorings`
+
+The prometheus_monitorings supports the following attributes:
+
+* `id` - The ID of the Prometheus Monitoring. It formats as `<cluster_id>:<monitoring_name>:<type>`.
+* `cluster_id` - The ID of the Prometheus instance.
+* `monitoring_name` - The name of the monitoring configuration.
+* `type` - The type of the monitoring configuration.
+* `config_yaml` - The monitoring configuration. The value is a YAML string.
+* `status` - The status of the monitoring configuration.

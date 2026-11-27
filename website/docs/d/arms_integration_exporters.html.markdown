@@ -33,22 +33,29 @@ output "arms_integration_exporters_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Integration Exporter IDs.
-* `cluster_id` - (Required, ForceNew) The ID of the Prometheus instance.
-* `integration_type` - (Required, ForceNew) The type of prometheus integration.
+* `ids` - (Optional, Computed) A list of Integration Exporter IDs.
+* `cluster_id` - (Required) The ID of the Prometheus instance.
+* `integration_type` - (Required) The type of prometheus integration.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `integration_exporters` - A list of Integration Exporters. Each element contains the following attributes:
-  * `id` - The ID of the Integration Exporter. It formats as `<cluster_id>:<integration_type>:<instance_id>`.
-  * `cluster_id` - The ID of the Prometheus instance.
-  * `integration_type` - The type of prometheus integration.
-  * `instance_id` - The ID of the Integration Exporter instance.
-  * `param` - Exporter configuration parameter json string.
-  * `instance_name` - The name of the instance.
-  * `exporter_type` - Integration Exporter Type.
-  * `target` - Monitor the target address.
-  * `version` - The version information.
+* `integration_exporters` - A list of Integration Exporters.
+
+---
+
+### `integration_exporters`
+
+The integration_exporters supports the following attributes:
+
+* `id` - The ID of the Integration Exporter. It formats as `<cluster_id>:<integration_type>:<instance_id>`.
+* `cluster_id` - The ID of the Prometheus instance.
+* `integration_type` - The type of prometheus integration.
+* `instance_id` - The ID of the Integration Exporter instance.
+* `param` - Exporter configuration parameter json string.
+* `instance_name` - The name of the instance.
+* `exporter_type` - Integration Exporter Type.
+* `target` - Monitor the target address.
+* `version` - The version information.

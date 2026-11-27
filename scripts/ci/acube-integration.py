@@ -21,13 +21,17 @@ import urllib.request
 from acube_diagnostics import (REUSE_SCAN_LIMIT, acc_execution_counts, publish_acc_summary, publish_planning_failure, publish_report, redact,
                                report_directory, terminal_report)
 import doc_examples
+import acctest_verdict
+import integration_receipts
 
 REPOSITORY = 'code.alibaba-inc.com/opensource-tools/terraform-provider-alicloud'
 BASE_URL = 'https://pre-acube.aliyun-inc.com'
 TERMINAL = {'success', 'failed', 'cancelled'}
 REUSE_SCAN_SKIP_REASON = f'scan-limit-{REUSE_SCAN_LIMIT}'
+MAX_CASES_PER_TASK = 500  # provider-run admission limit
 # How long ACube may stay unavailable in a row, e.g. while preproduction redeploys, before a safe call fails.
 UNAVAILABLE_WINDOW_SECONDS = 5 * 60
+REUSE_SPLIT_WINDOW_SECONDS = 5 * 60
 
 
 def digest(value):
@@ -80,8 +84,11 @@ def acceptance_scope(base, head):
 
 
 def scope_blockers(scope, kind):
-    coverage = set(scope.get('coverageBlockers', [])) if kind == 'examples' else set()
-    return [reason for reason in scope.get('blocked', []) if reason not in coverage]
+    blocked = scope.get('blocked', [])
+    if kind != 'examples':
+        return list(blocked)
+    acc_only = set(scope.get('coverageBlockers', [])) | set(scope.get('accOnlyBlockers', []))
+    return [reason for reason in blocked if reason not in acc_only]
 
 
 def planning_diagnostic(reason):
@@ -163,6 +170,12 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('ACube redirects are not allowed')
 
 
+class ReuseMatches(dict):
+    def __init__(self, matches, reason='complete'):
+        super().__init__(matches)
+        self.reason = reason
+
+
 class ReuseScanLimitReached(ValueError):
     def __init__(self):
         super().__init__(f'ACube reuse skipped after {REUSE_SCAN_LIMIT} history candidates; no reusable evidence confirmed')
@@ -179,8 +192,9 @@ class Client:
         payload = None if body is None else json.dumps(body).encode()
         request = urllib.request.Request(BASE_URL + '/api/v1/provider_runs' + path, data=payload, method=method,
             headers={'X-Provider-Run-Token': self.token, 'Content-Type': 'application/json'})
-        # POST replay is safe only for source import or a server-fenced submission.
-        safe = method == 'GET' or path in ('/sources/import', '/acctest/reusable-cases') or body and body.get('idempotencyKey')
+        # Replay only read-only queries, immutable receipt writes, or server-fenced submissions.
+        safe = method == 'GET' or path in ('/sources/import', '/acctest/reusable-cases',
+                                         '/integration-checks/reusable', '/integration-checks/results') or body and body.get('idempotencyKey')
         # Each call starts a new window, so a later outage gets the full window again.
         deadline = time.monotonic() + UNAVAILABLE_WINDOW_SECONDS
         for attempt in itertools.count():
@@ -189,18 +203,37 @@ class Client:
                     reuse_proof = response.headers.get('X-AccTest-Reuse-Query')
                     reuse_limit = response.headers.get('X-AccTest-Reuse-Scan-Limit')
                     value = json.load(response)
-                if not isinstance(value, dict) or value.get('code') != 'SUCCESS' or not isinstance(value.get('data'), dict):
+                if not isinstance(value, dict) or value.get('code') != 'SUCCESS':
+                    raise ValueError('Invalid ACube response')
+                data = value.get('data')
+                if path == '/integration-checks/environment':
+                    valid = isinstance(data, str) and re.fullmatch(r'[0-9a-f]{64}', data)
+                elif path == '/integration-checks/results':
+                    valid = data is True
+                else:
+                    valid = isinstance(data, dict)
+                if not valid:
                     raise ValueError('Invalid ACube response')
                 if path == '/acctest/reusable-cases':
                     if reuse_proof == 'skipped-scan-limit-v1':
                         if value['data'] or reuse_limit != str(REUSE_SCAN_LIMIT):
                             raise ValueError('Invalid ACube reuse scan-limit response')
                         raise ReuseScanLimitReached()
+                    partial = {'partial-time-budget-v1': 'time-budget',
+                               'partial-scan-limit-v1': 'scan-limit',
+                               'skipped-time-budget-v1': 'time-budget'}
+                    if reuse_proof in partial:
+                        if (reuse_proof == 'skipped-time-budget-v1' and data
+                                or reuse_proof == 'partial-scan-limit-v1' and reuse_limit != str(REUSE_SCAN_LIMIT)):
+                            raise ValueError('Invalid ACube partial reuse response')
+                        return ReuseMatches(data, partial[reuse_proof])
                     if reuse_proof != 'complete-v1':
-                        raise ValueError('ACube reuse query has no completion proof; no missing-case submission is authorized')
+                        raise ValueError('ACube reuse query returned an unrecognized completion status; no missing-case submission is authorized')
                 return value['data']
             except urllib.error.HTTPError as error:
                 error.close()
+                if error.code == 409 and path in ('/integration-checks/reusable', '/integration-checks/results'):
+                    raise integration_receipts.ReceiptConflict('ACube HTTP 409') from None
                 if not safe or error.code not in (429, 502, 503, 504) or time.monotonic() >= deadline:
                     raise ValueError('ACube HTTP ' + str(error.code)) from None
             except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError,
@@ -211,7 +244,7 @@ class Client:
             time.sleep(max(0, min(2 ** attempt, 20, deadline - time.monotonic())))
 
 
-def validate_result(status, request):
+def validate_result(status, request, *, require_pass=False):
     if not isinstance(status, dict) or status.get('status') not in ('success', 'failed'):
         raise ValueError('ACube task did not succeed')
     task_status = status['status']
@@ -222,12 +255,13 @@ def validate_result(status, request):
         raise ValueError('Invalid ACube result')
     if task_status == 'failed' and (
             result.get('error') != 'Command or acceptance checks failed'
-            or result.get('exitCode') != 0 or result.get('timedOut') is True
+            or result.get('exitCode') not in (0, 1) or result.get('timedOut') is True
             or result.get('infrastructureFailure') or result.get('finalizationErrors')):
         raise ValueError('ACube task did not succeed')
     for key in ('sourceId', 'checkBaseSourceId', 'commitSha', 'baseCommitSha', 'mode'):
         if result.get(key) != request[key]: raise ValueError('Result identity mismatch: ' + key)
-    if type(result.get('exitCode')) not in (int, float) or result['exitCode'] != 0 or result.get('timedOut') is True:
+    case_failure = task_status == 'failed' and result.get('exitCode') in (0, 1)
+    if type(result.get('exitCode')) not in (int, float) or (result['exitCode'] != 0 and not case_failure) or result.get('timedOut') is True:
         raise ValueError('Invalid successful result')
     if request['mode'] == 'acctest':
         tests = result.get('tests') or {}
@@ -237,31 +271,89 @@ def validate_result(status, request):
             raise ValueError('Missing or duplicate AccTest results')
         if result.get('testDirectory') != request['variables']['TEST']:
             raise ValueError('AccTest directory mismatch')
-        outcomes = [c.get('result') for c in cases]
-        if any(outcome not in ('PASS', 'SKIP') for outcome in outcomes):
-            raise ValueError('AccTest returned a failed or invalid case result')
+        skipped = None
+        for case in cases:
+            outcome = case.get('result')
+            if outcome not in ('PASS', 'SKIP', 'FAIL'):
+                raise ValueError(f"AccTest returned a failed or invalid case result: {case['name']}")
+            if outcome == 'SKIP' and skipped is None:
+                skipped = case['name']
+        failed = [case['name'] for case in cases if case['result'] == 'FAIL']
+        if failed:
+            cleanup = result.get('workspaceCleanup') or {}
+            statistics_cleanup = result.get('cleanup')
+            if statistics_cleanup is not None and not isinstance(statistics_cleanup, dict):
+                raise ValueError('AccTest returned invalid cleanup metadata')
+            skipped_count = sum(case['result'] == 'SKIP' for case in cases)
+            if (not case_failure or result.get('timedOut') is not False or result.get('signal')
+                    or result.get('stage') != 'complete' or not result.get('endedAt')
+                    or result.get('executionStatus') != 'failed' or result.get('status') != 'failed'
+                    or not isinstance(cleanup, dict)
+                    or cleanup.get('rootAbsent') is not True
+                    or cleanup.get('status') not in ('removed', 'already-absent')
+                    or tests.get('missing') != 0 or tests.get('failed') != len(failed)
+                    or tests.get('passed') != len(cases) - len(failed) - skipped_count
+                    or tests.get('skipped') != skipped_count or (require_pass and skipped_count)
+                    or (statistics_cleanup or {}).get('statisticsError')):
+                raise ValueError('AccTest returned a failed or invalid case result: ' + ', '.join(failed))
+            raise acctest_verdict.CaseFailures(failed)
         if task_status == 'failed':
             # The runner also emits this failure when any selected case skips.
             workspace_cleanup = result.get('workspaceCleanup', {'status': 'not-created'})
-            if ('SKIP' not in outcomes or result.get('signal')
+            if (skipped is None or result['exitCode'] != 0 or result.get('signal')
                     or not isinstance(workspace_cleanup, dict)
                     or workspace_cleanup.get('status') not in ('removed', 'already-absent', 'not-created')):
                 raise ValueError('ACube task did not succeed')
+        if require_pass and skipped is not None:
+            raise ValueError(f'Expanded AccTest scope requires PASS for every selected case; skipped: {skipped}')
     else:
         doc_examples.validate_result(result, request)
     return result
 
 
-def reusable_cases(client, request):
+def reusable_cases(client, request, split_deadline=None):
     value = client.call('POST', '/acctest/reusable-cases', request)
     if (not isinstance(value, dict) or set(value) - set(request['testCases'])
             or any(type(task) not in (str, int) or not re.fullmatch(r'[1-9][0-9]{0,18}', str(task))
                    for task in value.values())):
         raise ValueError('Invalid ACube case reuse receipt')
-    return {name: str(task) for name, task in value.items()}
+    matches = ReuseMatches({name: str(task) for name, task in value.items()}, getattr(value, 'reason', 'complete'))
+    if matches.reason != 'time-budget' or len(request['testCases']) <= 1:
+        return matches
+
+    # A time-limited lookup can stop before visiting valid receipts. Keep its verified
+    # hits and query smaller scopes under one deadline for this batch.
+    remaining = [name for name in request['testCases'] if name not in matches]
+    if split_deadline is None:
+        split_deadline = time.monotonic() + REUSE_SPLIT_WINDOW_SECONDS
+    middle = (len(remaining) + 1) // 2
+    matches.reason = 'complete'
+    for cases in (remaining[:middle], remaining[middle:]):
+        if not cases:
+            continue
+        if time.monotonic() >= split_deadline:
+            matches.reason = 'time-budget'
+            break
+        try:
+            subset = reusable_cases(client, {**request, 'testCases': cases}, split_deadline)
+        except ReuseScanLimitReached:
+            subset = ReuseMatches({}, 'scan-limit')
+        matches.update(subset)
+        if matches.reason == 'complete':
+            matches.reason = subset.reason
+    return matches
 
 
-def execute(client, frozen, kind, run_id, output, poll=time.sleep):
+def acc_batches(packages):
+    for package, cases in packages.items():
+        if not cases:
+            raise ValueError('Empty AccTest package selection: ' + package)
+        for start in range(0, len(cases), MAX_CASES_PER_TASK):
+            name = package if len(cases) <= MAX_CASES_PER_TASK else f'{package}#{start // MAX_CASES_PER_TASK + 1}'
+            yield name, package, cases[start:start + MAX_CASES_PER_TASK]
+
+
+def execute(client, frozen, kind, run_id, output, poll=time.sleep, *, environment=None, recovery=False):
     if not re.fullmatch(r'[a-zA-Z0-9._:-]{1,128}', run_id):
         raise ValueError('Stable CI run ID required; CI identity value=' + repr(run_id[:128]))
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -269,12 +361,13 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     report_directory(output)
     items = []
     if kind == 'acctest':
-        items = list(frozen['packages'].items())
+        items = list(acc_batches(frozen['packages']))
     else:
-        items = [(e['name'], e) for e in frozen['examples']]
+        items = [(e['name'], None, e) for e in frozen['examples']]
     (output / 'plan.json').write_text(json.dumps(frozen, indent=2))
     (output / 'plan.json').chmod(0o600)
     scope_errors = scope_blockers(frozen.get('scope', {}), kind)
+    full_packages = frozen.get('scope', {}).get('fullPackages', {}) if kind == 'acctest' else {}
     blockers = list(scope_errors)
     unverified_coverage = frozen.get('scope', {}).get('unverifiedCoverage', [])
     if kind == 'acctest' and unverified_coverage:
@@ -305,6 +398,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
               'scripts/ci/accscope/main.go scripts/ci/accscope/layout.go '
               f"-base {frozen['base']} -head HEAD; blocked must be empty.", file=sys.stderr, flush=True)
         raise ValueError(f"{report['error']} ({len(blockers)} blocker(s); see scope.json in CI diagnostics)")
+    for package, reasons in sorted(full_packages.items()):
+        print(f'Planned all {len(frozen["packages"][package])} AccTests in {package}:', *reasons, sep='\n  ', flush=True)
     if not items:
         if kind == 'acctest':
             publish_acc_summary(output, frozen['head'], [])
@@ -318,30 +413,40 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
     if (capabilities.get('submissionIdempotency') != 'oss-admission-v1'
             or kind == 'acctest' and capabilities.get('accTestReuseQuery') != 'complete-v1'
             or kind == 'examples' and not {doc_examples.example_action(value['document'])
-                                           for _, value in items} <= set(capabilities.get('hclActions', []))):
+                                           for _, _, value in items} <= set(capabilities.get('hclActions', []))):
         raise ValueError('ACube CI capability is not deployed; no cloud task submission authorized')
     sources = [client.call('POST', '/sources/import', {'repository': REPOSITORY, 'commitSha': frozen[key]}) for key in ('head','base')]
     if any(not re.fullmatch('[a-f0-9]{64}', s.get('sourceId', '')) for s in sources): raise ValueError('Invalid source import')
     failures = []
+    review_batches = []
     pending = []
     reuse_plans = []
     acc_rows = {name: dict(name=name, total=len(cases), reused=None, toRun=None,
-                          reuseValidation='unconfirmed', originalTaskIds=[])
-                for name, cases in items} if kind == 'acctest' else {}
-    for name, value in items:
+                          reuseValidation='unconfirmed', originalTaskIds=[], stage='reuse-query',
+                          executed=0, passed=0, failed=0, skipped=0, unknown=len(cases))
+                for name, _, cases in items} if kind == 'acctest' else {}
+    receipt_directory = output
+    if environment:
+        receipt_directory = output / ('receipts-' + environment)
+        receipt_directory.mkdir(exist_ok=True, mode=0o700)
+    for name, package, value in items:
         request = {'sourceId': sources[0]['sourceId'], 'checkBaseSourceId': sources[1]['sourceId'],
                    'commitSha': frozen['head'], 'baseCommitSha': frozen['base'], 'headRepo': REPOSITORY, 'baseRepo': REPOSITORY,
                    'mode': 'acctest' if kind == 'acctest' else 'hcl', 'timeoutSeconds': 21600,
                    'authorizationRef': 'code-ci:' + run_id + '/mr/' + str(frozen.get('mergeRequestId') or 'none')}
-        if kind == 'acctest': request.update(testCases=value, variables={'TEST':name},
+        if kind == 'acctest': request.update(testCases=value, variables={'TEST':package},
                                            testConcurrency=2)
         else: request.update(mainTf=value['mainTf'], hclAction=doc_examples.example_action(value['document']))
         # A documentation inventory/contract cannot change an identical ACC submission key.
-        request['idempotencyKey'] = 'ci-v1-' + digest({'run':run_id, 'kind':kind, 'name':name, 'request':request})
-        item_file = output / (digest(name) + '.json')
+        identity = {'run':run_id, 'kind':kind, 'name':name, 'request':request}
+        if environment:
+            identity['environment'] = environment
+        request['idempotencyKey'] = 'ci-v1-' + digest(identity)
+        item_file = receipt_directory / (digest(name) + '.json')
         try:
             reused_cases = {}
             reuse_skip_reason = None
+            reuse_query_status = 'complete'
             candidate = copy.deepcopy(request)
             saved = json.loads(item_file.read_text()) if item_file.exists() else None
             if saved is not None:
@@ -349,6 +454,9 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                     raise ValueError('Saved submission identity differs; retain original evidence and use a new output directory')
                 reused_cases = saved.get('reusedCases', {})
                 reuse_skip_reason = saved.get('reuseSkipReason')
+                reuse_query_status = saved.get('reuseQueryStatus', 'complete')
+                if reuse_query_status not in ('complete', 'time-budget', 'scan-limit'):
+                    raise ValueError('Invalid saved reuse query status')
                 if (reuse_skip_reason not in (None, REUSE_SCAN_SKIP_REASON)
                         or reuse_skip_reason is not None and reused_cases):
                     raise ValueError('Invalid saved reuse skip reason; reconcile the original record')
@@ -356,10 +464,11 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                         or any(not isinstance(task, str) or not re.fullmatch(r'[1-9][0-9]{0,18}', task)
                                for task in reused_cases.values())):
                     raise ValueError('Invalid saved reuse references; reconcile the original record')
-            elif kind == 'acctest' and (capabilities.get('accTestCaseReuse') == 'exact-source-v1'
+            elif kind == 'acctest' and not recovery and (capabilities.get('accTestCaseReuse') == 'exact-source-v1'
                     or capabilities.get('accTestContentReuse') == 'whole-source-and-comments-v1'):
                 try:
                     reused_cases = reusable_cases(client, candidate)
+                    reuse_query_status = reused_cases.reason
                 except ReuseScanLimitReached:
                     reuse_skip_reason = REUSE_SCAN_SKIP_REASON
             if kind == 'acctest':
@@ -376,11 +485,18 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 record['reuseSkipReason'] = reuse_skip_reason
                 print(f'ACC 复用已跳过：{name}，扫描达到 {REUSE_SCAN_LIMIT} 条上限，本计划全部执行', flush=True)
             if kind == 'acctest':
-                acc_rows[name].update(reused=0 if not reused_cases else None, toRun=len(request['testCases']),
-                    reuseValidation='pending' if reused_cases else 'skipped-limit' if reuse_skip_reason else 'not-needed',
+                record['reuseQueryStatus'] = reuse_query_status
+                acc_rows[name].update(stage='execution', reuseQueryStatus=reuse_query_status,
+                    reused=0 if not reused_cases else None, toRun=len(request['testCases']),
+                    reuseValidation='pending' if reused_cases else 'skipped-limit' if reuse_skip_reason
+                    else 'query-limited' if reuse_query_status != 'complete' else 'not-needed',
                     originalTaskIds=sorted(set(reused_cases.values())))
                 acc_rows[name].update(executed=None, passed=None, failed=None, skipped=None,
                                       unknown=len(request['testCases']))
+                if reuse_query_status != 'complete':
+                    print('ACC 复用查询达到' + ('时间预算' if reuse_query_status == 'time-budget' else '扫描上限')
+                          + '：保留已核验命中 ' + str(len(reused_cases)) + ' 项，仅补跑剩余 '
+                          + str(len(request['testCases'])) + ' 项', flush=True)
                 if not request['testCases']:
                     acc_rows[name].update(executed=0, passed=0, failed=0, skipped=0)
                 print('ACC 用例分配：' + name + '，总数=' + str(len(value)) + '，复用候选='
@@ -408,6 +524,8 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             print(json.dumps({'name': name, 'taskId': task_id, 'sourceId': request['sourceId'],
                               'reused': receipt.get('reused')}), flush=True)
         except ValueError as error:
+            if kind == 'acctest':
+                acc_rows[name]['error'] = redact(error)
             failures.append({'name': name, 'error': str(error)})
 
     # FC admits each batch according to its capacity. Observe every receipt
@@ -431,8 +549,13 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 item_file.write_text(json.dumps({**record, 'status': status, 'logs': logs}, indent=2))
                 item_file.chmod(0o600)
                 validation_error = None
+                failed_cases = []
                 try:
-                    validate_result(status, record['request'])
+                    request = record['request']
+                    validate_result(status, request, require_pass=request.get('variables', {}).get('TEST') in full_packages)
+                except acctest_verdict.CaseFailures as error:
+                    validation_error = str(error)
+                    failed_cases = error.names
                 except ValueError as error:
                     validation_error = str(error)
                 report = terminal_report(record['name'], task_id, status, record['request'], validation_error, logs)
@@ -449,16 +572,29 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
                 if validation_error:
                     failures.append({'name': record['name'], 'taskId': task_id,
                                      'error': report.get('failureSummary') or report.get('error') or validation_error})
+                    if failed_cases and report.get('logExcerpt'):
+                        review_batches.append(dict(package=request['variables']['TEST'], taskId=task_id,
+                                                   failedCases=failed_cases, logExcerpt=report['logExcerpt'],
+                                                   caseErrors=report.get('caseErrors', {}),
+                                                   executedCases={c['name']: c['result'] for c in status['result']['tests']['cases']},
+                                                   reusedCases=record['reusedCases']))
             except ValueError as error:
                 failures.append({'name': record['name'], 'taskId': task_id, 'error': redact(error)})
         pending = running
         if pending:
             poll(30)
     for item_file, candidate, initial in reuse_plans:
+        validation_status = 'unconfirmed'
         try:
             # The service rechecks runner epochs, newer failures and independent PASS invocations.
-            current = reusable_cases(client, candidate)
+            validation_request = copy.deepcopy(candidate)
+            validation_request['testCases'] = sorted(initial)
+            current = reusable_cases(client, validation_request)
+            validation_status = current.reason
             if not set(initial) <= set(current):
+                if current.reason != 'complete':
+                    raise ValueError('Reused AccTest evidence revalidation incomplete (' + current.reason
+                                     + '); original references retained, validity unconfirmed')
                 raise ValueError('Reused AccTest evidence was revoked/invalidated; original references retained')
             record = json.loads(item_file.read_text())
             record['currentReusedCases'] = {name:current[name] for name in initial}
@@ -474,14 +610,22 @@ def execute(client, frozen, kind, run_id, output, poll=time.sleep):
             print('ACC reuse verified: ' + json.dumps(report), flush=True)
         except ValueError as error:
             record = json.loads(item_file.read_text())
-            record.update(reuseValidation='invalid', reuseValidationError=str(error))
+            record.update(reuseValidation='invalid' if validation_status == 'complete' else 'unconfirmed',
+                          reuseRevalidationStatus=validation_status, reuseValidationError=str(error))
             acc_rows[record['name']].update(reused=None, reuseValidation='unconfirmed')
             item_file.write_text(json.dumps(record, indent=2))
             (output/'diagnostics'/('reuse-'+item_file.name)).write_text(json.dumps(
                 dict(status='blocked', candidateCommitSha=candidate['commitSha'],
                      initialReusedCases=initial, error=str(error)), indent=2))
             failures.append(dict(reusedCases=initial, error=str(error)))
-    if kind == 'acctest': publish_acc_summary(output, frozen['head'], list(acc_rows.values()), bool(failures))
+    if kind == 'acctest':
+        rows = list(acc_rows.values())
+        if (review_batches and len(review_batches) == len(failures) and frozen.get('mergeRequestId')
+                and not unverified_coverage and all(row.get('unknown') == 0 for row in rows)
+                and any(row['passed'] or row['reused'] for row in rows)):
+            if acctest_verdict.review(client, frozen, run_id, rows, review_batches, output, poll):
+                failures.clear()
+        publish_acc_summary(output, frozen['head'], rows, bool(failures))
     if failures: raise ValueError(json.dumps(failures))
 
 
@@ -511,8 +655,8 @@ def main():
     frozen['mergeRequestId'] = None if mr_id in ('','null') else numeric_id(mr_id)
     if args.plan_only:
         print(json.dumps(frozen, indent=2)); return
-    execute(Client(os.environ.get('ACUBE_PROVIDER_RUN_TOKEN')), frozen, args.kind,
-            numeric_id(os.environ.get('ACUBE_CI_RUN_ID','')), Path(args.output))
+    integration_receipts.run(Client(os.environ.get('ACUBE_PROVIDER_RUN_TOKEN')), frozen, args.kind,
+            numeric_id(os.environ.get('ACUBE_CI_RUN_ID','')), Path(args.output), execute)
 
 if __name__ == '__main__':
     try: main()

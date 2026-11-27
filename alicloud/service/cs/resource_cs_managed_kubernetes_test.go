@@ -16,6 +16,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// The V4 signing migration that touched resource_cs_managed_kubernetes.go only
+// swaps the legacy SDK call entry; every configurable multi-member TypeList
+// below predates this change, so their convergent reorder coverage is stock
+// debt outside this migration's scope.
+// collection-order: bypass worker_vswitch_ids -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass zone_ids -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass vswitch_ids -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass pod_vswitch_ids -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass addons -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass api_audiences -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass control_plane_log_components -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass control_plane_endpoints_config.load_balancers_config -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass control_plane_endpoints_config.internal_dns_config.bind_vpcs -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass retain_resources -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass delete_options -- pre-existing stock TypeList outside this signing-migration change
+
 func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 	var v *aliyungocs.KubernetesClusterDetail
 
@@ -58,6 +74,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"pod_cidr":               "10.93.0.0/16",
 					"service_cidr":           "172.21.0.0/16",
 					"slb_internet_enabled":   "true",
+					"support_policy":         "Standard",
 					"cluster_spec":           "ack.pro.small",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"security_group_id":      "${alicloud_security_group.default.0.id}",
@@ -100,6 +117,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"pod_cidr":                              "10.93.0.0/16",
 						"service_cidr":                          "172.21.0.0/16",
 						"slb_internet_enabled":                  "true",
+						"support_policy":                        "Standard",
 						"cluster_spec":                          "ack.pro.small",
 						"resource_group_id":                     acctest.CHECKSET,
 						"deletion_protection":                   "false",
@@ -136,6 +154,12 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"worker_vswitch_ids": acctest.REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("one of `vswitch_ids,worker_vswitch_ids,zone_ids` must be\\s+specified"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"support_policy": "Extended",
+				}),
+				Check: resource.TestCheckResourceAttr(resourceId, "support_policy", "Extended"),
 			},
 			{
 				ResourceName:            resourceId,

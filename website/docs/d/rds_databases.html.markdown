@@ -115,14 +115,28 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - (Read-Only, String) The ID of the data source, derived from `instance_id` and the filters so that it stays stable across refreshes.
 * `names` - (Read-Only, List) A list of database names that match the configured filters.
-* `databases` - (Read-Only, List) A list of databases that match the configured filters. Each element contains the following attributes:
-  * `db_name` - (Read-Only, String) The name of the database.
-  * `db_status` - (Read-Only, String) The status of the database. Valid values: `Creating`, `Running`, `Deleting` and `Cold`.
-  * `character_set_name` - (Read-Only, String) The character set of the database.
-  * `db_description` - (Read-Only, String) The description of the database.
-  * `engine` - (Read-Only, String) The database engine of the instance.
-  * `instance_id` - (Read-Only, String) The ID of the instance that the database belongs to.
-  * `accounts` - (Read-Only, List) A list of accounts that have privileges on the database. Each element contains the following attributes:
-    * `account_name` - (Read-Only, String) The name of the account.
-    * `account_privilege` - (Read-Only, String) The privilege that the account has on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly` and `DDLOnly`.
-    * `account_privilege_detail` - (Read-Only, String) The detailed privilege that the account has on the database.
+* `databases` - (Read-Only, List) A list of databases that match the configured filters.
+
+---
+
+### `databases`
+
+The databases supports the following attributes:
+
+* `db_name` - (Read-Only, String) The name of the database.
+* `db_status` - (Read-Only, String) The status of the database. Valid values: `Creating`, `Running`, `Deleting` and `Cold`.
+* `character_set_name` - (Read-Only, String) The character set of the database.
+* `db_description` - (Read-Only, String) The description of the database.
+* `engine` - (Read-Only, String) The database engine of the instance.
+* `instance_id` - (Read-Only, String) The ID of the instance that the database belongs to.
+* `accounts` - (Read-Only, List) A list of accounts that have privileges on the database.
+
+---
+
+### `databases.accounts`
+
+The accounts supports the following attributes:
+
+* `account_name` - (Read-Only, String) The name of the account.
+* `account_privilege` - (Read-Only, String) The privilege that the account has on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly` and `DDLOnly`.
+* `account_privilege_detail` - (Read-Only, String) The detailed privilege that the account has on the database.

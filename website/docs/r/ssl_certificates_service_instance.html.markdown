@@ -126,12 +126,14 @@ This parameter applies only to specific product types (ProductType is ddos_origi
 DNS: DNS verification, using TXT or CNAME records.
 HTTP: File verification.
 
+---
+
 ### `parameter`
 
 The parameter supports the following:
 
-* `code` - (Required, ForceNew) The module code. Common values are `fullSpec` (certificate brand and grade for a single-domain certificate), `wildcardSpec` (the same for a wildcard certificate), `fullDomainCount` (number of single domain names) and `wildcardDomainCount` (number of wildcard domain names).
-* `value` - (Required, ForceNew) The value of the module identified by `code`. For the domain-count modules this is an integer from 1 to 150. For `fullSpec` and `wildcardSpec` this is a specification code such as `ws.dv.f`.
+* `code` - (Required) The module code. Common values are `fullSpec` (certificate brand and grade for a single-domain certificate), `wildcardSpec` (the same for a wildcard certificate), `fullDomainCount` (number of single domain names) and `wildcardDomainCount` (number of wildcard domain names).
+* `value` - (Required) The value of the module identified by `code`. For the domain-count modules this is an integer from 1 to 150. For `fullSpec` and `wildcardSpec` this is a specification code such as `ws.dv.f`.
 
 Specification codes accepted by `fullSpec` follow a `brand.grade.type` pattern, for example:
 
@@ -170,7 +172,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

@@ -190,6 +190,8 @@ jobs:
             ${{ steps.go-cache.outputs.module }}
             ${{ steps.go-cache.outputs.build }}
           key: provider-go-download-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-${{ hashFiles('go.mod', 'go.sum') }}
+      - name: Run consistency checker unit tests
+        run: go test ./scripts/consistency/
       - name: Run consistency check
         env:
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}

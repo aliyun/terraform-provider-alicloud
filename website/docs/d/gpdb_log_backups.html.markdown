@@ -37,12 +37,12 @@ output "alicloud_gpdb_logbackup_example_id" {
 
 The following arguments are supported:
 
-* `db_instance_id` - (Required, ForceNew) The ID of the Master node of the instance.
-* `end_time` - (ForceNew, Optional) The query end time, which must be greater than the query start time. Format: yyyy-MM-ddTHH:mmZ(UTC time).
-* `page_number` - (ForceNew, Optional) Current page number.
-* `page_size` - (ForceNew, Optional) Number of records per page.
-* `start_time` - (ForceNew, Optional) The query start time. Format: yyyy-MM-ddTHH:mmZ(UTC time).
-* `ids` - (Optional, ForceNew, Computed) A list of Logbackup IDs.
+* `db_instance_id` - (Required) The ID of the Master node of the instance.
+* `end_time` - (Optional) The query end time, which must be greater than the query start time. Format: yyyy-MM-ddTHH:mmZ(UTC time).
+* `page_number` - (Optional) Current page number.
+* `page_size` - (Optional) Number of records per page.
+* `start_time` - (Optional) The query start time. Format: yyyy-MM-ddTHH:mmZ(UTC time).
+* `ids` - (Optional, Computed) A list of Logbackup IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -50,11 +50,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Logbackup IDs.
-* `logbackups` - A list of Logbackup Entries. Each element contains the following attributes:
-  * `db_instance_id` - The ID of the Master node of the instance.
-  * `log_backup_id` - The first ID of the resource
-  * `log_file_name` - Log file name (OSS path).
-  * `log_file_size` - Size of the backup log file. Unit: Byte.
-  * `log_time` - The log timestamp.
-  * `record_total` - Total number of records.
-  * `segment_name` - The node name.
+* `logbackups` - A list of Logbackup Entries.
+
+---
+
+### `logbackups`
+
+The logbackups supports the following attributes:
+
+* `db_instance_id` - The ID of the Master node of the instance.
+* `log_backup_id` - The first ID of the resource
+* `log_file_name` - Log file name (OSS path).
+* `log_file_size` - Size of the backup log file. Unit: Byte.
+* `log_time` - The log timestamp.
+* `record_total` - Total number of records.
+* `segment_name` - The node name.

@@ -40,26 +40,33 @@ output "nas_data_flow_id_2" {
 
 The following arguments are supported:
 
-* `file_system_id` - (Required, ForceNew) The ID of the file system.
-* `ids` - (Optional, ForceNew, Computed)  A list of Data Flow IDs.
+* `file_system_id` - (Required) The ID of the file system.
+* `ids` - (Optional, Computed)  A list of Data Flow IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the Data flow. Including: `Starting`, `Running`, `Updating`, `Deleting`, `Stopping`, `Stopped`, `Misconfigured`.
+* `status` - (Optional) The status of the Data flow. Including: `Starting`, `Running`, `Updating`, `Deleting`, `Stopping`, `Stopped`, `Misconfigured`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `flows` - A list of Nas Data Flows. Each element contains the following attributes:
-  * `create_time` - The time when Fileset was created. Executing the ISO8601 standard means that the return format is: 'yyyy-MM-ddTHH:mm:ssZ'.
-  * `data_flow_id` - The ID of the Data Flow.
-  * `description` - The Description of data flow.
-  * `error_message` - Error message.
-  * `file_system_id` - The ID of the file system.
-  * `file_system_path` - The path of Fileset in the CPFS file system.
-  * `fset_description` - Description of automatic update.
-  * `fset_id` - The ID of the Fileset.
-  * `id` - The resource ID of the data flow. The value formats as `<file_system_id>:<data_flow_id>`.
-  * `source_security_type` - The security protection type of the source storage.
-  * `source_storage` - The access path of the source store. Format: `<storage type>://<path>`.
-  * `status` - The status of the Data flow.
-  * `throughput` - The maximum transmission bandwidth of data flow, unit: `MB/s`.
+* `flows` - A list of Nas Data Flows.
+
+---
+
+### `flows`
+
+The flows supports the following attributes:
+
+* `create_time` - The time when Fileset was created. Executing the ISO8601 standard means that the return format is: 'yyyy-MM-ddTHH:mm:ssZ'.
+* `data_flow_id` - The ID of the Data Flow.
+* `description` - The Description of data flow.
+* `error_message` - Error message.
+* `file_system_id` - The ID of the file system.
+* `file_system_path` - The path of Fileset in the CPFS file system.
+* `fset_description` - Description of automatic update.
+* `fset_id` - The ID of the Fileset.
+* `id` - The resource ID of the data flow. The value formats as `<file_system_id>:<data_flow_id>`.
+* `source_security_type` - The security protection type of the source storage.
+* `source_storage` - The access path of the source store. Format: `<storage type>://<path>`.
+* `status` - The status of the Data flow.
+* `throughput` - The maximum transmission bandwidth of data flow, unit: `MB/s`.

@@ -67,13 +67,13 @@ The following arguments are supported:
 
 * `app_id` - (Required, ForceNew) The ID of the application that you want to deploy.
 * `group_name` - (Required, ForceNew) The name of the instance group that you want to create.
-* `group_type` - (ForceNew) The type of the instance group that you want to create. Valid values: 0: Default group. 1: Phased release is disabled for traffic management. 2: Phased release is enabled for traffic management.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above. The value is formulated as `<app_id>:<group_name>:<group_id>`.
+* `group_type` - The type of the instance group. Valid values: 0: Default group. 1: Phased release is disabled for traffic management. 2: Phased release is enabled for traffic management.
 
 ## Import
 

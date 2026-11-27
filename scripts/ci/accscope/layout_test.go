@@ -131,14 +131,15 @@ func TestScopeHelperSpellingDoesNotCreateEntities(t *testing.T) {
 	}
 }
 
-func TestScopeUnknownHelperStillBlocks(t *testing.T) {
+func TestScopeUnknownHelperSelectsFullPackage(t *testing.T) {
 	files := layoutFixture()
 	file := "alicloud/service/demo/data_source_alicloud_demo_helpers.go"
 	files[file] = "package demo; func decode() { old() }"
 	before := fixture(t, files)
 	files[file] = "package demo; func decode() { changed() }"
 	scope := selectScope(before, fixture(t, files), []string{file})
-	if len(scope.Blocked) == 0 || !strings.Contains(strings.Join(scope.Blocked, " "), "production helper consumers") {
+	if len(scope.Blocked) != 0 || !reflect.DeepEqual(scope.Packages["alicloud/service/demo"], []string{"TestAccDemo"}) ||
+		!strings.Contains(strings.Join(scope.FullPackages["alicloud/service/demo"], " "), "production helper consumers") {
 		t.Fatalf("%+v", scope)
 	}
 }

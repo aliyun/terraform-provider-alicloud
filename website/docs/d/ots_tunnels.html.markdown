@@ -46,20 +46,34 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of tunnel IDs.
 * `names` - A list of tunnel names.
-* `tunnels` - A list of tunnels. Each element contains the following attributes:
-  * `id` - The resource ID. The value is `<instance_name>:<table_name>:<tunnel_name>`.
-  * `instance_name` - The OTS instance name.
-  * `table_name` - The table name of the OTS which could not be changed.
-  * `tunnel_name` - The tunnel name of the OTS which could not be changed.
-  * `tunnel_id` - The tunnel id of the OTS which could not be changed.
-  * `tunnel_rpo` - The latest consumption time of the tunnel, unix time in nanosecond.
-  * `tunnel_type` - The type of the OTS tunnel, valid values: `BaseAndStream`, `BaseData`, `Stream`.
-  * `tunnel_stage` -  The stage of OTS tunnel, valid values: `InitBaseDataAndStreamShard`, `ProcessBaseData`, `ProcessStream`.
-  * `expired` - Whether the tunnel has expired.
-  * `create_time` - The creation time of the Tunnel.
-  * `channels` - The channels of OTS tunnel. Each element contains the following attributes:
-    * `channel_id` - The id of the channel.
-    * `channel_type` - The type of the channel, valid values: `BaseData`, `Stream`.
-    * `channel_status` - The status of the channel, valid values: `WAIT`, `OPEN`, `CLOSING`, `CLOSE`, `TERMINATED`.
-    * `client_id` - The client id of the channel.
-    * `channel_rpo` - The latest consumption time of the channel, unix time in nanosecond
+* `tunnels` - A list of tunnels.
+
+---
+
+### `tunnels`
+
+The tunnels supports the following attributes:
+
+* `id` - The resource ID. The value is `<instance_name>:<table_name>:<tunnel_name>`.
+* `instance_name` - The OTS instance name.
+* `table_name` - The table name of the OTS which could not be changed.
+* `tunnel_name` - The tunnel name of the OTS which could not be changed.
+* `tunnel_id` - The tunnel id of the OTS which could not be changed.
+* `tunnel_rpo` - The latest consumption time of the tunnel, unix time in nanosecond.
+* `tunnel_type` - The type of the OTS tunnel, valid values: `BaseAndStream`, `BaseData`, `Stream`.
+* `tunnel_stage` -  The stage of OTS tunnel, valid values: `InitBaseDataAndStreamShard`, `ProcessBaseData`, `ProcessStream`.
+* `expired` - Whether the tunnel has expired.
+* `create_time` - The creation time of the Tunnel.
+* `channels` - The channels of OTS tunnel.
+
+---
+
+### `tunnels.channels`
+
+The channels supports the following attributes:
+
+* `channel_id` - The id of the channel.
+* `channel_type` - The type of the channel, valid values: `BaseData`, `Stream`.
+* `channel_status` - The status of the channel, valid values: `WAIT`, `OPEN`, `CLOSING`, `CLOSE`, `TERMINATED`.
+* `client_id` - The client id of the channel.
+* `channel_rpo` - The latest consumption time of the channel, unix time in nanosecond

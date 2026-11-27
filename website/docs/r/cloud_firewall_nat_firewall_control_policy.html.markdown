@@ -14,7 +14,7 @@ For information about Cloud Firewall Nat Firewall Control Policy and how to use 
 
 -> **NOTE:** Available since v1.224.0.
 
-~> **NOTE** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_nat_firewall_control_policy_order` to manage the policy ordering.<br>
+~> **NOTE:** Since v1.276.0. Set `new_order = -1` or omit the argument to let the Cloud Backend manage policy ordering automatically. You can also use `alicloud_cloud_firewall_nat_firewall_control_policy_order` to manage the policy ordering.<br>
 If you want manged the policy order in parallel, **do not** set the `new_order`, instead use `alicloud_cloud_firewall_nat_firewall_control_policy_order` manage the policy order.
 
 ## Example Usage
@@ -225,7 +225,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Nat Firewall Control Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Firewall Control Policy.

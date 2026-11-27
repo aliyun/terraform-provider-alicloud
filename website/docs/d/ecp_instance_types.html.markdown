@@ -35,10 +35,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instance_types` - A list of ecp Instance types. Each element contains the following attributes:
-  * `instance_type` - The list of available instance type.
-  * `default_resolution` - The default resolution of the current instance type.
-  * `cpu_core_count` - The cpu core count of the current instance type.
-  * `name` - The name of the current instance type.
-  * `name_en` - The English name of the current instance type.
-  * `instance_type_family` - The family of the current instance type.
+* `instance_types` - A list of ecp Instance types.
+
+---
+
+### `instance_types`
+
+The instance_types supports the following attributes:
+
+* `instance_type` - The list of available instance type.
+* `default_resolution` - The default resolution of the current instance type.
+* `cpu_core_count` - The cpu core count of the current instance type.
+* `name` - The name of the current instance type.
+* `name_en` - The English name of the current instance type.
+* `instance_type_family` - The family of the current instance type.

@@ -44,7 +44,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of instance type family IDs.
-* `families` - A list of instance type families. Each element contains the following attributes:
-  * `id` - ID of the instance type family.
-  * `generation` - The generation of the instance type family.
-  * `zone_ids` - A list of Zone to launch the instance.
+* `families` - A list of instance type families.
+
+---
+
+### `families`
+
+The families supports the following attributes:
+
+* `id` - ID of the instance type family.
+* `generation` - The generation of the instance type family.
+* `zone_ids` - A list of Zone to launch the instance.

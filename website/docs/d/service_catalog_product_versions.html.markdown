@@ -30,9 +30,9 @@ output "alicloud_service_catalog_product_version_example_id" {
 
 The following arguments are supported:
 
-* `product_id` - (Required, ForceNew) Product ID
-* `ids` - (Optional, ForceNew, Computed) A list of Product Version IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `product_id` - (Required) Product ID
+* `ids` - (Optional, Computed) A list of Product Version IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -42,25 +42,39 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Product Version IDs.
 * `names` - A list of name of Product Versions.
-* `product_versions` - A list of Product Version Entries. Each element contains the following attributes:
-  * `id` - ID of product version.
-  * `active` - Whether the version is activated
-  * `create_time` - The creation time of the resource
-  * `description` - Version description
-  * `guidance` - Administrator guidance
-  * `product_id` - Product ID.
-  * `product_version_id` - The first ID of the resource
-  * `product_version_name` - The name of the resource
-  * `template_type` - Template Type
-  * `template_url` - Template URL
-* `versions` - (Deprecated since v1.197.0) A list of Product Version Entries. Each element contains the following attributes:
-  * `id` - ID of product version.
-  * `active` - Whether the version is activated
-  * `create_time` - The creation time of the resource
-  * `description` - Version description
-  * `guidance` - Administrator guidance
-  * `product_id` - Product ID.
-  * `product_version_id` - The first ID of the resource
-  * `product_version_name` - The name of the resource
-  * `template_type` - Template Type
-  * `template_url` - Template URL
+* `product_versions` - A list of Product Version Entries.
+* `versions` - (Deprecated since v1.197.0) A list of Product Version Entries.
+
+---
+
+### `product_versions`
+
+The product_versions supports the following attributes:
+
+* `id` - ID of product version.
+* `active` - Whether the version is activated
+* `create_time` - The creation time of the resource
+* `description` - Version description
+* `guidance` - Administrator guidance
+* `product_id` - Product ID.
+* `product_version_id` - The first ID of the resource
+* `product_version_name` - The name of the resource
+* `template_type` - Template Type
+* `template_url` - Template URL
+
+---
+
+### `versions`
+
+The versions supports the following attributes:
+
+* `id` - ID of product version.
+* `active` - Whether the version is activated
+* `create_time` - The creation time of the resource
+* `description` - Version description
+* `guidance` - Administrator guidance
+* `product_id` - Product ID.
+* `product_version_id` - The first ID of the resource
+* `product_version_name` - The name of the resource
+* `template_type` - Template Type
+* `template_url` - Template URL

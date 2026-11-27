@@ -33,10 +33,9 @@ output "first_record_id" {
 The following arguments are supported:
 
 * `domain_name` - (Required) The domain name associated to the records.
-* `type` - (Optional) Record type. Valid values: `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
+* `type` - (Optional) Record type. Valid values: `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `CAA`, `REDIRECT_URL`, `FORWORD_URL`.
 * `line` - (Optional) ISP line. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/en/dns/resolve-line-enumeration)
 * `status` - (Optional) Record status. Valid values: `ENABLE` and `DISABLE`.
-* `is_locked` - (Optional, type: bool) Whether the record is locked or not.
 * `ids` - (Optional) A list of record IDs.
 * `direction` - (Optional) Sorting direction. Valid values: `DESC`,`ASC`. Default to `AESC`.
 * `group_id` - (Optional) Domain name group ID.
@@ -56,16 +55,25 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of record IDs.
-* `records` - A list of records. Each element contains the following attributes:
-  * `id` - ID of the resource.
-  * `record_id` - ID of the record.
-  * `domain_name` - Name of the domain record belongs to.
-  * `rr` - Host record of the domain.
-  * `value` - Host record value of the domain.
-  * `type` - Type of the record.
-  * `ttl` - TTL of the record.
-  * `priority` - Priority of the `MX` record.
-  * `line` - ISP line of the record.
-  * `status` - Status of the record.
-  * `locked` - Indicates whether the record is locked.
-  * `remark` - The remark of the domain record.  **NOTE:** Available in 1.144.0+.
+* `records` - A list of records.
+
+---
+
+### `records`
+
+The records supports the following attributes:
+
+* `id` - ID of the resource.
+* `record_id` - ID of the record.
+* `domain_name` - Name of the domain record belongs to.
+* `rr` - Host record of the domain.
+* `value` - Host record value of the domain.
+* `type` - Type of the record.
+* `ttl` - TTL of the record.
+* `priority` - Priority of the `MX` record.
+* `line` - ISP line of the record.
+* `status` - Status of the record.
+* `locked` - Indicates whether the record is locked.
+* `remark` - The remark of the domain record.
+
+  -> **NOTE:** Available in 1.144.0+.

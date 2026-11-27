@@ -37,9 +37,9 @@ output "alicloud_ram_system_policy_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of System Policy IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `ids` - (Optional, Computed) A list of System Policy IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -47,11 +47,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of System Policy IDs.
 * `names` - A list of name of System Policys.
-* `policys` - A list of System Policy Entries. Each element contains the following attributes:
-  * `attachment_count` - Number of references.
-  * `create_time` - Creation time.
-  * `description` - The permission policy description.
-  * `policy_name` - The permission policy name.
-  * `policy_type` - Permission policy type.
-  * `update_date` - Modification time.
-  * `id` - The ID of the resource supplied above.
+* `policys` - A list of System Policy Entries.
+
+---
+
+### `policys`
+
+The policys supports the following attributes:
+
+* `attachment_count` - Number of references.
+* `create_time` - Creation time.
+* `description` - The permission policy description.
+* `policy_name` - The permission policy name.
+* `policy_type` - Permission policy type.
+* `update_date` - Modification time.
+* `id` - The ID of the resource supplied above.

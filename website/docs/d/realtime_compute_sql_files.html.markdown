@@ -45,14 +45,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Sql File IDs.
-* `files` - A list of Sql File Entries. Each element contains the following attributes:
-  * `batch_mode` - Whether the SQL query script runs in batch mode.
-  * `description` - The description of the SQL file.
-  * `name` - The name of the SQL file.
-  * `namespace` - The name of the namespace.
-  * `parent_id` - The ID of the parent folder of the SQL file.
-  * `session_cluster_name` - The name of the session cluster that runs the SQL query script.
-  * `sql_file_id` - The ID of the SQL file.
-  * `sql_script` - The SQL script content.
-  * `workspace` - The ID of the workspace.
-  * `id` - The ID of the SQL file. The value is formulated as `<workspace>:<namespace>:<sql_file_id>`.
+* `files` - A list of Sql File Entries.
+
+---
+
+### `files`
+
+The files supports the following attributes:
+
+* `batch_mode` - Whether the SQL query script runs in batch mode.
+* `description` - The description of the SQL file.
+* `name` - The name of the SQL file.
+* `namespace` - The name of the namespace.
+* `parent_id` - The ID of the parent folder of the SQL file.
+* `session_cluster_name` - The name of the session cluster that runs the SQL query script.
+* `sql_file_id` - The ID of the SQL file.
+* `sql_script` - The SQL script content.
+* `workspace` - The ID of the workspace.
+* `id` - The ID of the SQL file. The value is formulated as `<workspace>:<namespace>:<sql_file_id>`.

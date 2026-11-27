@@ -77,7 +77,9 @@ The following arguments are supported:
 * `mode` - (Required) The mode of the cluster. Valid values: `reserver`, `flexible`.
 * `modify_type` - (Optional) The modify type.
 * `pay_type` - (Deprecated since v1.166.0) Field `pay_type` has been deprecated. New field `payment_type` instead.
-* `payment_type` - (Optional) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`. **Note:** The `payment_type` supports updating from v1.166.0+.
+* `payment_type` - (Optional) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`.
+
+  -> **NOTE:** The `payment_type` supports updating from v1.166.0+.
 * `period` - (Optional, Int) The duration that you will buy DB cluster (in month). It is valid when `payment_type` is `Subscription`. Valid values: [1~9], 12, 24, 36.
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not affect the resource.
@@ -116,7 +118,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 120 mins) Used when create the DBCluster.
 * `update` - (Defaults to 6  hours) Used when update the DBCluster.

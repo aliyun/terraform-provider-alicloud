@@ -64,11 +64,11 @@ The following attributes are exported:
 * `sls_project` - The name of the SLS project used to store the trajectory data of the Agent Space.
 * `update_time` - The last update time of the Agent Space, in ISO 8601 UTC format (`yyyy-MM-ddTHH:mm:ssZ`).
 
-  -> **NOTE** Deleting the Agent Space also deletes the auto-created companion resources (SLS project, CMS workspace and MSE namespace). Resources you selected and bound yourself via `cms_workspace` / `mse_namespace_id` are kept.
+  -> **NOTE:** Deleting the Agent Space also deletes the auto-created companion resources (SLS project, CMS workspace and MSE namespace). Resources you selected and bound yourself via `cms_workspace` / `mse_namespace_id` are kept.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Agent Space.
 * `delete` - (Defaults to 5 mins) Used when delete the Agent Space.

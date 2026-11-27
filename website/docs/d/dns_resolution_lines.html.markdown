@@ -1,24 +1,24 @@
 ---
 subcategory: "Alidns"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_dns_domains"
+page_title: "Alicloud: alicloud_dns_resolution_lines"
 sidebar_current: "docs-alicloud-datasource-dns-domains"
 description: |-
     Provides a list of domains available to the user.
 ---
 
-# alicloud\_dns\_resolution\_lines
+# alicloud_dns_resolution_lines
 
 This data source provides a list of DNS Resolution Lines in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.60.0.
+-> **NOTE:** Available since v1.60.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_dns_resolution_lines" "resolution_lines_ds" {
-  line_codes = [ "cn_unicom_shanxi" ]
-  output_file       = "support_lines.txt"
+  line_codes  = ["cn_unicom_shanxi"]
+  output_file = "support_lines.txt"
 }
 
 output "first_line_code" {
@@ -30,9 +30,10 @@ output "first_line_code" {
 
 The following arguments are supported:
 
-* `domain_name` - (Optional) Domain Name. 
+* `domain_name` - (Optional) Domain Name.
 * `line_codes` - (Optional) A list of lines codes.
 * `line_display_names` - (Optional) A list of line display names.
+* `line_names` - (Optional) A list of line names.
 * `user_client_ip` - (Optional) The ip of user client.
 * `lang` - (Optional) language.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -43,7 +44,14 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `line_codes` - A list of lines codes.
 * `line_display_names` - A list of line display names.
-* `lines` - A list of cloud resolution line. Each element contains the following attributes:
-  * `line_codes` - Line code.
-  * `line_display_name` - Line display name.
-  * `line_name` - Line name.
+* `lines` - A list of cloud resolution line.
+
+---
+
+### `lines`
+
+The lines supports the following attributes:
+
+* `line_code` - Line code.
+* `line_display_name` - Line display name.
+* `line_name` - Line name.

@@ -46,16 +46,18 @@ output "ros_template_scratch_id_3" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Template Scratch IDs.
+* `ids` - (Optional, Computed)  A list of Template Scratch IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Values: `GENERATE_IN_PROGRESS`, `GENERATE_COMPLETE` and `GENERATE_FAILED`.
-* `template_scratch_type` - (Optional, ForceNew) The type of the template scratch. Valid Values: `ResourceImport`, `ArchitectureReplication`.
+* `status` - (Optional) The status of the resource. Valid Values: `GENERATE_IN_PROGRESS`, `GENERATE_COMPLETE` and `GENERATE_FAILED`.
+* `template_scratch_type` - (Optional) The type of the template scratch. Valid Values: `ResourceImport`, `ArchitectureReplication`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `scratches` - A list of Ros Template Scratches. Each element contains the following attributes. See [`scratches`](#scratches) below.
+
+---
 
 ### `scratches`
 
@@ -72,25 +74,35 @@ The following attributes are exported in addition to the arguments listed above:
 * `template_scratch_id` - The ID of the Template Scratch.
 * `template_scratch_type` - The type of the Template Scratch.
 
+---
+
 ### `scratches-preference_parameters`
 
 * `parameter_key` - Priority parameter key.
 * `parameter_value` - Priority parameter value.
+
+---
 
 ### `scratches-source_tag`
 
 * `resource_tags` - Source label.
 * `resource_type_filter` - Source resource type filter list.
 
+---
+
 ### `scratches-source_resource_group`
 
 * `resource_type_filter` - Source resource type filter list.
 * `resource_group_id` - The ID of the Source Resource Group.
 
+---
+
 ### `scratches-source_resources`
 
 * `resource_id` - The ID of the Source Resource.
 * `resource_type` - The type of the Source resource.
+
+---
 
 ### `scratches-stacks`
 

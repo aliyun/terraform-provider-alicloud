@@ -9,19 +9,22 @@ import (
 // Execute runs the chain around inner and restores any error an After hook
 // dropped, so a failed operation is never reported as success.
 func Execute(ctx context.Context, chain []Interceptor, call Call, inner func() error) error {
-	if len(chain) == 0 {
-		return inner()
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	var err error
-	aborted := false
 	for _, o := range chain {
-		if e := o.Before(ctx, call); e != nil {
-			err = e
-			aborted = true
+		if err = ctx.Err(); err != nil {
+			break
+		}
+		if err = o.Before(ctx, call); err != nil {
 			break
 		}
 	}
-	if !aborted {
+	if err == nil {
+		err = ctx.Err()
+	}
+	if err == nil {
 		err = inner()
 	}
 	for _, o := range slices.Backward(chain) {

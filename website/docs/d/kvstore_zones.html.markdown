@@ -38,6 +38,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of zone IDs.
-* `zones` - A list of availability zones. Each element contains the following attributes:
-  * `id` - ID of the zone.
-  * `multi_zone_ids` - A list of zone ids in which the multi zone.
+* `zones` - A list of availability zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `id` - ID of the zone.
+* `multi_zone_ids` - A list of zone ids in which the multi zone.

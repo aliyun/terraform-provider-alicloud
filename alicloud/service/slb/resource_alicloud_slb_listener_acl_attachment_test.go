@@ -3012,7 +3012,7 @@ func TestUnitListenerAclAttachmentTransportBadBodyClassification(t *testing.T) {
 	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 500 * time.Millisecond
 	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
 
-	newServer := func(t *testing.T, status int) (*httptest.Server, *atomic.Int32, *atomic.Int32) {
+	newServer := func(t *testing.T, status int, body string) (*httptest.Server, *atomic.Int32, *atomic.Int32) {
 		t.Helper()
 		var sets, describes atomic.Int32
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3021,7 +3021,7 @@ func TestUnitListenerAclAttachmentTransportBadBodyClassification(t *testing.T) {
 				sets.Add(1)
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(status)
-				_, _ = w.Write([]byte(`<html><body>the body is not JSON</body></html>`))
+				_, _ = w.Write([]byte(body))
 				return
 			}
 			describes.Add(1)
@@ -3032,7 +3032,7 @@ func TestUnitListenerAclAttachmentTransportBadBodyClassification(t *testing.T) {
 	}
 
 	t.Run("undecodable 4xx is an explicit rejection", func(t *testing.T) {
-		server, sets, describes := newServer(t, http.StatusBadRequest)
+		server, sets, describes := newServer(t, http.StatusBadRequest, `<html><body>the body is not JSON</body></html>`)
 		defer server.Close()
 		client := newListenerAclAttachmentTransportClient(t, server.URL)
 		providerServer := newListenerAclAttachmentServerWith(t, client)
@@ -3057,7 +3057,7 @@ func TestUnitListenerAclAttachmentTransportBadBodyClassification(t *testing.T) {
 	})
 
 	t.Run("undecodable 2xx is an unknown write and is reconciled", func(t *testing.T) {
-		server, sets, describes := newServer(t, http.StatusOK)
+		server, sets, describes := newServer(t, http.StatusOK, `<html><body>the body is not JSON</body></html>`)
 		defer server.Close()
 		client := newListenerAclAttachmentTransportClient(t, server.URL)
 		providerServer := newListenerAclAttachmentServerWith(t, client)
@@ -3073,6 +3073,26 @@ func TestUnitListenerAclAttachmentTransportBadBodyClassification(t *testing.T) {
 		}
 		if got := describes.Load(); got == 0 {
 			t.Fatal("an unknown 2xx outcome must be reconciled with a readback")
+		}
+	})
+
+	t.Run("non-object 2xx is an unknown write and is reconciled", func(t *testing.T) {
+		server, sets, describes := newServer(t, http.StatusOK, `[]`)
+		defer server.Close()
+		client := newListenerAclAttachmentTransportClient(t, server.URL)
+		providerServer := newListenerAclAttachmentServerWith(t, client)
+		plan, config := listenerAclTestPlanCreate(t, providerServer, "lb-123:http:80", "acl-1", "white")
+		applied := listenerAclTestApplyCreate(t, providerServer, plan, config)
+		listenerAclTestRequireNoError(t, "ApplyResourceChange (non-object 2xx)", applied.Diagnostics)
+		attrs := listenerAclTestAttrs(t, applied.NewState)
+		if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+			t.Fatalf("the reconciled binding was not kept, acl_id = %q", got)
+		}
+		if got := sets.Load(); got != 1 {
+			t.Fatalf("expected exactly one write, got %d", got)
+		}
+		if got := describes.Load(); got == 0 {
+			t.Fatal("a non-object 2xx outcome must be reconciled with a readback")
 		}
 	})
 

@@ -94,6 +94,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `name` - (Deprecated since v1.122.0). Field 'name' has been deprecated from provider version 1.122.0. New field 'network_acl_name' instead.
 
+---
+
 ### `egress_acl_entries`
 
 The egress_acl_entries supports the following:
@@ -120,6 +122,8 @@ When the Protocol type of the outbound rule is tcp or udp, the port range is 1 t
   - tcp: Transmission Control Protocol.
   - udp: User Datagram Protocol.
   - all: Supports all protocols.
+
+---
 
 ### `ingress_acl_entries`
 
@@ -148,6 +152,8 @@ When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to
   - all: Supports all protocols.
 * `source_cidr_ip` - (Optional) The source CIDR block, or the prefix list instance ID.
 
+---
+
 ### `resources`
 
 The resources supports the following:
@@ -162,12 +168,19 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `resources` - The associated resource.
-  * `status` - The state of the associated resource
 * `status` - The state of the network ACL.
+
+---
+
+### `resources`
+
+The resources supports the following attributes:
+
+* `status` - The state of the associated resource
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Network Acl.
 * `delete` - (Defaults to 10 mins) Used when delete the Network Acl.

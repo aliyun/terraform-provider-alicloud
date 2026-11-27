@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud logtail attachment resource.
 ---
 
-# alicloud\_logtail\_attachment
+# alicloud_logtail_attachment
 
 The Logtail access service is a log collection agent provided by Log Service.
 You can use Logtail to collect logs from servers such as Alibaba Cloud Elastic
@@ -16,6 +16,8 @@ Compute Service (ECS) instances in real time in the Log Service console. [Refer 
 This resource amis to attach one logtail configure to a machine group.
 
 -> **NOTE:** One logtail configure can be attached to multiple machine groups and one machine group can attach several logtail configures.
+
+-> **NOTE:** Available since v1.30.0+.
 
 ## Example Usage
 
@@ -55,16 +57,16 @@ resource "alicloud_logtail_config" "example" {
   name         = "terraform-example"
   output_type  = "LogService"
   input_detail = <<DEFINITION
-  	{
-		"logPath": "/logPath",
-		"filePattern": "access.log",
-		"logType": "json_log",
-		"topicFormat": "default",
-		"discardUnmatch": false,
-		"enableRawLog": true,
-		"fileEncoding": "gbk",
-		"maxDepth": 10
-	}
+   {
+  "logPath": "/logPath",
+  "filePattern": "access.log",
+  "logType": "json_log",
+  "topicFormat": "default",
+  "discardUnmatch": false,
+  "enableRawLog": true,
+  "fileEncoding": "gbk",
+  "maxDepth": 10
+ }
   DEFINITION
 }
 
@@ -92,7 +94,6 @@ The following arguments are supported:
 * `project` - (Required, ForceNew) The project name to the log store belongs.
 * `logtail_config_name` - (Required, ForceNew) The Logtail configuration name, which is unique in the same project.
 * `machine_group_name` - (Required, ForceNew) The machine group name, which is unique in the same project.
-
 
 ## Attributes Reference
 

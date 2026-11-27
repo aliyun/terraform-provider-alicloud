@@ -105,13 +105,30 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Db Extension IDs.
-* `extensions` - A list of Db Extension Entries. Each element contains the following attributes:
-  * `current_version` - **NOTE:** This field is only available when `enable_details` is `true`. Plug-in current version.
-  * `description` - Plug-in description.
-  * `extension_id` - **NOTE:** This field is only available when `enable_details` is `true`. Plug-in id.
-  * `extension_name` - The name of the extension to install.
-  * `is_install_need_restart` - **NOTE:** This field is only available when `enable_details` is `true`. Whether the instance needs to be restarted for installation.
-  * `is_latest_version` - **NOTE:** This field is only available when `enable_details` is `true`. Whether the extension is at its latest version.
-  * `latest_version` - **NOTE:** This field is only available when `enable_details` is `true`. Plug-in latest version.
-  * `status` - The status of the extension.
-  * `id` - The ID of the resource supplied above.
+* `extensions` - A list of Db Extension Entries.
+
+---
+
+### `extensions`
+
+The extensions supports the following attributes:
+
+* `current_version` - Plug-in current version.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `description` - Plug-in description.
+* `extension_id` - Plug-in id.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `extension_name` - The name of the extension to install.
+* `is_install_need_restart` - Whether the instance needs to be restarted for installation.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `is_latest_version` - Whether the extension is at its latest version.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `latest_version` - Plug-in latest version.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `status` - The status of the extension.
+* `id` - The ID of the resource supplied above.

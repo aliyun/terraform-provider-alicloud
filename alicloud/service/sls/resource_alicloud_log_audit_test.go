@@ -2,6 +2,7 @@ package sls_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
@@ -68,10 +69,20 @@ func TestAccAliCloudLogAudit_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"multi_account": []string{"1234567", "123123123213", "123141412"},
+					"variable_map": map[string]string{
+						"actiontrail_enabled": "true",
+						"actiontrail_ttl":     "10",
+						"oss_access_enabled":  "true",
+						"oss_access_ttl":      "155",
+						"oss_sync_enabled":    "true",
+						"oss_sync_ttl":        "180",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"multi_account.#": "3",
+						"multi_account.#":                  "3",
+						"variable_map.%":                   "6",
+						"variable_map.actiontrail_enabled": "true",
 					}),
 				),
 			},
@@ -84,7 +95,7 @@ func TestAccAliCloudLogAudit_basic(t *testing.T) {
 			// 		testAccCheck(map[string]string{
 			// 			"resource_directory_type": "custom",
 			// 		}),
-			// 	),
+			// 	}),
 			// },
 		},
 	})
@@ -94,6 +105,73 @@ func resourceLogAuditConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_account" "default" {}
 `)
+}
+
+// testAccLogAuditPreCheckResourceDirectoryAccount gates the
+// resource_directory_type case: only a resource-directory master or admin
+// account actually applies the directory mode, so the case runs when the
+// dedicated env flag opts in and skips otherwise (same pattern as
+// privatezoneTestPreCheckEnterpriseAccountEnabled).
+func testAccLogAuditPreCheckResourceDirectoryAccount(t *testing.T) {
+	if os.Getenv("LOG_AUDIT_RESOURCE_DIRECTORY_ENABLED") != "true" {
+		t.Skipf("Skipping the test case because the account is not a resource directory master or admin.")
+		t.Skipped()
+	}
+}
+
+// TestAccAliCloudLogAudit_resourceDirectoryType covers the
+// resource_directory_type attribute: "custom" requires multi_account, and
+// switching to "all" updates the directory mode in place.
+func TestAccAliCloudLogAudit_resourceDirectoryType(t *testing.T) {
+	var v *slsPop.DescribeAppResponse
+	resourceId := "alicloud_log_audit.foo"
+	ra := acctest.ResourceAttrInit(resourceId, logAuditMap)
+	serviceFunc := func() interface{} {
+		return sls.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogaudit-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceLogAuditConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			testAccLogAuditPreCheckResourceDirectoryAccount(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name":            name,
+					"aliuid":                  "${data.alicloud_account.default.id}",
+					"resource_directory_type": "custom",
+					"multi_account":           []string{"1234567"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name":            name,
+						"resource_directory_type": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name":            name,
+					"aliuid":                  "${data.alicloud_account.default.id}",
+					"resource_directory_type": "all",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_directory_type": acctest.CHECKSET,
+					}),
+				),
+			},
+		},
+	})
 }
 
 var logAuditMap = map[string]string{

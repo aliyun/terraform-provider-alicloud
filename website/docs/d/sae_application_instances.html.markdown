@@ -57,26 +57,40 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of Instances. Each element contains the following attributes:
-  * `id` - The ID of the Instance.
-  * `instance_id` - The instance ID.
-  * `group_id` - The ID of the group to which the instance belongs.
-  * `instance_container_ip` - The internal IP address of the instance.
-  * `instance_container_restarts` - The number of times the instance container has restarted.
-  * `instance_container_status` - The status of the instance container.
-  * `instance_health_status` - The health check status of the instance.
-  * `vswitch_id` - The ID of the vSwitch where the instance is deployed.
-  * `package_version` - The version of the deployment package.
-  * `image_url` - The URL of the container image.
-  * `debug_status` - Whether the instance is being debugged.
-  * `eip` - The elastic IP address (EIP).
-  * `unhealthy_message` - The error message for a failed health check on the application instance. This field is empty if the check is successful.
-  * `traffic_status` - The traffic status of the instance.
-  * `main_container_status` - The status of the main container.
-  * `timestamp` - The timestamp.
-  * `create_time_stamp` - The time when instance creation began.
-  * `finish_time_stamp` - The time when instance creation was completed.
-  * `sidecar_containers_status` - The status of the sidecar containers.
-    * `container_id` - The ID of the sidecar container.
-    * `image_url` - The URL of the container image.
-    * `container_status` - The status of the container.
+* `instances` - A list of Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The ID of the Instance.
+* `instance_id` - The instance ID.
+* `group_id` - The ID of the group to which the instance belongs.
+* `instance_container_ip` - The internal IP address of the instance.
+* `instance_container_restarts` - The number of times the instance container has restarted.
+* `instance_container_status` - The status of the instance container.
+* `instance_health_status` - The health check status of the instance.
+* `vswitch_id` - The ID of the vSwitch where the instance is deployed.
+* `package_version` - The version of the deployment package.
+* `image_url` - The URL of the container image.
+* `debug_status` - Whether the instance is being debugged.
+* `eip` - The elastic IP address (EIP).
+* `unhealthy_message` - The error message for a failed health check on the application instance. This field is empty if the check is successful.
+* `traffic_status` - The traffic status of the instance.
+* `main_container_status` - The status of the main container.
+* `timestamp` - The timestamp.
+* `create_time_stamp` - The time when instance creation began.
+* `finish_time_stamp` - The time when instance creation was completed.
+* `sidecar_containers_status` - The status of the sidecar containers.
+
+---
+
+### `instances.sidecar_containers_status`
+
+The sidecar_containers_status supports the following attributes:
+
+* `container_id` - The ID of the sidecar container.
+* `image_url` - The URL of the container image.
+* `container_status` - The status of the container.

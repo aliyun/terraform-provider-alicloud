@@ -58,13 +58,20 @@ resource "alicloud_sddp_rule" "default" {
 
 The following arguments are supported:
 
-* `rule_name` - (Required) The name of the sensitive data detection rule. **NOTE:** From version 1.222.0, `rule_name` can be modified.
+* `rule_name` - (Required) The name of the sensitive data detection rule.
+
+  -> **NOTE:** From version 1.222.0, `rule_name` can be modified.
 * `category` - (Required, Int) The content type of the sensitive data detection rule. Valid values:
   - `0`: Keyword.
   - `2`: Regular expression.
-**NOTE:** From version 1.222.0, `category` can be modified.
-* `content` - (Required) The content of the sensitive data detection rule. **NOTE:** From version 1.222.0, `content` can be modified.
-* `content_category` - (Optional, ForceNew) The type of the content in the sensitive data detection rule. **NOTE:** From version 1.222.0, `content_category` cannot be modified.
+
+  -> **NOTE:** From version 1.222.0, `category` can be modified.
+* `content` - (Required) The content of the sensitive data detection rule.
+
+  -> **NOTE:** From version 1.222.0, `content` can be modified.
+* `content_category` - (Optional, ForceNew) The type of the content in the sensitive data detection rule.
+
+  -> **NOTE:** From version 1.222.0, `content_category` cannot be modified.
 * `risk_level_id` - (Optional) The sensitivity level of the sensitive data that hits the sensitive data detection rule. Valid values:
   - `2`: S1, which indicates the low sensitivity level.
   - `3`: S2, which indicates the medium sensitivity level.
@@ -83,12 +90,18 @@ The following arguments are supported:
   - `1`: Low warn Level.
   - `2`: Medium Risk Level.
   - `3`: High Risk Level.
-* `stat_express` - (Optional, ForceNew) The statistical expression. **NOTE:** From version 1.222.0, `stat_express` cannot be modified.
-* `target` - (Optional, ForceNew) The code of the service to which the sensitive data detection rule is applied. **NOTE:** From version 1.222.0, `target` cannot be modified.
+* `stat_express` - (Optional, ForceNew) The statistical expression.
+
+  -> **NOTE:** From version 1.222.0, `stat_express` cannot be modified.
+* `target` - (Optional, ForceNew) The code of the service to which the sensitive data detection rule is applied.
+
+  -> **NOTE:** From version 1.222.0, `target` cannot be modified.
 * `status` - (Optional) Sensitive Specifies whether to enable the sensitive data detection rule. Valid values:
   - `0`: Disable.
   - `1`: Enable.
-* `description` - (Optional, ForceNew) The description of the rule. **NOTE:** From version 1.222.0, `description` cannot be modified.
+* `description` - (Optional, ForceNew) The description of the rule.
+
+  -> **NOTE:** From version 1.222.0, `description` cannot be modified.
 * `lang` - (Optional) The language of the content within the request and response. Default value: `zh`. Valid values:
   - `zh`: Chinese.
   - `en`: English.
@@ -98,7 +111,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Rule.
-* `custom_type` - The type of the sensitive data detection rule. **NOTE:** From version 1.222.0, `custom_type` cannot be specified when create Rule.
+* `custom_type` - The type of the sensitive data detection rule.
+
+  -> **NOTE:** From version 1.222.0, `custom_type` cannot be specified when create Rule.
 
 ## Import
 

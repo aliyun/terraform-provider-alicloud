@@ -91,7 +91,9 @@ The following arguments are supported:
 * `principal_type` - (Required, ForceNew) The type of the CloudSSO identity. Valid values: `User`, `Group`.
 * `target_id` - (Required, ForceNew) The ID of the task object.
 * `target_type` - (Required, ForceNew) The type of the task object. Valid values: `RD-Account`.
-* `deprovision_strategy` - (Optional) Specifies whether to de-provision the access configuration when you remove the access permissions from the CloudSSO identity. Valid values: `DeprovisionForLastAccessAssignmentOnAccount` and `None`. Default Value: `DeprovisionForLastAccessAssignmentOnAccount`. **NOTE:** When `deprovision_strategy` is `DeprovisionForLastAccessAssignmentOnAccount`, and the access assignment to be deleted is the last access assignment for the same account and the same AC, this option is used for the undeployment operation.
+* `deprovision_strategy` - (Optional) Specifies whether to de-provision the access configuration when you remove the access permissions from the CloudSSO identity. Valid values: `DeprovisionForLastAccessAssignmentOnAccount` and `None`. Default Value: `DeprovisionForLastAccessAssignmentOnAccount`.
+
+  -> **NOTE:** When `deprovision_strategy` is `DeprovisionForLastAccessAssignmentOnAccount`, and the access assignment to be deleted is the last access assignment for the same account and the same AC, this option is used for the undeployment operation.
 
 ## Attributes Reference
 
@@ -102,7 +104,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Assignment.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Assignment.

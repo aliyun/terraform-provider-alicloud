@@ -6,13 +6,15 @@ description: |-
     Provides information about the current Alibaba Cloud account.
 ---
 
-# alicloud\_account
+# alicloud_account
 
 This data source provides information about the current account.
 
+-> **NOTE:** Available since v1.15.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_account" "current" {
 }
 

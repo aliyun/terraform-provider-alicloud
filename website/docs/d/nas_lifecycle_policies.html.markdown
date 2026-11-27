@@ -39,9 +39,9 @@ output "nas_lifecycle_policy_id_2" {
 
 The following arguments are supported:
 
-* `file_system_id` - (Required, ForceNew) The ID of the file system.
-* `ids` - (Optional, ForceNew, Computed)  A list of Lifecycle Policy IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Lifecycle Policy name.
+* `file_system_id` - (Required) The ID of the file system.
+* `ids` - (Optional, Computed)  A list of Lifecycle Policy IDs.
+* `name_regex` - (Optional) A regex string to filter results by Lifecycle Policy name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -49,11 +49,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Lifecycle Policy names.
-* `policies` - A list of Nas Lifecycle Policies. Each element contains the following attributes:
-  * `create_time` - The time when the lifecycle management policy was created.
-  * `file_system_id` - The ID of the file system.
-  * `id` - The ID of the Lifecycle Policy. Its value is same as Queue Name.
-  * `lifecycle_policy_name` - The name of the lifecycle management policy.
-  * `lifecycle_rule_name` - The rules in the lifecycle management policy.
-  * `paths` - The list of absolute paths for multiple directories. In this case, you can associate a lifecycle management policy with each directory.
-  * `storage_type` - The storage type of the data that is dumped to the IA storage medium.
+* `policies` - A list of Nas Lifecycle Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `create_time` - The time when the lifecycle management policy was created.
+* `file_system_id` - The ID of the file system.
+* `id` - The ID of the Lifecycle Policy. Its value is same as Queue Name.
+* `lifecycle_policy_name` - The name of the lifecycle management policy.
+* `lifecycle_rule_name` - The rules in the lifecycle management policy.
+* `paths` - The list of absolute paths for multiple directories. In this case, you can associate a lifecycle management policy with each directory.
+* `storage_type` - The storage type of the data that is dumped to the IA storage medium.

@@ -56,14 +56,14 @@ output "oos_secret_parameter_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Parameter IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Parameter name.
-* `parameter_name` - (Optional, ForceNew) The name of the common parameter. You can enter a keyword to query parameter names in fuzzy match mode.
-* `type` - (Optional, ForceNew) The data type of the common parameter. Valid values: `String`, `StringList`.
-* `resource_group_id` - (Optional, ForceNew) The ID of the Resource Group.
+* `ids` - (Optional, List) A list of Parameter IDs.
+* `name_regex` - (Optional) A regex string to filter results by Parameter name.
+* `parameter_name` - (Optional) The name of the common parameter. You can enter a keyword to query parameter names in fuzzy match mode.
+* `type` - (Optional) The data type of the common parameter. Valid values: `String`, `StringList`.
+* `resource_group_id` - (Optional) The ID of the Resource Group.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
-* `sort_field` - (Optional, ForceNew) The field used to sort the query results. Valid values: `Name`, `CreatedDate`.
-* `sort_order` - (Optional, ForceNew) The order in which the entries are sorted. Default value: `Descending`. Valid values: `Ascending`, `Descending`.
+* `sort_field` - (Optional) The field used to sort the query results. Valid values: `Name`, `CreatedDate`.
+* `sort_order` - (Optional) The order in which the entries are sorted. Default value: `Descending`. Valid values: `Ascending`, `Descending`.
 * `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -72,19 +72,30 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Parameter names.
-* `parameters` - A list of Oos Parameters. Each element contains the following attributes:
-  * `id` - The ID of the Parameter. Its value is same as `parameter_name`.
-  * `parameter_name` - The name of the common parameter.
-  * `parameter_id` - The ID of the common parameter.
-  * `type` - The data type of the common parameter.
-  * `parameter_version` - The version number of the common parameter.
-  * `share_type` - The share type of the common parameter.
-  * `resource_group_id` - The ID of the Resource Group.
-  * `description` - The description of the common parameter.
-  * `tags` - The tags added to the common parameter.
-  * `constraints` - The constraints of the common parameter. **Note:** `constraints` takes effect only if `enable_details` is set to `true`.
-  * `value` - (Available since v1.231.0) The value of the common parameter. **Note:** `value` takes effect only if `enable_details` is set to `true`.
-  * `created_by` - The user who created the common parameter.
-  * `create_time` - The time when the common parameter was created.
-  * `updated_by` - The user who updated the common parameter.
-  * `updated_date` - The time when the common parameter was updated.
+* `parameters` - A list of Oos Parameters.
+
+---
+
+### `parameters`
+
+The parameters supports the following attributes:
+
+* `id` - The ID of the Parameter. Its value is same as `parameter_name`.
+* `parameter_name` - The name of the common parameter.
+* `parameter_id` - The ID of the common parameter.
+* `type` - The data type of the common parameter.
+* `parameter_version` - The version number of the common parameter.
+* `share_type` - The share type of the common parameter.
+* `resource_group_id` - The ID of the Resource Group.
+* `description` - The description of the common parameter.
+* `tags` - The tags added to the common parameter.
+* `constraints` - The constraints of the common parameter.
+
+  -> **NOTE:** `constraints` takes effect only if `enable_details` is set to `true`.
+* `value` - (Available since v1.231.0) The value of the common parameter.
+
+  -> **NOTE:** `value` takes effect only if `enable_details` is set to `true`.
+* `created_by` - The user who created the common parameter.
+* `create_time` - The time when the common parameter was created.
+* `updated_by` - The user who updated the common parameter.
+* `updated_date` - The time when the common parameter was updated.

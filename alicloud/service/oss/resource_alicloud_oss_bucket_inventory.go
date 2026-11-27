@@ -381,7 +381,7 @@ func resourceAliCloudOssBucketInventoryCreate(d *schema.ResourceData, meta inter
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketInventory", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -775,7 +775,7 @@ func resourceAliCloudOssBucketInventoryUpdate(d *schema.ResourceData, meta inter
 		errDel := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			_, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteBucketInventory", deleteAction), query, nil, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					waitDel()
 					return retry.RetryableError(err)
 				}
@@ -791,7 +791,7 @@ func resourceAliCloudOssBucketInventoryUpdate(d *schema.ResourceData, meta inter
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketInventory", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -826,7 +826,7 @@ func resourceAliCloudOssBucketInventoryDelete(d *schema.ResourceData, meta inter
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteBucketInventory", action), query, nil, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

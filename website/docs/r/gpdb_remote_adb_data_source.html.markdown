@@ -125,7 +125,7 @@ The following arguments are supported:
 * `local_database` - (Required, ForceNew) The database of the local instance which connection data.
 * `local_db_instance_id` - (Required, ForceNew) The instanceId of the local instance which connection data.
 * `manager_user_name` - (Required, ForceNew) The Management user name of the local instance.
-* `manager_user_password` - (Required, ForceNew) Password of the Manager user of the local instance
+* `manager_user_password` - (Required) Password of the Manager user of the local instance
 * `remote_database` - (Required, ForceNew) The database of the remote instance which provide data.
 * `remote_db_instance_id` - (Required, ForceNew) The instanceId of the remote instance which provide data.
 * `user_name` - (Required) The user name used to connect to the remote instance
@@ -141,7 +141,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Remote ADB Data Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Remote ADB Data Source.

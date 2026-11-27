@@ -1,6 +1,7 @@
 package ots
 
 import (
+	"github.com/alibabacloud-go/tea/dara"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -58,9 +59,22 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 		request.VpcId = vsw.VpcId
 	}
 
-	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.BindInstance2Vpc(request)
-	})
+	var raw interface{}
+	var err error
+	if client.UseOtsV4() {
+		// sign_version.default = v4 signs the control plane through the
+		// common V4 RPC path; the legacy POP client cannot sign V4.
+		raw, err = client.OtsPopV4("POST", "BindInstance2Vpc", map[string]interface{}{
+			"InstanceName":    request.InstanceName,
+			"InstanceVpcName": request.InstanceVpcName,
+			"VpcId":           request.VpcId,
+			"VirtualSwitchId": request.VirtualSwitchId,
+		})
+	} else {
+		raw, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.BindInstance2Vpc(request)
+		})
+	}
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instance_attachment", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -103,9 +117,19 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 	request.InstanceName = d.Id()
 	request.InstanceVpcName = object.InstanceVpcName
 
-	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.UnbindInstance2Vpc(request)
-	})
+	var raw interface{}
+	if client.UseOtsV4() {
+		// sign_version.default = v4 signs the control plane through the
+		// common V4 RPC path; the legacy POP client cannot sign V4.
+		raw, err = client.OtsPopV4("POST", "UnbindInstance2Vpc", map[string]interface{}{
+			"InstanceName":    request.InstanceName,
+			"InstanceVpcName": request.InstanceVpcName,
+		})
+	} else {
+		raw, err = client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
+			return otsClient.UnbindInstance2Vpc(request)
+		})
+	}
 	if err != nil {
 		if errs.NotFoundError(err) {
 			return nil
@@ -120,6 +144,34 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 // instance attachment can resolve a VPC id from a vswitch without importing the
 // (not yet split) root alicloud package. Behavior is preserved verbatim.
 func (s *Service) describeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+	if s.client.UseSignV4("vpc") {
+		// The vswitch lookup is a VPC request, so it follows the VPC effective
+		// sign version (the default), not the "ots" override: with
+		// sign_version{default = v4, ots = v1} the lookup still signs V4 while
+		// the bind itself goes through the legacy POP client. The shared
+		// legacy VPC client cannot sign V4, so the lookup goes through the
+		// common layer and the raw response is converted into the same struct,
+		// mirroring listVpcInfoByInstance.
+		data, err := s.client.RpcPost("Vpc", "2016-04-28", "DescribeVSwitchAttributes", map[string]interface{}{
+			"RegionId":  s.client.RegionId,
+			"VSwitchId": id,
+		}, nil, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
+				return v, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+			}
+			return v, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DescribeVSwitchAttributes", errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug("DescribeVSwitchAttributes", data)
+		resp := vpc.CreateDescribeVSwitchAttributesResponse()
+		if err := dara.Convert(data, resp); err != nil {
+			return v, err
+		}
+		if resp.VSwitchId != id {
+			return v, errs.WrapErrorf(errs.NotFoundErr("vswitch", id), errs.NotFoundMsg, errs.ProviderERROR)
+		}
+		return *resp, nil
+	}
 	request := vpc.CreateDescribeVSwitchAttributesRequest()
 	request.RegionId = s.client.RegionId
 	request.VSwitchId = id

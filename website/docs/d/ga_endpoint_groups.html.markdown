@@ -105,12 +105,12 @@ output "first_ga_endpoint_group_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Endpoint Group IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Endpoint Group name.
-* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
-* `listener_id` - (Optional, ForceNew) The ID of the listener that is associated with the endpoint group.
-* `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
-* `status` - (Optional, ForceNew) The status of the endpoint group. Valid values: `active`, `configuring`, `creating`, `init`.
+* `ids` - (Optional, List) A list of Endpoint Group IDs.
+* `name_regex` - (Optional) A regex string to filter results by Endpoint Group name.
+* `accelerator_id` - (Required) The ID of the Global Accelerator instance to which the endpoint group will be added.
+* `listener_id` - (Optional) The ID of the listener that is associated with the endpoint group.
+* `endpoint_group_type` - (Optional) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
+* `status` - (Optional) The status of the endpoint group. Valid values: `active`, `configuring`, `creating`, `init`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -118,28 +118,53 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Endpoint Group names.
-* `groups` - A list of Ga Endpoint Groups. Each element contains the following attributes:
-  * `id` - The ID of the Endpoint Group.
-  * `endpoint_group_id` - The endpoint_group_id of the Endpoint Group.
-  * `listener_id` - The ID of the listener that is associated with the endpoint group.
-  * `endpoint_group_region` - The ID of the region where the endpoint group is deployed.
-  * `name` - The name of the endpoint group.
-  * `description` - The description of the endpoint group.
-  * `health_check_interval_seconds` - The interval between two consecutive health checks. Unit: seconds.
-  * `health_check_path` - The path specified as the destination of the targets for health checks.
-  * `health_check_port` - The port that is used for health checks.
-  * `health_check_protocol` - The protocol that is used to connect to the targets for health checks.
-  * `threshold_count` - The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy.
-  * `traffic_percentage` - The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
-  * `endpoint_group_ip_list` - (Available since v1.213.1) The list of endpoint group IP addresses.
-  * `status` - The status of the endpoint group.
-  * `port_overrides` - Mapping between listening port and forwarding port of boarding point.
-    * `endpoint_port` - Forwarding port.
-    * `listener_port` - Listener port.
-  * `endpoint_configurations` - The endpointConfigurations of the endpoint group.
-    * `endpoint` - The IP address or domain name of Endpoint N in the endpoint group.
-	* `probe_protocol` - Probe Protocol.
-	* `probe_port` - Probe Port.
-    * `type` - The type of Endpoint N in the endpoint group.
-    * `weight` - The weight of Endpoint N in the endpoint group.
-    * `enable_clientip_preservation` - Indicates whether client IP addresses are reserved.
+* `groups` - A list of Ga Endpoint Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The ID of the Endpoint Group.
+* `endpoint_group_id` - The endpoint_group_id of the Endpoint Group.
+* `listener_id` - The ID of the listener that is associated with the endpoint group.
+* `endpoint_group_region` - The ID of the region where the endpoint group is deployed.
+* `name` - The name of the endpoint group.
+* `description` - The description of the endpoint group.
+* `health_check_interval_seconds` - The interval between two consecutive health checks. Unit: seconds.
+* `health_check_path` - The path specified as the destination of the targets for health checks.
+* `health_check_port` - The port that is used for health checks.
+* `health_check_protocol` - The protocol that is used to connect to the targets for health checks.
+* `threshold_count` - The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy.
+* `traffic_percentage` - The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
+* `endpoint_group_ip_list` - (Available since v1.213.1) The list of endpoint group IP addresses.
+* `status` - The status of the endpoint group.
+* `port_overrides` - Mapping between listening port and forwarding port of boarding point.
+* `endpoint_configurations` - The endpointConfigurations of the endpoint group.
+
+---
+
+### `groups.port_overrides`
+
+The port_overrides supports the following attributes:
+
+* `endpoint_port` - Forwarding port.
+* `listener_port` - Listener port.
+
+---
+
+### `groups.endpoint_configurations`
+
+The endpoint_configurations supports the following attributes:
+
+* `vpc_id` - The ID of the VPC to which the endpoint belongs.
+* `vswitch_ids` - The IDs of the vSwitches to which the endpoint belongs.
+* `enable_proxy_protocol` - Indicates whether the proxy protocol is enabled.
+* `sub_address` - The sub address of the endpoint.
+* `endpoint` - The IP address or domain name of Endpoint N in the endpoint group.
+* `probe_protocol` - Probe Protocol.
+* `probe_port` - Probe Port.
+* `type` - The type of Endpoint N in the endpoint group.
+* `weight` - The weight of Endpoint N in the endpoint group.
+* `enable_clientip_preservation` - Indicates whether client IP addresses are reserved.

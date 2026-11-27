@@ -108,10 +108,10 @@ The following arguments are supported:
 * `group_id` - (Required, ForceNew) The ID of the instance group where the application is going to be deployed. Set this parameter to all if you want to deploy the application to all groups.
 * `package_version` - (Optional, ForceNew) The version of the application that you want to deploy. It must be unique for every application. The length cannot exceed 64 characters. We recommended you to use a timestamp.
 * `war_url` - (Required, ForceNew) The address to store the uploaded web application (WAR) package for application deployment. This parameter is required when the deployType parameter is set as url.
-* `last_package_version` - (ForceNew) Last package version deployed.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The `key` of the resource supplied above. The value is formulated as `<app_id>:<package_version>`.
+* `last_package_version` - Last package version deployed.

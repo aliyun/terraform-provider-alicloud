@@ -145,9 +145,7 @@ func (s *VpcService) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributes
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVSwitchAttributes(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVSwitchAttributesResponse())
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
 				return WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
@@ -232,9 +230,7 @@ func (s *VpcService) QueryRouteTableById(routeTableId string) (rt vpc.RouteTable
 	request.RouteTableId = routeTableId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouteTables(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeRouteTablesResponse())
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -275,9 +271,7 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 		var raw interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeRouteTables(request)
-			})
+			raw, err = s.client.VpcSdkRpc(request, vpc.CreateDescribeRouteTablesResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -333,9 +327,7 @@ func (s *VpcService) DescribeRouterInterface(id, regionId string) (ri vpc.Router
 	request.Filter = &filter
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouterInterfaces(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeRouterInterfacesResponse())
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -522,9 +514,7 @@ func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
 	request := vpc.CreateDeactivateRouterInterfaceRequest()
 	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DeactivateRouterInterface(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDeactivateRouterInterfaceResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -536,9 +526,7 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	request := vpc.CreateActivateRouterInterfaceRequest()
 	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ActivateRouterInterface(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateActivateRouterInterfaceResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "RouterInterface", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

@@ -93,9 +93,7 @@ func dataSourceInstanceTypeFamiliesRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstanceTypeFamilies(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateDescribeInstanceTypeFamiliesResponse())
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instance_type_families", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

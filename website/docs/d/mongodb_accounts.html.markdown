@@ -32,7 +32,7 @@ output "mongodb_account_id_1" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The ID of the instance.
+* `instance_id` - (Required) The ID of the instance.
 * `account_name` - (Optional) The name of the account. Valid values: `root`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -40,10 +40,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `accounts` - A list of Mongodb Accounts. Each element contains the following attributes:
-  * `account_description` - The description of the account.
-  * `account_name` - The name of the account.
-  * `character_type` - The role of the account. Valid values: `db`, `cs`, `mongos`, `logic`, `normal`.
-  * `id` - The ID of the Account. The value formats as `<instance_id>:<account_name>`.
-  * `instance_id` - The id of the instance to which the account belongs.
-  * `status` - The status of the account. Valid values: `Unavailable`, `Available`.
+* `accounts` - A list of Mongodb Accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_description` - The description of the account.
+* `account_name` - The name of the account.
+* `character_type` - The role of the account. Valid values: `db`, `cs`, `mongos`, `logic`, `normal`.
+* `id` - The ID of the Account. The value formats as `<instance_id>:<account_name>`.
+* `instance_id` - The id of the instance to which the account belongs.
+* `status` - The status of the account. Valid values: `Unavailable`, `Available`.

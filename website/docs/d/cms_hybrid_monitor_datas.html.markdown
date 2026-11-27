@@ -34,21 +34,42 @@ output "cms_metric_rule_template_id_1" {
 The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `namespace` - (Required, ForceNew) The name of the namespace.
-* `prom_sql` - (Required, ForceNew) The name of the metric. Note PromQL statements are supported.
-* `start` - (Required, ForceNew) The timestamp that specifies the beginning of the time range to query.
-* `end` - (Required, ForceNew) The timestamp that specifies the end of the time range to query.
-* `period` - (Optional, ForceNew) The interval at which monitoring data is collected. Unit: seconds.
+* `namespace` - (Required) The name of the namespace.
+* `prom_sql` - (Required) The name of the metric. Note PromQL statements are supported.
+* `start` - (Required) The timestamp that specifies the beginning of the time range to query.
+* `end` - (Required) The timestamp that specifies the end of the time range to query.
+* `period` - (Optional) The interval at which monitoring data is collected. Unit: seconds.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `datas` - A list of Cms Hybrid Monitor Datas. Each element contains the following attributes:
-  * `metric_name` - The name of the monitoring indicator.
-  * `values` - The metric values that are collected at different timestamps.
-    * `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
-    * `value` - The value of the monitoring indicator.
-  * `labels` - The label of the time dimension.
-    * `key` - Label key.
-    * `value` - Label value.
+* `datas` - A list of Cms Hybrid Monitor Datas.
+
+---
+
+### `datas`
+
+The datas supports the following attributes:
+
+* `metric_name` - The name of the monitoring indicator.
+* `values` - The metric values that are collected at different timestamps.
+* `labels` - The label of the time dimension.
+
+---
+
+### `datas.values`
+
+The values supports the following attributes:
+
+* `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
+* `value` - The value of the monitoring indicator.
+
+---
+
+### `datas.labels`
+
+The labels supports the following attributes:
+
+* `key` - Label key.
+* `value` - Label value.

@@ -111,11 +111,15 @@ The following arguments are supported:
 * `rule_id` - (Required, ForceNew) The ID of the rule.
 * `vpcs` - (Required) The List of the VPC. See [`vpcs`](#vpcs) below.
 
+---
+
 ### `vpcs`
 
 The vpcs supports the following:
 
-* `vpc_id` - (Required) The ID of the VPC.  **NOTE:** The VPC that can be associated with the forwarding rule must belong to the same region as the Endpoint.
+* `vpc_id` - (Required) The ID of the VPC.
+
+  -> **NOTE:** The VPC that can be associated with the forwarding rule must belong to the same region as the Endpoint.
 * `region_id` - (Required) The region of the vpc. If not set, the current region will instead of.
 
 ## Attributes Reference

@@ -159,6 +159,8 @@ The following arguments are supported:
 * `target` - (Optional, Computed, Int) Default number of reserved instances. Valid values: `0-10000`. The API requires `target` on every write, so set it when you create the resource; creating the resource without `target` fails. This argument maps to the API `defaultTarget` and is written through both the required `target` field and `defaultTarget`. While a target tracking policy or a scheduled action is active, the service reports the policy-computed runtime target separately and Read does not map that runtime value into `target`, so an update triggered by another argument keeps the configured default instead of turning the temporary policy target into the new default. If an older Provider version already stored a runtime value in state, that legacy value can remain until an authoritative default is available; the next update recovers the default from the same qualifier instead of trusting the legacy value. Omitting the argument is supported only for an existing resource (for example after an import, or after you remove the argument from the configuration), where the next update reads the current default from the same qualifier instead of `0`. If the service response omits `defaultTarget` and no safe fallback is available, the update fails instead of writing `0` as the new default; set `target` explicitly in that case.
 * `target_tracking_policies` - (Optional, List) Metric tracking scaling policy configuration See [`target_tracking_policies`](#target_tracking_policies) below.
 
+---
+
 ### `scheduled_actions`
 
 The scheduled_actions supports the following:
@@ -169,6 +171,8 @@ The scheduled_actions supports the following:
 * `start_time` - (Optional) Policy effective time
 * `target` - (Optional, Int) Number of reserved target resources
 * `time_zone` - (Optional) Time zone.
+
+---
 
 ### `target_tracking_policies`
 
@@ -194,7 +198,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Provision Config.
 * `delete` - (Defaults to 5 mins) Used when delete the Provision Config.

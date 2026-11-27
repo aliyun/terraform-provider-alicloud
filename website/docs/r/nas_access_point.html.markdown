@@ -108,12 +108,16 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) The vSwitch ID.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC.
 
+---
+
 ### `posix_user`
 
 The posix_user supports the following:
 
 * `posix_group_id` - (Optional, ForceNew, Int) The ID of the Posix user group.
 * `posix_user_id` - (Optional, ForceNew, Int) The Posix user ID.
+
+---
 
 ### `root_path_permission`
 
@@ -131,13 +135,20 @@ The following attributes are exported:
 * `access_point_id` - The ID of the access point.
 * `create_time` - The time when the access point was created.
 * `posix_user` - The Posix user.
-  * `posix_secondary_group_ids` - The ID of the second user group.
 * `region_id` - (Available since v1.254.0) The region ID.
 * `status` - The status of the access point.
 
+---
+
+### `posix_user`
+
+The posix_user supports the following attributes:
+
+* `posix_secondary_group_ids` - The ID of the second user group.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Access Point.
 * `delete` - (Defaults to 5 mins) Used when delete the Access Point.

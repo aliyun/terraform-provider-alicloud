@@ -57,6 +57,8 @@ The following attributes are exported:
 * `query_args` - (Optional, Set) The query parameters. See [`query_args`](#query_args) below.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+---
+
 ### `query_args`
 
 The query_args supports the following:
@@ -71,13 +73,20 @@ The query_args supports the following:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Waf Ruleset names.
-* `sets` -  A list of Waf Rulesets. Each element contains the following attributes:
-  * `id` - The ID of the WAF Rule Set.
-  * `ruleset_id` - The ID of the WAF rule set.
-  * `phase` - The WAF operation phase.
-  * `name` - The name of the rule set.
-  * `target` - Protection target type in http_bot.
-  * `status` - The status of the rule set.
-  * `update_time` - The last modification time of the rule set.
-  * `types` - The list of rule types.
-  * `fields` - The list of match objects.
+* `sets` -  A list of Waf Rulesets.
+
+---
+
+### `sets`
+
+The sets supports the following attributes:
+
+* `id` - The ID of the WAF Rule Set.
+* `ruleset_id` - The ID of the WAF rule set.
+* `phase` - The WAF operation phase.
+* `name` - The name of the rule set.
+* `target` - Protection target type in http_bot.
+* `status` - The status of the rule set.
+* `update_time` - The last modification time of the rule set.
+* `types` - The list of rule types.
+* `fields` - The list of match objects.

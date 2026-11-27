@@ -71,8 +71,8 @@ The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `lang` - (Optional, Available since v1.109.0) User language.
-* `resource_record` - (Optional, ForceNew, Deprecated since v1.109.0) The resource record of the Private Zone Record.
-* `rr` - (Optional, ForceNew) The rr of the Private Zone Record.
+* `resource_record` - (Optional, Deprecated since v1.109.0) The resource record of the Private Zone Record.
+* `rr` - (Optional) The rr of the Private Zone Record.
 * `type` - (Required, String) The type of the Private Zone Record. Valid values: `A`, `AAAA`, `CNAME`, `MX`, `PTR`, `SRV`, `TXT`.
 * `value` - (Required) The value of the Private Zone Record.
 * `ttl` - (Optional) The ttl of the Private Zone Record. Default to `60`.
@@ -94,7 +94,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.109.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Private Zone Record.
 * `update` - (Defaults to 1 mins) Used when updating the Private Zone Record.

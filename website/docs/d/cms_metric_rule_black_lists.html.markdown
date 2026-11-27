@@ -31,13 +31,13 @@ output "alicloud_cms_rule_black_list_example_id" {
 
 The following arguments are supported:
 
-* `category` - (ForceNew, Optional) Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
-* `metric_rule_black_list_id` - (ForceNew, Optional) The first ID of the resource
-* `namespace` - (ForceNew, Optional) The data namespace of the cloud service.
-* `ids` - (Optional, ForceNew, Computed) A list of Metric Rule Black List IDs.
-* `order` - (Optional, ForceNew) The order of the Metric Rule Black List.
+* `category` - (Optional) Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
+* `metric_rule_black_list_id` - (Optional) The first ID of the resource
+* `namespace` - (Optional) The data namespace of the cloud service.
+* `ids` - (Optional, Computed) A list of Metric Rule Black List IDs.
+* `order` - (Optional) The order of the Metric Rule Black List.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 
 ## Attributes Reference
 
@@ -45,20 +45,34 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Metric Rule Black List IDs.
 * `names` - A list of name of Metric Rule Black Lists.
-* `lists` - A list of Metric Rule Black List Entries. Each element contains the following attributes:
-  * `id` - The ID of the Metric Rule Black List.
-  * `category` - Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
-  * `create_time` - The timestamp for creating an alert blacklist policy.Unit: milliseconds.
-  * `effective_time` - The effective time range of the alert blacklist policy.
-  * `enable_end_time` - The start timestamp of the alert blacklist policy.Unit: milliseconds.
-  * `enable_start_time` - The end timestamp of the alert blacklist policy.Unit: milliseconds.
-  * `instances` - The list of instances of cloud services specified in the alert blacklist policy.
-  * `is_enable` - The status of the alert blacklist policy. Value:-true: enabled.-false: disabled.
-  * `metric_rule_black_list_id` - The first ID of the resource
-  * `metric_rule_black_list_name` - The name of the alert blacklist policy.
-  * `metrics` - Monitoring metrics in the instance.
-    * `metric_name` - The name of the monitoring indicator.
-    * `resource` - The extended dimension information of the instance. For example, '{"device":"C:"}' indicates that the blacklist policy is applied to all C disks under the ECS instance.
-  * `namespace` - The data namespace of the cloud service.
-  * `scope_type` - The effective range of the alert blacklist policy. Value:-USER: The alert blacklist policy only takes effect in the current Alibaba cloud account.-GROUP: The alert blacklist policy takes effect in the specified application GROUP.
-  * `scope_value` - Application Group ID list. The format is JSON Array.> This parameter is displayed only when 'ScopeType' is 'GROUP.
+* `lists` - A list of Metric Rule Black List Entries.
+
+---
+
+### `lists`
+
+The lists supports the following attributes:
+
+* `id` - The ID of the Metric Rule Black List.
+* `category` - Cloud service classification. For example, Redis includes kvstore_standard, kvstore_sharding, and kvstore_splitrw.
+* `create_time` - The timestamp for creating an alert blacklist policy.Unit: milliseconds.
+* `effective_time` - The effective time range of the alert blacklist policy.
+* `enable_end_time` - The start timestamp of the alert blacklist policy.Unit: milliseconds.
+* `enable_start_time` - The end timestamp of the alert blacklist policy.Unit: milliseconds.
+* `instances` - The list of instances of cloud services specified in the alert blacklist policy.
+* `is_enable` - The status of the alert blacklist policy. Value:-true: enabled.-false: disabled.
+* `metric_rule_black_list_id` - The first ID of the resource
+* `metric_rule_black_list_name` - The name of the alert blacklist policy.
+* `metrics` - Monitoring metrics in the instance.
+* `namespace` - The data namespace of the cloud service.
+* `scope_type` - The effective range of the alert blacklist policy. Value:-USER: The alert blacklist policy only takes effect in the current Alibaba cloud account.-GROUP: The alert blacklist policy takes effect in the specified application GROUP.
+* `scope_value` - Application Group ID list. The format is JSON Array.> This parameter is displayed only when 'ScopeType' is 'GROUP.
+
+---
+
+### `lists.metrics`
+
+The metrics supports the following attributes:
+
+* `metric_name` - The name of the monitoring indicator.
+* `resource` - The extended dimension information of the instance. For example, '{"device":"C:"}' indicates that the blacklist policy is applied to all C disks under the ECS instance.

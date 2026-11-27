@@ -156,6 +156,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `transit_router_attachment_name` - (Deprecated since v1.274.0). Field 'transit_router_attachment_name' has been deprecated from provider version 1.274.0. New field 'transit_router_vpn_attachment_name' instead.
 
+---
+
 ### `zone`
 
 The zone supports the following:
@@ -174,7 +176,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 17 mins) Used when create the Transit Router Vpn Attachment.
 * `delete` - (Defaults to 8 mins) Used when delete the Transit Router Vpn Attachment.

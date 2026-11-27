@@ -36,28 +36,42 @@ output "alb_acl_id_2" {
 
 The following arguments are supported:
 
-* `acl_ids` - (Optional, ForceNew) The acl ids.
-* `acl_name` - (Optional, ForceNew) The ACL Name.
+* `acl_ids` - (Optional) The acl ids.
+* `acl_name` - (Optional) The ACL Name.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Acl IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Acl name.
+* `ids` - (Optional, Computed)  A list of Acl IDs.
+* `name_regex` - (Optional) A regex string to filter results by Acl name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) Resource Group to Which the Number.
-* `status` - (Optional, ForceNew) The state of the ACL. Valid values:`Provisioning`,`Available`and`Configuring`.  `Provisioning`: The ACL is being created. `Available`: The ACL is available. `Configuring`: The ACL is being configured.
+* `resource_group_id` - (Optional) Resource Group to Which the Number.
+* `status` - (Optional) The state of the ACL. Valid values:`Provisioning`,`Available`and`Configuring`.  `Provisioning`: The ACL is being created. `Available`: The ACL is available. `Configuring`: The ACL is being configured.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Acl names.
-* `acls` - A list of Alb Acls. Each element contains the following attributes:
-  * `acl_entries` - ACL Entries.
-    * `description` - Access Control Entries Note Description Length Is Limited to 1 to 256 Characters, Letters, digital, the Dash (-), a Forward Slash (/), Half a Period (.) and Underscores (_), Support Chinese Characters.
-    * `entry` - The resource ID in terraform of Acl.
-    * `status` - The status of the ACL entry. Valid values: `Adding` , `Available` and `Removing`. `Adding`: The entry is being added. `Available`: The entry is added and available. `Removing`: The entry is being removed.
-  * `id` - The ID of the Acl.
-  * `acl_id` - Access Control Policy ID.
-  * `acl_name` - The ACL Name.
-  * `address_ip_version` - Address Protocol Version.
-  * `resource_group_id` - Resource Group to Which the Number.
-  * `status` - The state of the ACL. Valid values:`Provisioning` , `Available` and `Configuring`. `Provisioning`: The ACL is being created. `Available`: The ACL is available. `Configuring`: The ACL is being configured.
+* `acls` - A list of Alb Acls.
+
+---
+
+### `acls`
+
+The acls supports the following attributes:
+
+* `acl_entries` - ACL Entries.
+* `id` - The ID of the Acl.
+* `acl_id` - Access Control Policy ID.
+* `acl_name` - The ACL Name.
+* `address_ip_version` - Address Protocol Version.
+* `resource_group_id` - Resource Group to Which the Number.
+* `status` - The state of the ACL. Valid values:`Provisioning` , `Available` and `Configuring`. `Provisioning`: The ACL is being created. `Available`: The ACL is available. `Configuring`: The ACL is being configured.
+
+---
+
+### `acls.acl_entries`
+
+The acl_entries supports the following attributes:
+
+* `description` - Access Control Entries Note Description Length Is Limited to 1 to 256 Characters, Letters, digital, the Dash (-), a Forward Slash (/), Half a Period (.) and Underscores (_), Support Chinese Characters.
+* `entry` - The resource ID in terraform of Acl.
+* `status` - The status of the ACL entry. Valid values: `Adding` , `Available` and `Removing`. `Adding`: The entry is being added. `Available`: The entry is added and available. `Removing`: The entry is being removed.

@@ -42,10 +42,10 @@ output "cloud_sso_access_configuration_id_2" {
 
 The following arguments are supported:
 
-* `directory_id` - (Required, ForceNew) The ID of the Directory.
+* `directory_id` - (Required) The ID of the Directory.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Access Configuration IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Access Configuration name.
+* `ids` - (Optional, Computed)  A list of Access Configuration IDs.
+* `name_regex` - (Optional) A regex string to filter results by Access Configuration name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -53,18 +53,32 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Access Configuration names.
-* `configurations` - A list of Cloud Sso Access Configurations. Each element contains the following attributes:
-  * `access_configuration_id` - The AccessConfigurationId of the Access Configuration.
-  * `access_configuration_name` - The AccessConfigurationName of the Access Configuration.
-  * `create_time` - The Created Time of the Directory.
-  * `description` - The Description of the Directory.
-  * `directory_id` - The ID of the Directory.
-  * `id` - The ID of the Access Configuration.
-  * `permission_policies` - The Policy List.
-    * `add_time` - The Creation time of policy.
-    * `permission_policy_document` - The Content of Policy.
-    * `permission_policy_name` - The Policy Name of policy.
-    * `permission_policy_type` - The Policy Type of policy. Valid values: `System`, `Inline`.
-  * `relay_state` - The RelayState of the Access Configuration.
-  * `session_duration` - The SessionDuration of the Access Configuration.
-  * `status_notifications` - The StatusNotifications of the Access Configuration.
+* `configurations` - A list of Cloud Sso Access Configurations.
+
+---
+
+### `configurations`
+
+The configurations supports the following attributes:
+
+* `access_configuration_id` - The AccessConfigurationId of the Access Configuration.
+* `access_configuration_name` - The AccessConfigurationName of the Access Configuration.
+* `create_time` - The Created Time of the Directory.
+* `description` - The Description of the Directory.
+* `directory_id` - The ID of the Directory.
+* `id` - The ID of the Access Configuration.
+* `permission_policies` - The Policy List.
+* `relay_state` - The RelayState of the Access Configuration.
+* `session_duration` - The SessionDuration of the Access Configuration.
+* `status_notifications` - The StatusNotifications of the Access Configuration.
+
+---
+
+### `configurations.permission_policies`
+
+The permission_policies supports the following attributes:
+
+* `add_time` - The Creation time of policy.
+* `permission_policy_document` - The Content of Policy.
+* `permission_policy_name` - The Policy Name of policy.
+* `permission_policy_type` - The Policy Type of policy. Valid values: `System`, `Inline`.

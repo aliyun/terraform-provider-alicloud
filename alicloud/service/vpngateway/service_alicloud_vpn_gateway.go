@@ -27,9 +27,7 @@ func (s *VpnGatewayService) DescribeVpnGateway(id string) (v vpc.DescribeVpnGate
 	request.RegionId = s.client.RegionId
 	request.VpnGatewayId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVpnGateway(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVpnGatewayResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidVpnGatewayInstanceId.NotFound"}) {
 			return v, errs.WrapErrorf(errs.NotFoundErr("VpnGateway", id), errs.NotFoundMsg, errs.ProviderERROR)
@@ -49,9 +47,7 @@ func (s *VpnGatewayService) DescribeVpnCustomerGateway(id string) (v vpc.Describ
 	request.RegionId = s.client.RegionId
 	request.CustomerGatewayId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeCustomerGateway(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeCustomerGatewayResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidCustomerGatewayInstanceId.NotFound"}) {
 			return v, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -71,9 +67,7 @@ func (s *VpnGatewayService) DescribeVpnConnection(id string) (v vpc.DescribeVpnC
 	request.RegionId = s.client.RegionId
 	request.VpnConnectionId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVpnConnection(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVpnConnectionResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidVpnConnectionInstanceId.NotFound"}) {
 			return v, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -93,9 +87,7 @@ func (s *VpnGatewayService) DescribeSslVpnServer(id string) (v vpc.SslVpnServer,
 	request.RegionId = s.client.RegionId
 	request.SslVpnServerId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeSslVpnServers(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeSslVpnServersResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidSslVpnServerId.NotFound"}) {
 			return v, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -116,9 +108,7 @@ func (s *VpnGatewayService) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 	request.RegionId = s.client.RegionId
 	request.SslVpnClientCertId = id
 
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeSslVpnClientCert(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeSslVpnClientCertResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidInstanceId.NotFound"}) {
 			return v, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -143,9 +133,7 @@ func (s *VpnGatewayService) DescribeVpnRouteEntry(id string) (v vpc.VpnRouteEntr
 	gatewayId := parts[0]
 
 	request.VpnGatewayId = gatewayId
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVpnRouteEntries(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeVpnRouteEntriesResponse())
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"Forbidden", "InvalidVpnGatewayInstanceId.NotFound", "InvalidVpnInstanceId.NotFound"}) {
 			return v, errs.WrapErrorf(errs.NotFoundErr("VpnRouterEntry", id), errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)

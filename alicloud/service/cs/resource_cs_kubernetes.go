@@ -1030,9 +1030,7 @@ func resourceCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	// set nat gateway
 	natRequest := vpc.CreateDescribeNatGatewaysRequest()
 	natRequest.VpcId = object.VpcId
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeNatGateways(natRequest)
-	})
+	raw, err := client.VpcSdkRpc(natRequest, vpc.CreateDescribeNatGatewaysResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), natRequest.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}

@@ -52,15 +52,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Image Component names.
-* `components` - A list of Ecs Image Components. Each element contains the following attributes:
-  * `component_type` - The type of the image component.
-  * `content` - The content of the image component.
-  * `create_time` - The time when the image component was created.
-  * `description` - The description of the image component.
-  * `id` - The ID of the Image Component.
-  * `image_component_id` - The ID of the image component.
-  * `image_component_name` - The name of the image component.
-  * `owner` - The type of the image component.
-  * `resource_group_id` - The ID of the resource group.
-  * `system_type` - The operating system type supported by the image component.
-  * `tags` - List of label key-value pairs.
+* `components` - A list of Ecs Image Components.
+
+---
+
+### `components`
+
+The components supports the following attributes:
+
+* `component_type` - The type of the image component.
+* `content` - The content of the image component.
+* `create_time` - The time when the image component was created.
+* `description` - The description of the image component.
+* `id` - The ID of the Image Component.
+* `image_component_id` - The ID of the image component.
+* `image_component_name` - The name of the image component.
+* `owner` - The type of the image component.
+* `resource_group_id` - The ID of the resource group.
+* `system_type` - The operating system type supported by the image component.
+* `tags` - List of label key-value pairs.

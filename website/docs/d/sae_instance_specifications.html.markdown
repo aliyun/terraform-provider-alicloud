@@ -29,20 +29,25 @@ output "sae_instance_specification_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Instance Specification IDs.
+* `ids` - (Optional, Computed)  A list of Instance Specification IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `specifications` - A list of Sae Instance Specifications. Each element contains the following attributes:
-  * `cpu` - CPU Size, Specifications for Micronucleus.
-  * `enable` - Whether the instance is available. The value description is as follows:
-    * `true` - indicates that it is available.
-    * `false` - means unavailable.
-  * `id` - The ID of the Instance Specification.
-  * `instance_specification_id` - The first ID of the resource.
-  * `memory` - The Memory specifications for the MB.
-  * `spec_info` - The specification configuration name.
-  * `version` - The specification configuration version.
+* `specifications` - A list of Sae Instance Specifications.
+
+---
+
+### `specifications`
+
+The specifications supports the following attributes:
+
+* `cpu` - CPU Size, Specifications for Micronucleus.
+* `enable` - Whether the instance is available. `true` indicates that it is available, and `false` means unavailable.
+* `id` - The ID of the Instance Specification.
+* `instance_specification_id` - The first ID of the resource.
+* `memory` - The Memory specifications for the MB.
+* `spec_info` - The specification configuration name.
+* `version` - The specification configuration version.

@@ -66,7 +66,9 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 The following arguments are supported:
 
 * `auto_renew` - (Optional) Specifies whether to enable auto-renewal. Unit: months. Valid values: `true` and `false`.
-* `auto_renew_period` - (Optional) The auto renew period. Valid values: `1`,`3`, `6`, `12`, `24`, `36`. **NOTE:** The attribute `auto_renew` is valid when the attribute is `true`.
+* `auto_renew_period` - (Optional) The auto renew period. Valid values: `1`,`3`, `6`, `12`, `24`, `36`.
+
+  -> **NOTE:** The attribute `auto_renew` is valid when the attribute is `true`.
 * `data_disk_size` - (Optional) The size of the data disk. Unit: GB. Valid values: `0` to `16380`.
 * `image_id` - (Required) The ID of the image.  You can use the `alicloud_simple_application_server_images` to query the available images in the specified region. The value must be an integral multiple of 20.
 * `instance_name` - (Optional) The name of the simple application server.
@@ -84,7 +86,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `update` - (Defaults to 5 mins) Used when update the Instance.

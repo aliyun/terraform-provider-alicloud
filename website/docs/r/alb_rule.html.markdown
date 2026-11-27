@@ -192,6 +192,8 @@ The following arguments are supported:
 * `rule_actions` - (Required, Set) The actions of the forwarding rules. See [`rule_actions`](#rule_actions) below.
 * `rule_conditions` - (Required, Set) The conditions of the forwarding rule. See [`rule_conditions`](#rule_conditions) below.
 
+---
+
 ### `rule_actions`
 
 The rule_actions supports the following:
@@ -218,6 +220,8 @@ The rule_actions supports the following:
 * `traffic_mirror_config` - (Optional, Set, Available since v1.162.0) The Traffic mirroring. See [`traffic_mirror_config`](#rule_actions-traffic_mirror_config) below.
 * `cors_config` - (Optional, Set, Available since v1.205.0) Request forwarding based on CORS. See [`cors_config`](#rule_actions-cors_config) below.
 
+---
+
 ### `rule_actions-fixed_response_config`
 
 The fixed_response_config supports the following:
@@ -226,12 +230,16 @@ The fixed_response_config supports the following:
 * `content_type` - (Optional) The format of the fixed response. Valid values: `text/plain`, `text/css`, `text/html`, `application/javascript`, and `application/json`.
 * `http_code` - (Optional) The HTTP status code of the response. The code must be an `HTTP_2xx`, `HTTP_4xx` or `HTTP_5xx.x` is a digit.
 
+---
+
 ### `rule_actions-forward_group_config`
 
 The forward_group_config supports the following:
 
 * `server_group_tuples` - (Optional, Set) The destination server group to which requests are forwarded. See [`server_group_tuples`](#rule_actions-forward_group_config-server_group_tuples) below.
 * `server_group_sticky_session` - (Optional, Set, Available since v1.179.0) The configuration of session persistence for server groups. See [`server_group_sticky_session`](#rule_actions-forward_group_config-server_group_sticky_session) below.
+
+---
 
 ### `rule_actions-forward_group_config-server_group_tuples`
 
@@ -242,12 +250,16 @@ The server_group_tuples supports the following:
 
   -> **NOTE:** `weight` is required when the number of `server_group_tuples` is greater than 2. From version 1.264.0, `weight` can be set to `0`.
 
+---
+
 ### `rule_actions-forward_group_config-server_group_sticky_session`
 
 The server_group_sticky_session supports the following:
 
 * `enabled` - (Optional, Bool, Available since v1.179.0) Whether to enable session persistence.
 * `timeout` - (Optional, Int, Available since v1.179.0) The timeout period. Unit: seconds. Valid values: `1` to `86400`. Default value: `1000`.
+
+---
 
 ### `rule_actions-insert_header_config`
 
@@ -271,6 +283,8 @@ The insert_header_config supports the following:
   - `ReferenceHeader`: uses a field of the user request header.
   - `SystemDefined`: a system value.
 
+---
+
 ### `rule_actions-remove_header_config`
 
 The remove_header_config supports the following:
@@ -278,6 +292,8 @@ The remove_header_config supports the following:
 * `key` - (Optional) The name of the removed header field. It can be 1 to 40 characters in length and supports upper and lower case letters a to z, numbers, underscores (_), and dashes (-). Header field names cannot be used repeatedly in RemoveHeader.
   * Request Direction: The header name cannot be set to the following fields (case insensitive):slb-id, slb-ip, x-forwarded-for, x-forwarded-proto, x-forwarded-eip, x-forwarded-port, x-forwarded-client-srcport, connection, upgrade, content-length, transfer-encoding, keep-alive, te, host, cookie, remoteip, authority, and x-forwarded-host.
   * Response Direction: The header name cannot be set to the following fields (case insensitive):connection, upgrade, content-length, transfer-encoding.
+
+---
 
 ### `rule_actions-redirect_config`
 
@@ -293,6 +309,8 @@ The redirect_config supports the following:
 
 * `query` - (Optional) The query string of the request to be redirected. The query string must be `1` to `128` characters in length, can contain letters and printable characters. It cannot contain the following special characters: # [ ] { } \ | < > &. Default value: ${query}. You can also reference ${host}, ${protocol}, and ${port}. Each variable can appear at most once. You can use the preceding variables at the same time, or use them together with a valid string.
 
+---
+
 ### `rule_actions-rewrite_config`
 
 The rewrite_config supports the following:
@@ -300,6 +318,8 @@ The rewrite_config supports the following:
 * `host` - (Optional) The host name of the destination to which requests are redirected within ALB. The host name must be 3 to 128 characters in length, and can contain letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?). The host name must contain at least one period (.), and cannot start or end with a period (.). The rightmost domain label can contain only letters, asterisks (*) and question marks (?) and cannot contain digits or hyphens (-). Other domain labels cannot start or end with a hyphen (-). You can include asterisks (*) and question marks (?) anywhere in a domain label. Default value: ${host}. You cannot use this value with other characters at the same time.
 * `path` - (Optional) The path to which requests are to be redirected within ALB. The path must be 1 to 128 characters in length, and start with a forward slash (/). The path can contain letters, digits, asterisks (*), question marks (?)and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ”. The path is case-sensitive. Default value: ${path}. This value can be used only once. You can use it with a valid string.
 * `query` - (Optional) The query string of the request to be redirected within ALB. The query string must be 1 to 128 characters in length, can contain letters and printable characters. It cannot contain the following special characters: # [ ] { } \ | < > &. Default value: ${query}. This value can be used only once. You can use it with a valid string.
+
+---
 
 ### `rule_actions-traffic_limit_config`
 
@@ -310,6 +330,8 @@ The traffic_limit_config supports the following:
 
   -> **NOTE:** If `qps` is also configured, the value of `per_ip_qps` must be smaller than the value of `qps`.
 
+---
+
 ### `rule_actions-traffic_mirror_config`
 
 The traffic_mirror_config supports the following:
@@ -317,17 +339,23 @@ The traffic_mirror_config supports the following:
 * `target_type` - (Optional) The Mirror target type.
 * `mirror_group_config` - (Optional, Set) The Traffic is mirrored to the server group. See [`mirror_group_config`](#rule_actions-traffic_mirror_config-mirror_group_config) below.
 
+---
+
 ### `rule_actions-traffic_mirror_config-mirror_group_config`
 
 The mirror_group_config supports the following:
 
 * `server_group_tuples` - (Optional, Set) The destination server group to which requests are forwarded. See [`server_group_tuples`](#rule_actions-traffic_mirror_config-mirror_group_config-server_group_tuples) below.
 
+---
+
 ### `rule_actions-traffic_mirror_config-mirror_group_config-server_group_tuples`
 
 The server_group_tuples supports the following:
 
 * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
+
+---
 
 ### `rule_actions-cors_config`
 
@@ -339,6 +367,8 @@ The cors_config supports the following:
 * `expose_headers` - (Optional, List) The headers that can be exposed.
 * `allow_credentials` - (Optional) Specifies whether credentials can be passed during CORS operations. Valid values: `on`, `off`.
 * `max_age` - (Optional, Int) The maximum cache time of preflight requests in the browser. Unit: seconds. Valid values: `-1` to `172800`.
+
+---
 
 ### `rule_conditions`
 
@@ -367,11 +397,15 @@ The rule_conditions supports the following:
 * `query_string_config` - (Optional, Set) The configuration of the query string. See [`query_string_config`](#rule_conditions-query_string_config) below.
 * `source_ip_config` - (Optional, Set, Available since v1.162.0) The Based on source IP traffic matching. Required and valid when Type is SourceIP. See [`source_ip_config`](#rule_conditions-source_ip_config) below.
 
+---
+
 ### `rule_conditions-cookie_config`
 
 The cookie_config supports the following:
 
 * `values` - (Optional, Set) The values of the cookie. See [`values`](#rule_conditions-cookie_config-values) below.
+
+---
 
 ### `rule_conditions-cookie_config-values`
 
@@ -380,12 +414,16 @@ The values supports the following:
 * `key` - (Optional) The key of the cookie.
 * `value` - (Optional) The value of the cookie.
 
+---
+
 ### `rule_conditions-header_config`
 
 The header_config supports the following:
 
 * `key` - (Optional) The key of the header field. The key must be 1 to 40 characters in length, and can contain letters, digits, hyphens (-) and underscores (_). The key does not support Cookie or Host.
 * `values` - (Optional, List) The value of the header field. The value must be 1 to 128 characters in length, and can contain lowercase letters, printable ASCII characters whose values are ch >= 32 && ch < 127, asterisks (*), and question marks (?). The value cannot start or end with a space.
+
+---
 
 ### `rule_conditions-response_header_config`
 
@@ -394,11 +432,15 @@ The response_header_config supports the following:
 * `key` - (Optional) The key of the header field. The key must be 1 to 40 characters in length, and can contain letters, digits, hyphens (-) and underscores (_). The key does not support Cookie or Host.
 * `values` - (Optional, List) The value of the header field. The value must be 1 to 128 characters in length, and can contain lowercase letters, printable ASCII characters whose values are ch >= 32 && ch < 127, asterisks (*), and question marks (?). The value cannot start or end with a space.
 
+---
+
 ### `rule_conditions-response_status_code_config`
 
 The response_status_code_config supports the following:
 
 * `values` - (Optional, List) Response status code list.
+
+---
 
 ### `rule_conditions-host_config`
 
@@ -408,11 +450,15 @@ The host_config supports the following:
 
   -> **NOTE:** The host name must meet the following rules: The hostname must be 3 to 128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?). The host name must contain at least one period (.), and cannot start or end with a period (.). The rightmost field can contain only letters and wildcards, and cannot contain digits or hyphens (-). Other fields cannot start or end with a hyphen (-). You can enter asterisks (*) and question marks (?) anywhere in a field.
 
+---
+
 ### `rule_conditions-method_config`
 
 The method_config supports the following:
 
 * `values` - (Optional, List) The request method. Valid values: `HEAD`, `GET`, `POST`, `OPTIONS`, `PUT`, `PATCH`, and `DELETE`.
+
+---
 
 ### `rule_conditions-path_config`
 
@@ -420,11 +466,15 @@ The path_config supports the following:
 
 * `values` - (Optional, List) The path of the request to be forwarded. The path must be 1 to 128 characters in length and must start with a forward slash (/). The path can contain letters, digits, and the following special characters: $ - _ . + / & ~ @ :. It cannot contain the following special characters: " % # ; ! ( ) [ ] ^ , ". The value is case-sensitive, and can contain asterisks (*) and question marks (?).
 
+---
+
 ### `rule_conditions-query_string_config`
 
 The query_string_config supports the following:
 
 * `values` - (Optional, Set) The query string. See [`values`](#rule_conditions-query_string_config-values) below.
+
+---
 
 ### `rule_conditions-query_string_config-values`
 
@@ -432,6 +482,8 @@ The values supports the following:
 
 * `key` - (Optional) The key must be 1 to 100 characters in length, and can contain lowercase letters, printable characters, asterisks (*), and question marks (?). The key cannot contain spaces or the following special characters: # [ ] { } \ | < > &.
 * `value` - (Optional) The value must be 1 to 128 characters in length, and can contain lowercase letters, printable characters, asterisks (*), and question marks (?). The value cannot contain spaces or the following special characters: # [ ] { } \ | < > &.
+
+---
 
 ### `rule_conditions-source_ip_config`
 
@@ -448,7 +500,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Rule.
 * `update` - (Defaults to 2 mins) Used when update the Rule.

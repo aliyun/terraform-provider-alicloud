@@ -120,9 +120,9 @@ output "arms_env_service_monitors_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Addon Release IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Addon Release name.
-* `environment_id` - (Required, ForceNew) The environment ID.
+* `ids` - (Optional, List) A list of ARMS Addon Release IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Addon Release name.
+* `environment_id` - (Required) The environment ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -130,15 +130,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Addon Release names.
-* `releases` - A list of ARMS Addon Releases. Each element contains the following attributes:
-  * `id` - The ID of the Addon Release. It formats as `<environment_id>:<addon_release_name>`.
-  * `addon_name` - The name of the add-on.
-  * `addon_release_name` - The name of the Addon Release.
-  * `addon_version` - The version of the add-on.
-  * `alert_rule_count` - The number of alert rules.
-  * `aliyun_lang` - The language.
-  * `create_time` - The time when the add-on was created.
-  * `dashboard_count` - The number of dashboards.
-  * `environment_id` - The environment ID.
-  * `exporter_count` - The number of exporters.
-  * `region_id` - The region ID.
+* `releases` - A list of ARMS Addon Releases.
+
+---
+
+### `releases`
+
+The releases supports the following attributes:
+
+* `id` - The ID of the Addon Release. It formats as `<environment_id>:<addon_release_name>`.
+* `addon_name` - The name of the add-on.
+* `addon_release_name` - The name of the Addon Release.
+* `addon_version` - The version of the add-on.
+* `alert_rule_count` - The number of alert rules.
+* `aliyun_lang` - The language.
+* `create_time` - The time when the add-on was created.
+* `dashboard_count` - The number of dashboards.
+* `environment_id` - The environment ID.
+* `exporter_count` - The number of exporters.
+* `region_id` - The region ID.

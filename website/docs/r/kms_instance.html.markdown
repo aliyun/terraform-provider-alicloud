@@ -278,6 +278,8 @@ The following arguments are supported:
 
   ~> **NOTE:** Since v1.290.0 `vswitch_ids` and `zone_ids` are ordered lists instead of sets. Previously the provider reordered each list independently before submitting it, which could pair a vSwitch with a zone it does not belong to. The change applies to instances created from v1.290.0 on. Existing instances are not replaced by the upgrade and keep the pairing they were created with: the API does not report the order back, so a difference in order alone never produces a diff, and reordering either list in the configuration of an existing instance has no effect. Re-pairing an existing instance means recreating it, with `terraform apply -replace`.
 
+---
+
 ### `bind_vpcs`
 
 The bind_vpcs supports the following:

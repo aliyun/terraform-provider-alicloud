@@ -104,6 +104,8 @@ The following arguments are supported:
   - The length must be between 2 and 64 characters.
 * `status` - (Optional, Computed, Available since v1.271.0) The status of the scheduled SQL job.
 
+---
+
 ### `schedule`
 
 The schedule supports the following:
@@ -119,6 +121,8 @@ Cron: Uses a cron expression to specify the interval and checks query and analys
 Weekly: Checks query and analysis results once at a fixed time on a specific day of the week.
 Daily: Checks query and analysis results once at a fixed time each day.
 Hourly: Checks query and analysis results once every hour.
+
+---
 
 ### `scheduled_sql_configuration`
 
@@ -150,7 +154,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Scheduled Sql.
 * `delete` - (Defaults to 5 mins) Used when delete the Scheduled Sql.

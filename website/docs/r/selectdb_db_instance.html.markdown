@@ -80,6 +80,8 @@ The following arguments are supported:
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `desired_security_ip_lists` - (Optional) The modified IP address whitelists. See [`desired_security_ip_lists`](#desired_security_ip_lists) below.
 
+---
+
 ### `desired_security_ip_lists`
 
 The desired_security_ip_lists supports the following:
@@ -112,6 +114,8 @@ The following attributes are exported:
 * `instance_net_infos` - The net infos for instances.
 * `security_ip_lists` - The details about each IP address whitelist returned.
 
+---
+
 ### `instance_net_infos`
 
 The instance_net_infos supports the following:
@@ -123,12 +127,16 @@ The instance_net_infos supports the following:
 * `vswitch_id` - The ID of vswitch.
 * `port_list` - A list for port provides SelectDB service.
 
+---
+
 ### `instance_net_infos.port_list`
 
 The port_list supports the following:
 
 * `protocol` - The protocol of the port.
 * `port` - The port that is used to connect.
+
+---
 
 ### `security_ip_lists`
 
@@ -142,7 +150,7 @@ The security_ip_lists supports the following:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the SelectDB DBInstance (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 30 mins) Used when update the SelectDB DBInstance.

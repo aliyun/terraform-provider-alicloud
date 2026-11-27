@@ -69,7 +69,7 @@ func resourceAliCloudOssBucketPublicAccessBlockCreate(d *schema.ResourceData, me
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketPublicAccessBlock", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -148,7 +148,7 @@ func resourceAliCloudOssBucketPublicAccessBlockUpdate(d *schema.ResourceData, me
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketPublicAccessBlock", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -183,7 +183,7 @@ func resourceAliCloudOssBucketPublicAccessBlockDelete(d *schema.ResourceData, me
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("DELETE", "2019-05-17", "DeleteBucketPublicAccessBlock", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}

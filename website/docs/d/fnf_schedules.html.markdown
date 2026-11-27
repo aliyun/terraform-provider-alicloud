@@ -33,10 +33,10 @@ output "first_fnf_schedule_id" {
 
 The following arguments are supported:
 
-* `flow_name` - (Required, ForceNew) The name of the flow bound to the time-based schedule you want to create.
-* `ids` - (Optional, ForceNew, Computed) A list of Schedule IDs.
-* `limit` - (Optional, ForceNew, Available in v1.110.0+) The number of resource queries.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Schedule name.
+* `flow_name` - (Required) The name of the flow bound to the time-based schedule you want to create.
+* `ids` - (Optional, Computed) A list of Schedule IDs.
+* `limit` - (Optional, Available in v1.110.0+) The number of resource queries.
+* `name_regex` - (Optional) A regex string to filter results by Schedule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,12 +44,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Schedule names.
-* `schedules` - A list of Fnf Schedules. Each element contains the following attributes:
-  * `cron_expression` - The CRON expression of the time-based schedule to be created.
-  * `description` - The description of the time-based schedule to be created.
-  * `enable` - Specifies whether to enable the time-based schedule you want to create.
-  * `id` - The ID of the Schedule.
-  * `last_modified_time` - The time when the time-based schedule was last updated.
-  * `payload` - The trigger message of the time-based schedule to be created. It must be in JSON object format.
-  * `schedule_id` - The ID of the time-based schedule.
-  * `schedule_name` - The name of the time-based schedule to be created.
+* `schedules` - A list of Fnf Schedules.
+
+---
+
+### `schedules`
+
+The schedules supports the following attributes:
+
+* `cron_expression` - The CRON expression of the time-based schedule to be created.
+* `description` - The description of the time-based schedule to be created.
+* `enable` - Specifies whether to enable the time-based schedule you want to create.
+* `id` - The ID of the Schedule.
+* `last_modified_time` - The time when the time-based schedule was last updated.
+* `payload` - The trigger message of the time-based schedule to be created. It must be in JSON object format.
+* `schedule_id` - The ID of the time-based schedule.
+* `schedule_name` - The name of the time-based schedule to be created.

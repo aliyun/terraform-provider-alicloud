@@ -71,12 +71,26 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Domain Config names.
-* `configs` -  A list of Domain Configs. Each element contains the following attributes:
-  * `id` - The ID of the Domain Config.
-  * `function_name` - The name of the feature.
-  * `config_id` - The ID of the feature configuration.
-  * `parent_id` - The ID of the rule condition.
-  * `status` - The status of the configuration.
-  * `function_args` - The args of the domain config.
-    * `arg_name` - The name of arg.
-    * `arg_value` - The value of arg.
+* `configs` -  A list of Domain Configs.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `id` - The ID of the Domain Config.
+* `function_name` - The name of the feature.
+* `config_id` - The ID of the feature configuration.
+* `parent_id` - The ID of the rule condition.
+* `status` - The status of the configuration.
+* `function_args` - The args of the domain config.
+
+---
+
+### `configs.function_args`
+
+The function_args supports the following attributes:
+
+* `arg_name` - The name of arg.
+* `arg_value` - The value of arg.

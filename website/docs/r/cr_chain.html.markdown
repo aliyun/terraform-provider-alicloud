@@ -182,10 +182,18 @@ The following arguments are supported:
 
 * `chain_name` - (Required) The name of delivery chain. The length of the name is 1-64 characters, lowercase English letters and numbers, and the separators "_", "-", "." can be used, noted that the separator cannot be at the first or last position.
 * `description` - (Optional) The description delivery chain.
-* `repo_name` - (Optional, ForceNew) The name of CR Enterprise Edition repository. **NOTE:** This parameter must specify a correct value, otherwise the created resource will be incorrect.
-* `repo_namespace_name` - (Optional, ForceNew) The name of CR Enterprise Edition namespace. **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
+* `repo_name` - (Optional, ForceNew) The name of CR Enterprise Edition repository.
+
+  -> **NOTE:** This parameter must specify a correct value, otherwise the created resource will be incorrect.
+* `repo_namespace_name` - (Optional, ForceNew) The name of CR Enterprise Edition namespace.
+
+  -> **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
 * `instance_id` - (Required, ForceNew) The ID of CR Enterprise Edition instance.
-* `chain_config` - (Optional) The configuration of delivery chain. See [`chain_config`](#chain_config) below. **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
+* `chain_config` - (Optional) The configuration of delivery chain. See [`chain_config`](#chain_config) below.
+
+  -> **NOTE:** This parameter must specify the correct value, otherwise the created resource will be incorrect.
+
+---
 
 ### `chain_config`
 
@@ -196,6 +204,8 @@ The `chain_config` block supports the following:
 
   -> **NOTE:** The `from` and `to` fields are all fixed, and their structure and the value of `node_name` are fixed. You can refer to the template given in the example for configuration.
 
+---
+
 ### `chain_config-routers`
 
 The `routers` block supports the following:
@@ -203,17 +213,23 @@ The `routers` block supports the following:
 * `from` - (Optional) Source node. See [`from`](#chain_config-routers-from) below.
 * `to` - (Optional) Destination node. See [`to`](#chain_config-routers-to) below.
 
+---
+
 ### `chain_config-routers-from`
 
 The `from` block supports the following:
 
 * `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
 
+---
+
 ### `chain_config-routers-to`
 
 The `to` block supports the following:
 
 * `node_name` - (Optional) The name of node. Valid values: `DOCKER_IMAGE_BUILD`, `DOCKER_IMAGE_PUSH`, `VULNERABILITY_SCANNING`, `ACTIVATE_REPLICATION`, `TRIGGER`, `SNAPSHOT`, `TRIGGER_SNAPSHOT`.
+
+---
 
 ### `chain_config-nodes`
 
@@ -223,11 +239,17 @@ The `nodes` block supports the following:
 * `enable` - (Optional) Whether to enable the delivery chain node. Valid values: `true`, `false`.
 * `node_config` - (Optional) The configuration of delivery chain node. See [`node_config`](#chain_config-nodes-node_config) below.
 
+---
+
 ### `chain_config-nodes-node_config`
 
 The `node_config` block supports the following:
 
-* `deny_policy` - (Optional) Blocking rules for scanning nodes in delivery chain nodes. See [`deny_policy`](#chain_config-nodes-node_config-deny_policy) below. **Note:** When `node_name` is `VULNERABILITY_SCANNING`, the parameters in `deny_policy` need to be filled in.
+* `deny_policy` - (Optional) Blocking rules for scanning nodes in delivery chain nodes. See [`deny_policy`](#chain_config-nodes-node_config-deny_policy) below.
+
+  -> **NOTE:** When `node_name` is `VULNERABILITY_SCANNING`, the parameters in `deny_policy` need to be filled in.
+
+---
 
 ### `chain_config-nodes-node_config-deny_policy`
 

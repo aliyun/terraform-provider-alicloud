@@ -65,17 +65,19 @@ data "alicloud_cloud_control_prices" "default" {
 
 The following arguments are supported:
 
-* `desire_attributes` - (Optional, ForceNew) This property represent the detailed configuration of the Resource which you are going to get price.  Give same content as DesireAttributes of the 'Resource' Resource when start Create operation. 'PaymentType' is necessary when in DesireAttributes.  Here is a probably example when you get the price of SLB LoadBalancer:```json{"LoadBalancerName": "cc-test","Bandwidth": 6,"PaymentType": "PayAsYouGo","AddressType": "internet","LoadBalancerSpec": "slb.s3.small","InternetChargeType": "paybybandwidth"} Only flat string values are supported. It conflicts with `desire_attributes_json`.
-* `desire_attributes_json` - (Optional, ForceNew, Available since v1.295.0) The desired attributes in JSON format, which supports nested objects and arrays, such as the `SystemDisk` of an ECS instance. It has the same purpose as `desire_attributes` and conflicts with it. Here is a probably example when you get the price of an ECS instance:```json{"InstanceType": "ecs.g7.large", "SystemDisk": {"Category": "cloud_essd"}}
-* `product` - (Required, ForceNew) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
-* `resource_code` - (Required, ForceNew) Resource Code, if there is a parent resource, split with `::`, such as VPC::VSwitch. The supported resource Code can be obtained from the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `desire_attributes` - (Optional) This property represent the detailed configuration of the Resource which you are going to get price.  Give same content as DesireAttributes of the 'Resource' Resource when start Create operation. 'PaymentType' is necessary when in DesireAttributes.  Here is a probably example when you get the price of SLB LoadBalancer:```json{"LoadBalancerName": "cc-test","Bandwidth": 6,"PaymentType": "PayAsYouGo","AddressType": "internet","LoadBalancerSpec": "slb.s3.small","InternetChargeType": "paybybandwidth"} Only flat string values are supported. It conflicts with `desire_attributes_json`.
+* `desire_attributes_json` - (Optional, Available since v1.295.0) The desired attributes in JSON format, which supports nested objects and arrays, such as the `SystemDisk` of an ECS instance. It has the same purpose as `desire_attributes` and conflicts with it. Here is a probably example when you get the price of an ECS instance:```json{"InstanceType": "ecs.g7.large", "SystemDisk": {"Category": "cloud_essd"}}
+* `product` - (Required) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `resource_code` - (Required) Resource Code, if there is a parent resource, split with `::`, such as VPC::VSwitch. The supported resource Code can be obtained from the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `prices` - A list of Price Entries. Each element contains the following attributes:
+
+---
 
 ### `prices`
 
@@ -88,6 +90,8 @@ The prices supports the following attributes:
 * `promotion_details` - Offer Details
 * `trade_price` - Preferential price
 
+---
+
 ### `prices.module_details`
 
 The module_details supports the following attributes:
@@ -98,6 +102,8 @@ The module_details supports the following attributes:
 * `module_name` - Pricing Module Name.
 * `original_cost` - Original Price.
 * `price_type` - Price Type.
+
+---
 
 ### `prices.promotion_details`
 

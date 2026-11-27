@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of Snat Entries owned by an Alibaba Cloud account.
 
--> **NOTE:** Available since 1.37.0+.
+-> **NOTE:** Available since v1.37.0.
 
 ## Example Usage
 
@@ -65,14 +65,14 @@ data "alicloud_snat_entries" "foo" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew) A list of Snat Entries IDs.
-* `snat_ip` - (Optional, ForceNew) The public IP of the Snat Entry.
-* `source_cidr` - (Optional, ForceNew) The source CIDR block of the Snat Entry.
-* `snat_table_id` - (Required, ForceNew) The ID of the Snat table.
-* `name_regex` - (Optional, ForceNew, Available since 1.119.1+) A regex string to filter results by the resource name. 
-* `snat_entry_name` - (Optional, ForceNew, Available since 1.119.1+) The name of snat entry.
-* `source_vswitch_id` - (Optional, ForceNew, Available since 1.119.1+) The source vswitch ID.
-* `status` - (Optional, ForceNew, Available since 1.119.1+) The status of the Snat Entry. Valid values: `Available`, `Deleting` and `Pending`.
+* `ids` - (Optional) A list of Snat Entries IDs.
+* `snat_ip` - (Optional) The public IP of the Snat Entry.
+* `source_cidr` - (Optional) The source CIDR block of the Snat Entry.
+* `snat_table_id` - (Required) The ID of the Snat table.
+* `name_regex` - (Optional, Available since 1.119.1+) A regex string to filter results by the resource name.
+* `snat_entry_name` - (Optional, Available since 1.119.1+) The name of snat entry.
+* `source_vswitch_id` - (Optional, Available since 1.119.1+) The source vswitch ID.
+* `status` - (Optional, Available since 1.119.1+) The status of the Snat Entry. Valid values: `Available`, `Deleting` and `Pending`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -81,12 +81,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - (Optional) A list of Snat Entries IDs.
 * `names` - A list of Snat Entries names.
-* `entries` - A list of Snat Entries. Each element contains the following attributes:
-  * `id` - The ID of the Snat Entry.
-  * `snat_ip` - The public IP of the Snat Entry.
-  * `source_cidr` - The source CIDR block of the Snat Entry.
-  * `status` - The status of the Snat Entry.
-  * `snat_entry_id` - The ID of snat entry.
-  * `snat_entry_name` - The name of snat entry.
-  * `source_vswitch_id` - The source vswitch ID.
+* `entries` - A list of Snat Entries.
 
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `id` - The ID of the Snat Entry.
+* `snat_ip` - The public IP of the Snat Entry.
+* `source_cidr` - The source CIDR block of the Snat Entry.
+* `status` - The status of the Snat Entry.
+* `snat_entry_id` - The ID of snat entry.
+* `snat_entry_name` - The name of snat entry.
+* `source_vswitch_id` - The source vswitch ID.

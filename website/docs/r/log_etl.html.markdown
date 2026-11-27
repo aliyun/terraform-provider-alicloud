@@ -122,12 +122,17 @@ The following arguments are supported:
 
 * `from_time` - (Optional) The start time of the processing job, if not set the value is 0, indicates to start processing from the oldest data.
 * `to_time` - (Optional) Deadline of processing job, if not set the value is 0, indicates that new data will be processed continuously.
+
+  -> **NOTE:** `from_time` and `to_time` no modification allowed after successful creation.
+
 * `script` - (Required) Processing operation grammar.
 * `version` - (Optional) Log etl job version. the default value is `2`.
 * `logstore` - (Required) The source logstore of the processing job.
 * `parameters` - (Optional) Advanced parameter configuration of processing operations.
 * `role_arn` - (Optional) Sts role info under source logstore. `role_arn` and `(access_key_id, access_key_secret)` fill in at most one. If you do not fill in both, then you must fill in `(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context)` to use KMS to get the key pair.
 * `etl_sinks` - (Required) Target logstore configuration for delivery after data processing. See [`etl_sinks`](#etl_sinks) below.
+
+---
 
 ### `etl_sinks`
 
@@ -145,8 +150,6 @@ The etl_sinks supports the following:
 * `type` - (Optional)  ETL sinks type, the default value is AliyunLOG.
 * `datasets` - (Optional, Available since v1.261.0) LogETL datasets.
 
--> **Note:** `from_time` and `to_time` no modification allowed after successful creation.
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -155,7 +158,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when Creating LogEtl instance.
 * `delete` - (Defaults to 3 mins) Used when terminating the LogEtl instance.

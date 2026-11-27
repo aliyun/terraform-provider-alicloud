@@ -63,7 +63,11 @@ The following arguments are supported:
   - `FOLDER`: Folder account group.
   - `CUSTOM`: Custom account group.
 * `description` - (Required) The description of the account group.
-* `folder_id` - (Optional, Available since v1.262.0) The ID of the attached folder. You can specify multiple folder IDs. Separate the IDs with commas (,). **NOTE:** If `aggregator_type` is set to `FOLDER`, `folder_id` is required.
+* `folder_id` - (Optional, Available since v1.262.0) The ID of the attached folder. You can specify multiple folder IDs. Separate the IDs with commas (,).
+
+  -> **NOTE:** If `aggregator_type` is set to `FOLDER`, `folder_id` is required.
+
+---
 
 ### `aggregator_accounts`
 
@@ -83,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Aggregator.
 * `delete` - (Defaults to 5 mins) Used when delete the Aggregator.

@@ -57,13 +57,20 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of instance IDs.
 * `names` - A list of instance names.
-* `instances` - A list of apis. Each element contains the following attributes:
-  * `id` - The instance's id.
-  * `name` - The instance's remark.
-  * `type` - The instance's type.
-  * `region` - The instance's region.
-  * `base_bandwidth` - The instance's base defend bandwidth.
-  * `bandwidth` - The instance's elastic defend bandwidth.
-  * `ip_type` - The instance's IP version.
-  * `ip_count` - The instance's count of ip config.
-  * `normal_bandwidth` - Normal defend bandwidth of the instance. The unit is Gbps.
+* `instances` - A list of apis.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The instance's id.
+* `name` - The instance's remark.
+* `type` - The instance's type.
+* `region` - The instance's region.
+* `base_bandwidth` - The instance's base defend bandwidth.
+* `bandwidth` - The instance's elastic defend bandwidth.
+* `ip_type` - The instance's IP version.
+* `ip_count` - The instance's count of ip config.
+* `normal_bandwidth` - Normal defend bandwidth of the instance. The unit is Gbps.

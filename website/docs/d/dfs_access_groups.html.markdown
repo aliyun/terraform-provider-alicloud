@@ -38,9 +38,9 @@ output "dfs_access_group_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Access Group IDs.
+* `ids` - (Optional, Computed)  A list of Access Group IDs.
 * `limit` - (Optional) The number of Access Groups to return.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Access Group name.
+* `name_regex` - (Optional) A regex string to filter results by Access Group name.
 * `order_by` - (Optional) The field that sorts the Access Groups. Valid values: `CreateTime`, `AccessGroupName`.
 * `order_type` - (Optional) The sort order. Valid values: `ASC`, `DESC`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -51,12 +51,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Access Group names.
-* `groups` - A list of Dfs Access Groups. Each element contains the following attributes:
-  * `access_group_id` - The length of `description` does not exceed 100 bytes.
-  * `access_group_name` - The Name of Access Group. The length Of `access_group_name` does not exceed 100 bytes.
-  * `create_time` - The CreateTime of Access Group.
-  * `description` - The Description of Access Group. The length Of `description` does not exceed 100 bytes.
-  * `id` - The ID of the Access Group.
-  * `mount_point_count` - The Number of attached mountpoint.
-  * `network_type` - The NetworkType of Access Group. Valid values: `VPC`.
-  * `rule_count` - The Number of access rule.
+* `groups` - A list of Dfs Access Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `access_group_id` - The length of `description` does not exceed 100 bytes.
+* `access_group_name` - The Name of Access Group. The length Of `access_group_name` does not exceed 100 bytes.
+* `create_time` - The CreateTime of Access Group.
+* `description` - The Description of Access Group. The length Of `description` does not exceed 100 bytes.
+* `id` - The ID of the Access Group.
+* `mount_point_count` - The Number of attached mountpoint.
+* `network_type` - The NetworkType of Access Group. Valid values: `VPC`.
+* `rule_count` - The Number of access rule.

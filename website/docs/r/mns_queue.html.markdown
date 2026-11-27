@@ -13,7 +13,7 @@ Provides a MNS queue resource.
 
 -> **NOTE:** Terraform will auto build a mns queue  while it uses `alicloud_mns_queue` to build a mns queue resource.
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.188.0`. Please use new resource [message_service_queue](https://www.terraform.io/docs/providers/alicloud/r/message_service_queue).
+-> **DEPRECATED:**  This resource has been deprecated from version `1.188.0`. Please use new resource [message_service_queue](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/message_service_queue).
 
 ## Example Usage
 

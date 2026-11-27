@@ -64,6 +64,8 @@ The following arguments are supported:
 * `enable` - (Required) Specifies whether to enable TLS version management for the bucket. Valid values: true, false.
 * `tls_versions` - (Optional, Set) Specifies the TLS versions allowed to access this buckets.
 
+---
+
 ### `cipher_suit`
 
 The cipher_suit supports the following:
@@ -85,7 +87,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Https Config.
 * `update` - (Defaults to 5 mins) Used when update the Bucket Https Config.

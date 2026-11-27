@@ -79,12 +79,16 @@ The following arguments are supported:
 * `extend_info` - (Optional, Computed) A JSON string containing protocol-specific probe configuration. The supported keys depend on `protocol`. See [`extend_info`](#extend_info) below.
 * `remark` - (Optional) The remark of the monitor template. Passing an empty value clears the existing remark.
 
+---
+
 ### `isp_city_nodes`
 
 The `isp_city_nodes` block supports:
 
 * `city_code` - (Optional) The city code of the monitoring node.
 * `isp_code` - (Optional) The ISP (Internet Service Provider) code of the monitoring node.
+
+---
 
 ### `extend_info`
 
@@ -117,7 +121,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the Cloud Gtm Monitor Template.
 * `update` - (Defaults to 5 mins) Used when updating the Cloud Gtm Monitor Template.

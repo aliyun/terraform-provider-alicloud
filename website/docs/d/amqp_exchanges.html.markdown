@@ -42,23 +42,30 @@ output "amqp_exchange_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Exchange IDs. Its element value is same as Exchange Name.
-* `instance_id` - (Required, ForceNew) The ID of the instance.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Exchange name.
+* `ids` - (Optional, Computed)  A list of Exchange IDs. Its element value is same as Exchange Name.
+* `instance_id` - (Required) The ID of the instance.
+* `name_regex` - (Optional) A regex string to filter results by Exchange name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `virtual_host_name` - (Required, ForceNew) The name of virtual host where an exchange resides.
+* `virtual_host_name` - (Required) The name of virtual host where an exchange resides.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Exchange names.
-* `exchanges` - A list of Amqp Exchanges. Each element contains the following attributes:
-  * `attributes` - The attributes.
-  * `auto_delete_state` - Indicates whether the Auto Delete attribute is configured.
-  * `create_time` - The creation time.
-  * `exchange_name` - The name of the exchange.
-  * `exchange_type` - The type of the exchange.
-  * `id` - The ID of the Exchange. Its value is same as Queue Name.
-  * `instance_id` - The ID of the instance.
-  * `virtual_host_name` - The name of virtual host where an exchange resides.
+* `exchanges` - A list of Amqp Exchanges.
+
+---
+
+### `exchanges`
+
+The exchanges supports the following attributes:
+
+* `attributes` - The attributes.
+* `auto_delete_state` - Indicates whether the Auto Delete attribute is configured.
+* `create_time` - The creation time.
+* `exchange_name` - The name of the exchange.
+* `exchange_type` - The type of the exchange.
+* `id` - The ID of the Exchange. Its value is same as Queue Name.
+* `instance_id` - The ID of the instance.
+* `virtual_host_name` - The name of virtual host where an exchange resides.

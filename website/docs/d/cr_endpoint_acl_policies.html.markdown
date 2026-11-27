@@ -32,19 +32,26 @@ output "cr_endpoint_acl_policy_id_1" {
 
 The following arguments are supported:
 
-* `endpoint_type` - (Required, ForceNew)  The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Endpoint Acl Policy IDs.
-* `instance_id` - (Required, ForceNew)  The ID of the CR Instance.
-* `module_name` - (Optional, ForceNew) The module that needs to set the access policy. Valid values: `Registry`.
+* `endpoint_type` - (Required)  The type of endpoint. Valid values: `internet`, `Internet`. The value is normalized to lowercase `internet` in the attributes.
+* `ids` - (Optional, Computed)  A list of Endpoint Acl Policy IDs.
+* `instance_id` - (Required)  The ID of the CR Instance.
+* `module_name` - (Optional) The module that needs to set the access policy. Valid values: `Registry`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `policies` - A list of Cr Endpoint Acl Policies. Each element contains the following attributes:
-  * `description` - The description of the entry.
-  * `endpoint_type` - The type of endpoint.
-  * `entry` - The IP segment that allowed to access.
-  * `id` - The ID of the Endpoint Acl Policy.
-  * `instance_id` - The ID of the CR Instance.
+* `policies` - A list of Cr Endpoint Acl Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `description` - The description of the entry.
+* `endpoint_type` - The type of endpoint.
+* `entry` - The IP segment that allowed to access.
+* `id` - The ID of the Endpoint Acl Policy.
+* `instance_id` - The ID of the CR Instance.

@@ -90,6 +90,8 @@ The following arguments are supported:
 * `tag_value_scope` - (Optional) The rule monitors the tag value, use with the `tag_key_scope` options. only applies to rules created based on managed rules.
 * `status` - (Optional, Available since v1.145.0) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
 
+---
+
 ### `exclude_tags_scope`
 
 The exclude_tags_scope supports the following:
@@ -106,7 +108,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Aggregate Config Rule.
 * `update` - (Defaults to 10 mins) Used when update the Aggregate Config Rule.

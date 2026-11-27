@@ -154,6 +154,8 @@ The following arguments are supported:
 * `switch_time` - (Optional) The point in time at which you want to upgrade the database proxy version of the instance. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `resource_group_id` - (Optional) The ID of the resource group.
 
+---
+
 ### `read_only_instance_weight`
 
 The read_only_instance_weight mapping supports the following:
@@ -174,7 +176,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Use when opening exclusive agent (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating exclusive agent (until it reaches the initial `Running` status).

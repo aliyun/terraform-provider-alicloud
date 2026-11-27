@@ -32,26 +32,40 @@ output "ga_custom_routing_endpoint_traffic_policies_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Custom Routing Endpoint Traffic Policy IDs.
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance to which the traffic policies belong.
-* `listener_id` - (Optional, ForceNew) The ID of the listener to which the traffic policies belong.
-* `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group to which the traffic policies belong.
-* `endpoint_id` - (Optional, ForceNew) The ID of the endpoint to which the traffic policies belong.
-* `address` - (Optional, ForceNew) The IP addresses of the traffic policies.
+* `ids` - (Optional, Computed) A list of Custom Routing Endpoint Traffic Policy IDs.
+* `accelerator_id` - (Required) The ID of the GA instance to which the traffic policies belong.
+* `listener_id` - (Optional) The ID of the listener to which the traffic policies belong.
+* `endpoint_group_id` - (Optional) The ID of the endpoint group to which the traffic policies belong.
+* `endpoint_id` - (Optional) The ID of the endpoint to which the traffic policies belong.
+* `address` - (Optional) The IP addresses of the traffic policies.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `custom_routing_endpoint_traffic_policies` - A list of Custom Routing Endpoint Traffic Policies. Each element contains the following attributes:
-  * `id` - The id of the Global Accelerator Custom Routing Endpoint Traffic Policy. It formats as `<endpoint_id>:<custom_routing_endpoint_traffic_policy_id>`.
-  * `endpoint_id` - The ID of the Custom Routing Endpoint.
-  * `custom_routing_endpoint_traffic_policy_id` - The ID of the Custom Routing Endpoint Traffic Policy.
-  * `accelerator_id` - The ID of the GA instance to which the endpoint belongs.
-  * `listener_id` - The ID of the custom routing listener to which the endpoint belongs.
-  * `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
-  * `address` - The IP address of the traffic policy.
-  * `port_ranges` - The port range of the traffic policy.
-    * `from_port` - The first port of the port range.
-    * `to_port` - The last port of the port range.
+* `custom_routing_endpoint_traffic_policies` - A list of Custom Routing Endpoint Traffic Policies.
+
+---
+
+### `custom_routing_endpoint_traffic_policies`
+
+The custom_routing_endpoint_traffic_policies supports the following attributes:
+
+* `id` - The id of the Global Accelerator Custom Routing Endpoint Traffic Policy. It formats as `<endpoint_id>:<custom_routing_endpoint_traffic_policy_id>`.
+* `endpoint_id` - The ID of the Custom Routing Endpoint.
+* `custom_routing_endpoint_traffic_policy_id` - The ID of the Custom Routing Endpoint Traffic Policy.
+* `accelerator_id` - The ID of the GA instance to which the endpoint belongs.
+* `listener_id` - The ID of the custom routing listener to which the endpoint belongs.
+* `endpoint_group_id` - The ID of the Custom Routing Endpoint Group.
+* `address` - The IP address of the traffic policy.
+* `port_ranges` - The port range of the traffic policy.
+
+---
+
+### `custom_routing_endpoint_traffic_policies.port_ranges`
+
+The port_ranges supports the following attributes:
+
+* `from_port` - The first port of the port range.
+* `to_port` - The last port of the port range.

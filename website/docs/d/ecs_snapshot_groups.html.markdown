@@ -64,12 +64,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot Group names.
-* `groups` - A list of Ecs Snapshot Groups. Each element contains the following attributes:
-  * `description` - The description of the snapshot-consistent group.
-  * `id` - The ID of the Snapshot Group.
-  * `instance_id` - The ID of the instance.
-  * `resource_group_id` - The ID of the resource group to which the snapshot consistency group belongs.
-  * `snapshot_group_id` - The first ID of the resource.
-  * `snapshot_group_name` - The name of the snapshot-consistent group.
-  * `status` - The status of the resource.
-  * `tags` - (Optional) List of label key-value pairs.
+* `groups` - A list of Ecs Snapshot Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `description` - The description of the snapshot-consistent group.
+* `id` - The ID of the Snapshot Group.
+* `instance_id` - The ID of the instance.
+* `resource_group_id` - The ID of the resource group to which the snapshot consistency group belongs.
+* `snapshot_group_id` - The first ID of the resource.
+* `snapshot_group_name` - The name of the snapshot-consistent group.
+* `status` - The status of the resource.
+* `tags` - (Optional) List of label key-value pairs.

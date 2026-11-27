@@ -649,7 +649,7 @@ The following arguments are supported:
   - Key: It can be up to 64 characters in length. It cannot begin with `aliyun`, `acs:`, `aliyun`, or `https://`. It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with `aliyun`, `acs:`, `http://`, or `https://`. It can be a null string.
 
-  ~> **Note:** From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
+  ~> **NOTE:** From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
 
 * `security_group_id` - (Deprecated) It has been deprecated from 1.69.0 and use `security_group_ids` instead.
 * `security_group_ids` - (Optional, List(string), Available since v1.69.0) The list IDs to join ECS Security Group. At most supports three security groups.
@@ -709,7 +709,10 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter is available when the instance runs MySQL.
 * `tde_encryption_key` - (Optional, Available since v1.240.0) The ID of the custom key.
-* `ca_type` - (Optional, Available since v1.124.1) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. **NOTE:** From version 1.231.0, `ca_type` start  support `MySQL` engine. Value range:
+* `ca_type` - (Optional, Available since v1.124.1) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun.
+
+  -> **NOTE:** From version 1.231.0, `ca_type` starts to support `MySQL` engine. Value range:
+
   - aliyun: a cloud certificate
   - custom: a custom certificate
 * `collect_stat_mode` - (Optional, Available since v1.277.0) Specify the point in time at which the system collects the statistics of the instance.
@@ -751,8 +754,12 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter is available and must be specified only when the instance runs SQL Server 2019 SE or an Enterprise Edition of SQL Server.
 
-* `server_cert` - (Optional, Available since v1.124.1) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_cert` start  support `MySQL` engine.
-* `server_key` - (Optional, Available since v1.124.1) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter. **NOTE:** From version 1.231.0, `server_key` start support `MySQL` engine.
+* `server_cert` - (Optional, Available since v1.124.1) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
+
+  -> **NOTE:** From version 1.231.0, `server_cert` start  support `MySQL` engine.
+* `server_key` - (Optional, Available since v1.124.1) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL or MySQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
+
+  -> **NOTE:** From version 1.231.0, `server_key` start support `MySQL` engine.
 * `client_ca_enabled` - (Optional, Available since v1.124.1) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
   - 1: enables the public key
   - 0: disables the public key
@@ -848,11 +855,13 @@ The following arguments are supported:
   - false
 
 * `node_id` - (Optional, Available since v1.213.1) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
-* `force` - (Optional, ForceNew, Available since v1.213.1) Specifies whether to enable forcible switching. Valid values:
+* `force` - (Optional, Available since v1.213.1) Specifies whether to enable forcible switching. Valid values:
   - Yes
   - No
 
 * `db_param_group_id` - (Optional, Available since v1.222.0) Parameter template ID. Only MySQL and PostgreSQL support this parameter. If this parameter is not specified, the default parameter template is used. You can also customize a parameter template and use it here.
+
+---
 
 ### `parameters`
 
@@ -860,6 +869,8 @@ The parameters mapping supports the following:
 
 * `name` - (Required) The parameter name.
 * `value` - (Required) The parameter value.
+
+---
 
 ### `pg_hba_conf`
 
@@ -879,6 +890,8 @@ The pg_hba_conf mapping supports the following:
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
 
+---
+
 ### `babelfish_config`
 
 The babelfish_config mapping supports the following:
@@ -887,6 +900,8 @@ The babelfish_config mapping supports the following:
 * `migration_mode` - (Required, ForceNew) The migration mode of the instance. Valid values: **single-db** and **multi-db**.
 * `master_username` - (Required, ForceNew) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
 * `master_user_password` - (Required, ForceNew) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
+
+---
 
 ### `serverless_config`
 
@@ -929,7 +944,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.52.1.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the db instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).

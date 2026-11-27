@@ -55,6 +55,8 @@ The following arguments are supported:
 * `saml_service_provider` - (Optional, Computed, List, Available since v1.248.0) SP information. See [`saml_service_provider`](#saml_service_provider) below.
 * `user_provisioning_configuration` - (Optional, List, Available since v1.248.0) User Provisioning configuration See [`user_provisioning_configuration`](#user_provisioning_configuration) below.
 
+---
+
 ### `login_preference`
 
 The login_preference supports the following:
@@ -62,12 +64,16 @@ The login_preference supports the following:
 * `allow_user_to_get_credentials` - (Optional, Computed, Available since v1.248.0) Whether the user can obtain the program access credential in the portal after logging in.
 * `login_network_masks` - (Optional, Available since v1.248.0) IP address whitelist
 
+---
+
 ### `mfa_authentication_setting_info`
 
 The mfa_authentication_setting_info supports the following:
 
 * `mfa_authentication_advance_settings` - (Optional, Computed, Available since v1.248.0) Global MFA validation policy
 * `operation_for_risk_login` - (Optional, Computed, Available since v1.248.0) MFA verification policy for abnormal logon.
+
+---
 
 ### `password_policy`
 
@@ -80,6 +86,8 @@ The password_policy supports the following:
 * `password_not_contain_username` - (Optional, Computed, Available since v1.248.0) Whether the user name is not allowed in the password.
 * `password_reuse_prevention` - (Optional, Computed, Int, Available since v1.248.0) Historical password check policy.
 
+---
+
 ### `saml_identity_provider_configuration`
 
 The saml_identity_provider_configuration supports the following:
@@ -91,6 +99,8 @@ The saml_identity_provider_configuration supports the following:
 * `sso_status` - (Optional, Computed) SSOStatus
 * `want_request_signed` - (Optional, ForceNew, Available since v1.248.0) SP Request whether the signature is required
 
+---
+
 ### `saml_service_provider`
 
 The saml_service_provider supports the following:
@@ -98,6 +108,8 @@ The saml_service_provider supports the following:
 * `authn_sign_algo` - (Optional, Computed, Available since v1.248.0) Signature algorithms supported by AuthNRequest
 * `certificate_type` - (Optional, Computed, Available since v1.248.0) Type of certificate used for signing in the SSO process
 * `support_encrypted_assertion` - (Optional, Computed, Available since v1.248.0) Whether IdP-side encryption of Assertion is supported.
+
+---
 
 ### `user_provisioning_configuration`
 
@@ -113,24 +125,45 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - CreateTime
 * `password_policy` - Password policy
-  * `hard_expire` - Whether to restrict login after Password Expiration
-  * `max_password_length` - Maximum password length.
-  * `require_lower_case_chars` - Whether lowercase letters are required in the password.
-  * `require_numbers` - Whether numbers are required in the password.
-  * `require_symbols` - Whether symbols are required in the password.
-  * `require_upper_case_chars` - Whether uppercase letters are required in the password.
 * `saml_identity_provider_configuration` - Identity Provider (IDP)
-  * `certificate_ids` - Certificate ID list
-  * `create_time` - CreateTime
-  * `update_time` - UpdateTime
 * `saml_service_provider` - SP information.
-  * `acs_url` - ACS URL of SP.
-  * `encoded_metadata_document` - SP metadata document (Base64 encoding).
-  * `entity_id` - SP identity.
+
+---
+
+### `password_policy`
+
+The password_policy supports the following attributes:
+
+* `hard_expire` - Whether to restrict login after Password Expiration
+* `max_password_length` - Maximum password length.
+* `require_lower_case_chars` - Whether lowercase letters are required in the password.
+* `require_numbers` - Whether numbers are required in the password.
+* `require_symbols` - Whether symbols are required in the password.
+* `require_upper_case_chars` - Whether uppercase letters are required in the password.
+
+---
+
+### `saml_identity_provider_configuration`
+
+The saml_identity_provider_configuration supports the following attributes:
+
+* `certificate_ids` - Certificate ID list
+* `create_time` - CreateTime
+* `update_time` - UpdateTime
+
+---
+
+### `saml_service_provider`
+
+The saml_service_provider supports the following attributes:
+
+* `acs_url` - ACS URL of SP.
+* `encoded_metadata_document` - SP metadata document (Base64 encoding).
+* `entity_id` - SP identity.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Directory.
 * `delete` - (Defaults to 5 mins) Used when delete the Directory.

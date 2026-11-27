@@ -54,10 +54,10 @@ output "cr_ee_repos_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Repository IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Repository name.
-* `instance_id` - (Required, ForceNew) The ID of the Container Registry instance.
-* `namespace` - (Optional, ForceNew) The name of the namespace to which the Repository belongs.
+* `ids` - (Optional, List) A list of Repository IDs.
+* `name_regex` - (Optional) A regex string to filter results by Repository name.
+* `instance_id` - (Required) The ID of the Container Registry instance.
+* `namespace` - (Optional) The name of the namespace to which the Repository belongs.
 * `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -66,18 +66,34 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Repository names.
-* `repos` -  A list of Repositories. Each element contains the following attributes:
-  * `id` - The ID of the Repository.
-  * `instance_id` - The ID of the Container Registry instance to which the Repository belongs.
-  * `namespace` - The name of the namespace to which the Repository belongs.
-  * `name` - The name of the Repository.
-  * `summary` - The summary of the Repository.
-  * `repo_type` - The type of the Repository.
-  * `tags` - A list of image tags belong to this Repository. **Note:** `tags` takes effect only if `enable_details` is set to `true`.
-    * `tag` - The tag of the image.
-    * `image_id` - The ID of the image.
-    * `image_size` - The size of the image.
-    * `digest` - The digest of the image.
-    * `status` - The status of the image.
-    * `image_create` - The time when the image was created.  
-    * `image_update` - The time when the image was last updated.
+* `repos` -  A list of Repositories.
+
+---
+
+### `repos`
+
+The repos supports the following attributes:
+
+* `id` - The ID of the Repository.
+* `instance_id` - The ID of the Container Registry instance to which the Repository belongs.
+* `namespace` - The name of the namespace to which the Repository belongs.
+* `name` - The name of the Repository.
+* `summary` - The summary of the Repository.
+* `repo_type` - The type of the Repository.
+* `tags` - A list of image tags belong to this Repository.
+
+  -> **NOTE:** `tags` takes effect only if `enable_details` is set to `true`.
+
+---
+
+### `repos.tags`
+
+The tags supports the following attributes:
+
+* `tag` - The tag of the image.
+* `image_id` - The ID of the image.
+* `image_size` - The size of the image.
+* `digest` - The digest of the image.
+* `status` - The status of the image.
+* `image_create` - The time when the image was created.
+* `image_update` - The time when the image was last updated.

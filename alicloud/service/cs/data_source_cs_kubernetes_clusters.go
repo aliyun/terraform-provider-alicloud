@@ -661,9 +661,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VPCID
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeNatGatewaysResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}

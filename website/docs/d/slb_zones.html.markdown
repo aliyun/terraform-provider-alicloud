@@ -42,12 +42,26 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of primary zone IDs.
-* `zones` - A list of availability zones. Each element contains the following attributes:
-  * `id` - ID of the zone. It is same as `master_zone_id`.
-  * `master_zone_id` - (Available in 1.157.0+) The primary zone.
-  * `slave_zone_id` - (Available in 1.157.0+) The secondary zone.
-  * `slb_slave_zone_ids` - (Deprecated from 1.157.0) A list of slb slave zone ids in which the slb master zone.
-    It has been deprecated from v1.157.0 and use `slave_zone_id` instead.
-  * `supported_resources` - (Available in 1.154.0+)A list of available resource which the slb master zone supported.
-    * `address_type` - The type of network.
-    * `address_ip_version` - The type of IP address.
+* `zones` - A list of availability zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `id` - ID of the zone. It is same as `master_zone_id`.
+* `master_zone_id` - (Available in 1.157.0+) The primary zone.
+* `slave_zone_id` - (Available in 1.157.0+) The secondary zone.
+* `slb_slave_zone_ids` - (Deprecated from 1.157.0) A list of slb slave zone ids in which the slb master zone.
+  It has been deprecated from v1.157.0 and use `slave_zone_id` instead.
+* `supported_resources` - (Available in 1.154.0+)A list of available resource which the slb master zone supported.
+
+---
+
+### `zones.supported_resources`
+
+The supported_resources supports the following attributes:
+
+* `address_type` - The type of network.
+* `address_ip_version` - The type of IP address.

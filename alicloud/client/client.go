@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -82,13 +83,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/client/config"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"gopkg.in/resty.v1"
 )
 
 type AliyunClient struct {
@@ -128,6 +130,7 @@ type AliyunClient struct {
 	otsconn                      *ots.Client
 	cmsconn                      *cms.Client
 	logconn                      *sls.Client
+	fcHTTP                       *resty.Client
 	fcconn                       *fc.Client
 	cenconn                      *cbn.Client
 	logpopconn                   *slsPop.Client
@@ -178,9 +181,20 @@ func NewClient(c *config.Config) (*AliyunClient, error) {
 
 // Client for AliyunClient
 func NewClientWithValidRegions(c *config.Config, validRegions []config.Region) (*AliyunClient, error) {
+	return NewClientWithValidRegionsContext(context.Background(), c, validRegions)
+}
+
+func NewClientWithValidRegionsContext(ctx context.Context, c *config.Config, validRegions []config.Region) (*AliyunClient, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	ctx = ProviderContext(ctx, c.TerraformTraceId, c.RegionId)
 	// Get the auth and region. This can fail if keys/regions were not
 	// specified and we're attempting to use the environment.
 	teaSdkConfig, teaRoaSdkConfig, teaRpcOpenapiConfig, teaRoaOpenapiConfig, err := c.Prepare(validRegions)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -205,10 +219,17 @@ func NewClientWithValidRegions(c *config.Config, validRegions []config.Region) (
 		Features:                     c.Features,
 	}
 	if c.AccountType == "" {
-		c.AccountType = client.getAccountType()
+		accountType, err := client.getAccountType(ctx)
+		if err != nil {
+			return nil, err
+		}
+		c.AccountType = accountType
 		client.config = c
 	}
-	log.Printf("[INFO] caller identity's account type is %s.", client.config.AccountType)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	tflog.Info(ctx, "Provider client initialized", map[string]interface{}{"account_type": client.config.AccountType})
 	return client, nil
 }
 
@@ -558,13 +579,11 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 	// SignVersion
 	authVersion := oss.AuthV4
-	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
-		switch fmt.Sprintf("%v", ossV) {
-		case "v1":
-			authVersion = oss.AuthV1
-		case "v4":
-			authVersion = oss.AuthV4
-		}
+	switch effectiveSignVersion(client.config.SignVersion, "oss") {
+	case "v1":
+		authVersion = oss.AuthV1
+	case "v4":
+		authVersion = oss.AuthV4
 	}
 	clientOptions = append(clientOptions, oss.AuthVersion(authVersion))
 
@@ -617,13 +636,11 @@ func (client *AliyunClient) WithOssClientV2(do func(*ossv2.Client) (interface{},
 		}
 	}
 
-	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
-		switch fmt.Sprintf("%v", ossV) {
-		case "v4":
-			cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV4)
-		case "v1":
-			cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV1)
-		}
+	switch effectiveSignVersion(client.config.SignVersion, "oss") {
+	case "v4":
+		cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV4)
+	case "v1":
+		cfg = cfg.WithSignatureVersion(ossv2.SignatureVersionV1)
 	}
 
 	client.ossconnV2 = ossv2.NewClient(cfg)
@@ -941,6 +958,8 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 
 // WithOtsClient init ots openapi publish sdk client(if necessary), and exec do func by client
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {
+	// The legacy POP SDK client signs HMAC-SHA1 only; the V4 control-plane
+	// path goes through OtsPopV4 instead of this constructor.
 	if client.otsconn != nil && !client.config.NeedRefreshCredential() {
 		return do(client.otsconn)
 	}
@@ -984,10 +1003,12 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 
 // NewOtsRoaClient rpc client for common sdk
 func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, error) {
+	// The legacy ROA client signs HMAC-SHA1 only; the V4 REST data-plane
+	// path goes through OtsRestV4 instead of this constructor.
 	// first, load endpoint by user setting
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		// second,  load endpoint by serverside rule
-		if err := client.config.LoadEndpoint(productCode, client.RegionId); err != nil {
+		if err := client.loadEndpoint(context.Background(), productCode); err != nil {
 			return nil, err
 		}
 	}
@@ -1137,7 +1158,9 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 	// does we leave Region empty and let the SDK's v4 signer return its
 	// explicit "sign version v4 require a valid region" error rather than
 	// emitting an invalid signature.
-	if region, err := slsutil.ParseRegion(endpoint); err == nil {
+	if client.useV4ForProduct("sls") {
+		client.logconn.Region = client.config.RegionId
+	} else if region, err := slsutil.ParseRegion(endpoint); err == nil {
 		client.logconn.Region = region
 	}
 	applyLogClientSignVersion(client.logconn, client.config.SignVersion, "sls")
@@ -1274,6 +1297,15 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
+	// fc-go-sdk calls resty.R() and configures resty.DefaultClient even during
+	// construction. Bind this alias's HTTP client for the entire locked SDK
+	// callback, including cache hits, and restore the previous binding on exit.
+	if client.fcHTTP == nil {
+		client.fcHTTP = resty.New()
+	}
+	previous := resty.DefaultClient
+	resty.DefaultClient = client.fcHTTP
+	defer func() { resty.DefaultClient = previous }()
 	if client.fcconn != nil && !client.config.NeedRefreshCredential() {
 		return do(client.fcconn)
 	}
@@ -1290,8 +1322,25 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 	transport := cfg.HttpTransport
 	// Receiving proxy config from environment
 	transport.Proxy = http.ProxyFromEnvironment
-	clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
-		fc.WithRetryCount(config.DefaultClientRetryCountSmall)}
+	// V4 requests are signed on the wire by the fc transport wrapper, so the
+	// legacy SDK client itself keeps no credentials: its HMAC output is
+	// discarded and the credential comes from the shared provider signer.
+	v4 := client.useV4ForProduct(product)
+	scheme := "https"
+	if v4 && strings.EqualFold(client.config.Protocol, "HTTP") {
+		scheme = "http"
+	}
+	var accessKey, secretKey, secretToken string
+	clientOptions := []fc.ClientOption{fc.WithRetryCount(config.DefaultClientRetryCountSmall)}
+	if v4 {
+		if client.config.RegionId == "" {
+			return nil, fmt.Errorf("sign_version.default = v4 requires a signing region")
+		}
+		clientOptions = append(clientOptions, fcV4ClientOption(client, string(config.ApiVersion20160815), endpoint, transport))
+	} else {
+		clientOptions = append(clientOptions, fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport))
+		accessKey, secretKey, secretToken = client.config.GetRefreshCredential()
+	}
 	// The FC SDK takes the whole-request timeout in seconds and treats 0 as
 	// "no timeout": keep its default when the provider value is unset, and
 	// round a positive sub-second value up instead of dropping it to 0.
@@ -1299,8 +1348,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		clientOptions = append(clientOptions, fc.WithTimeout(uint((client.config.ClientReadTimeout+999)/1000)))
 	}
 
-	accessKey, secretKey, secretToken := client.config.GetRefreshCredential()
-	fcconn, err := fc.NewClient(fmt.Sprintf("https://%s", endpoint), string(config.ApiVersion20160815), accessKey, secretKey, clientOptions...)
+	fcconn, err := fc.NewClient(fmt.Sprintf("%s://%s", scheme, endpoint), string(config.ApiVersion20160815), accessKey, secretKey, clientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
 	}
@@ -1493,7 +1541,21 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 		}
 		mnsUrl := fmt.Sprintf("https://%s.mns.%s", accountId, endpoint)
 		accessKey, secretKey, token := client.config.GetRefreshCredential()
-		mnsClient := ali_mns.NewAliMNSClientWithToken(mnsUrl, accessKey, secretKey, token)
+		// An explicit v4 selection (default = v4 without an mns = v1 override)
+		// signs the REST data plane with ACS4. The legacy SDK client stays
+		// embedded for its account/region parsing, but its 5-segment URL parser
+		// rejects station endpoints, so in v4 mode it is built from the
+		// synthetic public cloud shape while the wrapper sends to the resolved
+		// endpoint and reads credentials per request.
+		clientURL := mnsUrl
+		v4DataPlane := effectiveSignVersion(client.config.SignVersion, "mns") == "v4"
+		if v4DataPlane {
+			if client.config.RegionId == "" {
+				return nil, fmt.Errorf("sign_version.default = v4 requires a signing region")
+			}
+			clientURL = fmt.Sprintf("https://%s.mns.%s.aliyuncs.com", accountId, client.config.RegionId)
+		}
+		mnsClient := ali_mns.NewAliMNSClientWithToken(clientURL, accessKey, secretKey, token)
 		proxy, err := client.getHttpProxy()
 		if proxy != nil {
 			skip, err := client.skipProxy(endpoint)
@@ -1504,7 +1566,16 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 				mnsClient.SetProxy(proxy.String())
 			}
 		}
-		client.mnsconn = &mnsClient
+		if !v4DataPlane {
+			client.mnsconn = &mnsClient
+		} else {
+			v4conn, err := newMnsV4Client(mnsClient, mnsUrl, client)
+			if err != nil {
+				return nil, err
+			}
+			var conn ali_mns.MNSClient = v4conn
+			client.mnsconn = &conn
+		}
 	}
 
 	return do(client.mnsconn)
@@ -1559,6 +1630,16 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 	tableStoreConfig := getTableStoreConfig()
 	accessKey, secretKey, token := client.config.GetRefreshCredential()
 	tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, tableStoreConfig, externalHeaders)
+	if client.UseOtsV4() {
+		provider, err := client.newOtsV4CredentialsProvider()
+		if err != nil {
+			return nil, err
+		}
+		// The V4 credentials provider resolves the credential chain on every
+		// request, so the constructor credentials above only seed the default
+		// provider that is replaced here.
+		applyTableStoreV4(tableStoreClient, provider)
+	}
 	client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 
 	return do(tableStoreClient)
@@ -1598,7 +1679,20 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 		externalHeaders["x-ots-sourceip"] = client.config.SourceIp
 	}
 	accessKey, secretKey, token := client.config.GetRefreshCredential()
-	tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsTunnel.DefaultTunnelConfig, externalHeaders)
+	if client.UseOtsV4() {
+		// The SDK has no constructor combining a credentials provider with
+		// external headers, so the V4 path wires the provider into a
+		// TunnelApi and adapts it to the TunnelClient interface.
+		provider, err := client.newOtsV4CredentialsProvider()
+		if err != nil {
+			return nil, err
+		}
+		api := otsTunnel.NewTunnelApiWithExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsTunnel.DefaultTunnelConfig, externalHeaders)
+		otsTunnel.SetCredentialsProvider(provider)(api)
+		tunnelClient = &otsTunnelV4Client{api}
+	} else {
+		tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, accessKey, secretKey, token, otsTunnel.DefaultTunnelConfig, externalHeaders)
+	}
 	client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
 
 	return do(tunnelClient)
@@ -1629,7 +1723,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	endpoint := ""
 	product = strings.ToLower(product)
 	if _, exist := client.config.Endpoints.Load(product); !exist {
-		if err := client.config.LoadEndpoint(product, client.RegionId); err != nil {
+		if err := client.loadEndpoint(context.Background(), product); err != nil {
 			return nil, err
 		}
 	}
@@ -1682,9 +1776,12 @@ func (client *AliyunClient) AccountId() (string, error) {
 // Otherwise, it defaults the account type to "Domestic" and initializes a request to query available instances through the BssOpenApi API.
 // It then determines whether the account is domestic or international based on the API specific errors.
 // If there is a specific error, the account type should be updates, and meantime corrects the BssOpenApi endpoint.
-func (client *AliyunClient) getAccountType() string {
+func (client *AliyunClient) getAccountType(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	if client.config.AccountType != "" {
-		return client.config.AccountType
+		return client.config.AccountType, nil
 	}
 	// Default to Domestic
 	accountType := "Domestic"
@@ -1696,38 +1793,69 @@ func (client *AliyunClient) getAccountType() string {
 		"ProductType":      "vipcloudfw",
 		"SubscriptionType": "Subscription",
 	}
-	endpoint, err := client.loadApiEndpoint(productCode)
+	endpoint, err := client.loadApiEndpointWithContext(ctx, productCode)
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
 	if err != nil {
-		log.Printf("[WARN] getting BssOpenApi endpoint failed. Error: %v", err)
+		tflog.Warn(ctx, "Failed to resolve BssOpenApi endpoint", map[string]interface{}{"error": err.Error()})
 	} else if endpoint == config.BssOpenAPIEndpointInternational {
 		request["ProductCode"] = "cfw"
 		request["ProductType"] = "cfw_pre_intl"
 		accountType = "International"
 	}
-	wait := tfhelper.IncrementalWait(1*time.Second, 0*time.Second)
-	_ = retry.Retry(30*time.Second, func() *retry.RetryError {
-		_, err := client.RpcPost("BssOpenApi", "2017-12-14", "QueryAvailableInstances", nil, request, true)
-		log.Printf("[WARN] checking caller identity's account type by invoking BssOpenApi QueryAvailableInstances failed. Error: %v", err)
-		if err != nil {
-			if config.NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
+	err = retry.RetryContext(ctx, 30*time.Second, func() *retry.RetryError {
+		var response map[string]interface{}
+		var requestErr error
+		// 保留原 tea-rpc 的自动重试次数和分类，每次请求都使用当前 ctx。
+		autoRetry := map[string]interface{}{"retryable": true, "maxAttempts": 3}
+		for attempts := 0; tea.BoolValue(tea.AllowRetry(autoRetry, tea.Int(attempts))); attempts++ {
+			if err := ctx.Err(); err != nil {
+				return retry.NonRetryableError(err)
 			}
-			if errs.IsExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
-				if request["ProductType"] == "vipcloudfw" {
-					accountType = "International"
-					client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointInternational)
-				} else {
-					accountType = "Domestic"
-					client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointDomestic)
-				}
-			} else {
-				accountType = ""
+			response, requestErr = client.RpcPostWithContext(ctx, "BssOpenApi", "2017-12-14", "QueryAvailableInstances", nil, request)
+			if ctx.Err() != nil {
+				return retry.NonRetryableError(ctx.Err())
+			}
+			if response != nil || !tea.BoolValue(tea.Retryable(requestErr)) {
+				break
 			}
 		}
-		return nil
+		if requestErr == nil {
+			return nil
+		}
+		tflog.Warn(ctx, "Failed to determine account type", map[string]interface{}{"error": requestErr.Error()})
+		if config.NeedRetry(requestErr) {
+			timer := time.NewTimer(time.Second)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return retry.NonRetryableError(ctx.Err())
+			case <-timer.C:
+			}
+			return retry.RetryableError(requestErr)
+		}
+		return retry.NonRetryableError(requestErr)
 	})
-	return accountType
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+	var timeoutErr *retry.TimeoutError
+	if err == nil || config.NeedRetry(err) || errors.As(err, &timeoutErr) {
+		return accountType, nil
+	}
+	if errs.IsExpectedErrors(err, []string{"NotApplicable", "not found article by given param"}) {
+		if request["ProductType"] == "vipcloudfw" {
+			accountType = "International"
+			client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointInternational)
+		} else {
+			accountType = "Domestic"
+			client.config.Endpoints.Store(productCode, config.BssOpenAPIEndpointDomestic)
+		}
+	} else {
+		accountType = ""
+	}
+	return accountType, nil
 }
 func (client *AliyunClient) IsInternationalAccount() bool {
 	return client.config.AccountType == "International"
@@ -1857,6 +1985,17 @@ func (client *AliyunClient) applyTeaProxyConfig(roaClient *roa.Client, endpoint 
 }
 
 func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
+	if client.defaultV4() {
+		data, err := client.RpcPostWithEndpoint("sts", "2015-04-01", "GetCallerIdentity", nil, nil, false, client.config.StsEndpoint)
+		if err != nil {
+			return nil, err
+		}
+		result := sts.CreateGetCallerIdentityResponse()
+		if err := dara.Convert(data, result); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
 	args := sts.CreateGetCallerIdentityRequest()
 
 	endpoint := client.config.StsEndpoint
@@ -2476,7 +2615,7 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	productCode := "quotas"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.config.LoadEndpoint(productCode, client.RegionId); err != nil {
+		if err := client.loadEndpoint(context.Background(), productCode); err != nil {
 			endpoint = "quotas.aliyuncs.com"
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
@@ -2495,10 +2634,42 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
+	if client.defaultV4() {
+		result.Credential = client.config.Credential
+		if err := client.configureV4(result, productCode); err != nil {
+			return nil, err
+		}
+	}
 	return result, nil
 }
 func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
-	return client.config.LoadAPIEndpoint(productCode, client.RegionId, client.AccountId)
+	return client.loadApiEndpointWithContext(context.Background(), productCode)
+}
+
+// loadApiEndpointWithContext bounds cold Location discovery by the caller's operation context.
+func (client *AliyunClient) loadApiEndpointWithContext(ctx context.Context, productCode string) (string, error) {
+	return client.loadApiEndpointForRegion(ctx, productCode, client.RegionId)
+}
+
+// loadApiEndpointForRegion resolves the product endpoint for the region a
+// specific request targets, mirroring the legacy SDK clients that resolved
+// cross-region requests by the request's own region. A request for the
+// provider's own region keeps the shared per-product cache every other V4
+// entry uses. A request for another region must not read or write that
+// entry: it only holds the endpoint of whichever region resolved first — a
+// same-region call usually warms it during apply — while the V4 signature
+// embeds the request's region, so a warm shared cache would sign one region
+// against another region's host. Such requests resolve through the
+// region-scoped cache key instead, and their Location probe describes the
+// request's region.
+func (client *AliyunClient) loadApiEndpointForRegion(ctx context.Context, productCode, regionId string) (string, error) {
+	discover := func(ctx context.Context, productCode, regionId string) (string, error) {
+		return client.describeEndpointForService(ctx, productCode, regionId)
+	}
+	if regionId == "" || regionId == client.RegionId {
+		return client.config.LoadAPIEndpointWithContext(ctx, productCode, client.RegionId, client.AccountId, discover)
+	}
+	return client.config.LoadAPIEndpointForRegion(ctx, productCode, regionId, client.AccountId, discover)
 }
 
 // RpcPost invoking RPC API request with POST method
@@ -2876,6 +3047,10 @@ func rpcTransportTimeouts(budget time.Duration) (connect, read time.Duration) {
 // response body and never panics on an empty or non-object payload: such a
 // payload is reported as ErrUnreadableResponse so the caller can reconcile.
 func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
+	return decodeRpcResponseWithEmptyBody(response, false)
+}
+
+func decodeRpcResponseWithEmptyBody(response *tea.Response, allowEmpty bool) (map[string]interface{}, error) {
 	if response == nil || response.Body == nil {
 		return nil, fmt.Errorf("%w: empty response", ErrUnreadableResponse)
 	}
@@ -2884,19 +3059,25 @@ func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, undecodableRpcResponseError(response, err)
 	}
+	status := tea.IntValue(response.StatusCode)
 	if len(bytes.TrimSpace(body)) == 0 {
+		if allowEmpty && status >= 200 && status < 300 {
+			return map[string]interface{}{"_headers": response.Headers}, nil
+		}
 		return nil, undecodableRpcResponseError(response, fmt.Errorf("empty body"))
 	}
 	var decoded interface{}
 	if err := json.Unmarshal(body, &decoded); err != nil {
 		return nil, undecodableRpcResponseError(response, err)
 	}
+	if decoded == nil && allowEmpty && status >= 200 && status < 300 {
+		return map[string]interface{}{"_headers": response.Headers}, nil
+	}
 	result, ok := decoded.(map[string]interface{})
 	if !ok {
-		return nil, undecodableRpcResponseError(response, fmt.Errorf("unexpected JSON payload of type %T", decoded))
+		return nil, undecodableRpcResponseError(response, fmt.Errorf("unexpected JSON payload of type %T instead of a JSON object", decoded))
 	}
 	result["_headers"] = response.Headers
-	status := tea.IntValue(response.StatusCode)
 	// The signed request is never followed across a redirect (see
 	// contextHTTPClient), so a 3xx answer is a non success receipt: the addressed
 	// endpoint did not perform the action. It is reported as an explicit
@@ -2921,7 +3102,20 @@ func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 			"_headers":   response.Headers,
 		})
 	}
-	return result, nil
+	payload := redactLogValue(result, false).(map[string]interface{})
+	for _, key := range []string{"Code", "code"} {
+		if value, ok := payload[key].(float64); ok {
+			payload[key] = json.Number(fmt.Sprint(value))
+		}
+	}
+	switch value := payload["StatusCode"].(type) {
+	case float64:
+		payload["StatusCode"] = tea.Int(int(value))
+	case *int:
+	default:
+		payload["StatusCode"] = tea.Int(status)
+	}
+	return result, formatError(payload, nil)
 }
 
 // rpcBusinessString returns a decoded JSON string field, or an empty string when
@@ -2973,35 +3167,66 @@ func undecodableRpcResponseError(response *tea.Response, cause error) error {
 // flattening, signing and error decoding) but executes the request through a
 // context aware HTTP client.
 func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
-	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
-	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	endpointProduct := strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpointWithContext(ctx, endpointProduct)
 	if err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	request := tea.NewRequest()
+	request.Protocol = util.DefaultString(client.teaSdkConfig.Protocol, tea.String("HTTPS"))
+	request.Method = tea.String(method)
+	request.Pathname = tea.String("/")
+	if err := validateRpcEndpointURL(tea.StringValue(request.Protocol), endpoint); err != nil {
+		return nil, err
+	}
+	if client.useV4ForProduct(apiProductCode) {
+		err = client.signContextRPCV4(apiProductCode, endpoint, apiVersion, apiName, request, query, body)
+	} else {
+		err = client.signContextRPCV1(apiProductCode, endpoint, apiVersion, apiName, request, query, body)
+	}
+	if err != nil {
+		return nil, err
+	}
+	// Keep signed credentials out of SDK debug logs and preserve cancellation.
+	response, err := executeSignedRpcRequestWithTimeouts(
+		ctx,
+		request,
+		time.Duration(client.config.ClientConnectTimeout)*time.Millisecond,
+		time.Duration(client.config.ClientReadTimeout)*time.Millisecond,
+	)
+	if err != nil {
+		return nil, sanitizeRpcError(err)
+	}
+	result, err := decodeRpcResponseWithEmptyBody(response, endpointProduct == "foasconsole")
+	if err != nil {
+		return nil, sanitizeRpcError(err)
+	}
+	return result, sanitizeRpcError(formatError(redactLogValue(result, false).(map[string]interface{}), nil))
+}
+
+func (client *AliyunClient) signContextRPCV1(apiProductCode, endpoint, apiVersion, apiName string, request *tea.Request, query, body map[string]interface{}) error {
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	credential, err := client.config.Credential.GetCredential()
 	if err != nil || credential == nil {
-		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+		return fmt.Errorf("get credential failed. Error: %#v", err)
 	}
 	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
 	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
 	sdkConfig.SetSecurityToken(*credential.SecurityToken)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+		return fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
-
-	request := tea.NewRequest()
-	request.Protocol = util.DefaultString(conn.Protocol, tea.String("HTTPS"))
-	// Reject a malformed endpoint before tea builds the signed request URL: tea
-	// logs that URL when its debug output is enabled, and its own http request
-	// construction reports the failure with the complete signed query attached.
-	if err := validateRpcEndpointURL(tea.StringValue(request.Protocol), endpoint); err != nil {
-		return nil, err
-	}
-	request.Method = tea.String(method)
-	request.Pathname = tea.String("/")
 	request.Query, err = rpcutil.FlattenParams(tea.ToMap(map[string]interface{}{
 		"Action":         tea.StringValue(tea.String(apiName)),
 		"Format":         "json",
@@ -3010,7 +3235,7 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 		"SignatureNonce": tea.StringValue(util.GetNonce()),
 	}, query))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !tea.BoolValue(util.IsUnset(conn.SourceIp)) {
 		request.Query["SourceIp"] = conn.SourceIp
@@ -3027,7 +3252,7 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 	if !tea.BoolValue(util.IsUnset(body)) {
 		bodyParams, flattenErr := rpcutil.FlattenParams(body)
 		if flattenErr != nil {
-			return nil, flattenErr
+			return flattenErr
 		}
 		request.Body = tea.ToReader(util.ToFormString(util.AnyifyMapValue(bodyParams)))
 		request.Headers["content-type"] = tea.String("application/x-www-form-urlencoded")
@@ -3035,15 +3260,15 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 
 	accessKeyId, err := conn.GetAccessKeyId()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	accessKeySecret, err := conn.GetAccessKeySecret()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	securityToken, err := conn.GetSecurityToken()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !tea.BoolValue(util.Empty(securityToken)) {
 		request.Query["SecurityToken"] = securityToken
@@ -3053,25 +3278,11 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 	request.Query["AccessKeyId"] = accessKeyId
 	bodyParams, err := rpcutil.FlattenParams(body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	request.Query["Signature"] = rpcutil.GetSignatureV1(tea.Merge(request.Query, bodyParams), request.Method, accessKeySecret)
 
-	// tea.DoRequest writes the fully signed request URL to its debug logger
-	// before the request reaches any transport, so even a valid endpoint would
-	// expose the access key, signature and security token whenever the SDK debug
-	// output is enabled. The round trip is performed here with the same signing,
-	// headers, body, deadline and cancellation, and no credential bearing URL is
-	// ever handed to a logger.
-	response, err := executeSignedRpcRequest(ctx, request)
-	if err != nil {
-		return nil, sanitizeRpcError(err)
-	}
-	result, err := decodeRpcResponse(response)
-	if err != nil {
-		return nil, sanitizeRpcError(err)
-	}
-	return result, nil
+	return nil
 }
 
 // executeSignedRpcRequest sends an already signed RPC request through a context
@@ -3079,6 +3290,10 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 // the request context and the client timeout, while the dial and response
 // header waits are derived from the same remaining budget.
 func executeSignedRpcRequest(ctx context.Context, request *tea.Request) (*tea.Response, error) {
+	return executeSignedRpcRequestWithTimeouts(ctx, request, 0, 0)
+}
+
+func executeSignedRpcRequestWithTimeouts(ctx context.Context, request *tea.Request, connectTimeout time.Duration, readTimeout time.Duration) (*tea.Response, error) {
 	budget := time.Duration(0)
 	if deadline, ok := ctx.Deadline(); ok {
 		if remaining := time.Until(deadline); remaining > 0 {
@@ -3088,6 +3303,16 @@ func executeSignedRpcRequest(ctx context.Context, request *tea.Request) (*tea.Re
 		}
 	}
 	connectBudget, readBudget := rpcTransportTimeouts(budget)
+	if connectTimeout > 0 && (connectBudget == 0 || connectTimeout < connectBudget) {
+		connectBudget = connectTimeout
+	}
+	if readTimeout > 0 && (readBudget == 0 || readTimeout < readBudget) {
+		readBudget = readTimeout
+	}
+	clientBudget := budget
+	if readTimeout > 0 && (clientBudget == 0 || readTimeout < clientBudget) {
+		clientBudget = readTimeout
+	}
 
 	httpRequest, err := http.NewRequestWithContext(ctx, tea.StringValue(request.Method), signedRpcRequestURL(request), request.Body)
 	if err != nil {
@@ -3119,7 +3344,7 @@ func executeSignedRpcRequest(ctx context.Context, request *tea.Request) (*tea.Re
 		ResponseHeaderTimeout: readBudget,
 		TLSNextProto:          map[string]func(string, *tls.Conn) http.RoundTripper{},
 	}
-	response, err := (contextHTTPClient{ctx: ctx, budget: budget}).Call(httpRequest, transport)
+	response, err := (contextHTTPClient{ctx: ctx, budget: clientBudget}).Call(httpRequest, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -3176,13 +3401,20 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint)
+}
+
+// rpcRequestWithTimeouts runs one RPC attempt through the legacy SDK entry point.
+func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
-		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
-		endpoint, err = client.loadApiEndpoint(apiProductCode)
+		endpoint, err = client.loadApiEndpoint(strings.ToLower(ConvertKebabToSnake(apiProductCode)))
 		if err != nil {
 			return nil, err
 		}
+	}
+	if client.useV4ForProduct(apiProductCode) {
+		return client.rpcV4(context.Background(), apiProductCode, endpoint, method, apiVersion, apiName, query, body, autoRetry)
 	}
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
@@ -3362,10 +3594,14 @@ func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersio
 }
 
 func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
-	endpoint, err := client.loadApiEndpoint(apiProductCode)
+	endpoint, err := client.loadApiEndpoint(strings.ToLower(ConvertKebabToSnake(apiProductCode)))
 	if err != nil {
 		return nil, err
+	}
+	if client.useV4ForProduct(apiProductCode) {
+		params := &openapi.Params{Style: tea.String("ROA"), Method: tea.String(method), Version: tea.String(apiVersion),
+			Action: tea.String(apiName), Pathname: tea.String(pathName), ReqBodyType: tea.String("json")}
+		return client.commonV4(context.Background(), apiProductCode, endpoint, params, &openapi.OpenApiRequest{Query: query, Headers: headers, Body: body}, autoRetry)
 	}
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
@@ -3419,6 +3655,7 @@ func normalizeOssOpenAPIResponse(response map[string]interface{}) (map[string]in
 //	hostMap - API parameters in hostMap
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error) {
+	signingProduct := apiProductCode
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -3433,6 +3670,9 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		sdkConfig = openapi.Config{
 			ConnectTimeout: tea.Int(client.config.ClientConnectTimeout),
 			ReadTimeout:    tea.Int(client.config.ClientReadTimeout),
+		}
+		if client.useV4ForProduct("sls") {
+			sdkConfig.SetRegionId(client.config.RegionId)
 		}
 	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
@@ -3457,9 +3697,7 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 			return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 		}
 		// SignVersion
-		if ossV, ok := client.config.SignVersion.Load("oss"); ok {
-			openapiClient.SignatureVersion = tea.String(ossV.(string))
-		}
+		applyOpenapiSignVersion(openapiClient, client.config.SignVersion, "oss")
 	}
 	if apiProductCode == "sls" {
 		openapiClient.Spi, err = gatewayclient.NewClient()
@@ -3469,6 +3707,11 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		openapiClient.Protocol = tea.String(client.config.Protocol)
 		// SignVersion
 		applyOpenapiSignVersion(openapiClient, client.config.SignVersion, "sls")
+	}
+	if apiProductCode != "oss" && apiProductCode != "sls" && client.defaultV4() {
+		if err := client.configureV4(openapiClient, signingProduct); err != nil {
+			return nil, err
+		}
 	}
 	var response map[string]interface{}
 	runtime := &utilV2.RuntimeOptions{}
@@ -3496,48 +3739,24 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 	return response, formatError(response, err)
 }
 
-// applyOpenapiSignVersion writes the configured signature version (if any)
-// for the given apiProductCode into openapiClient.SignatureVersion. It is a
-// no-op when the map does not contain the key, so it is safe to call
-// unconditionally from any product branch.
+// A product setting overrides the provider-instance default.
 func applyOpenapiSignVersion(openapiClient *openapi.Client, signVersion *sync.Map, apiProductCode string) {
 	if openapiClient == nil || signVersion == nil {
 		return
 	}
-	v, ok := signVersion.Load(apiProductCode)
-	if !ok {
-		return
+	if s := effectiveSignVersion(signVersion, apiProductCode); s != "" {
+		openapiClient.SignatureVersion = tea.String(s)
 	}
-	s, ok := v.(string)
-	if !ok {
-		return
-	}
-	openapiClient.SignatureVersion = tea.String(s)
 }
 
-// applyLogClientSignVersion is the legacy-SDK counterpart of
-// applyOpenapiSignVersion: it writes the configured signature version (if
-// any) for the given apiProductCode into c.AuthVersion, and does nothing
-// else. It is a no-op when the map does not contain the key.
-//
-// Region is intentionally left alone here. v4 signing requires a region,
-// but region is a property of the client's deployment (which the provider
-// already carries as client.config.RegionId), not of the signature-version
-// decision — WithLogClient seeds c.Region from that config before calling
-// this helper, matching how the SDK v2 path sets sdkConfig.SetRegionId.
+// WithLogClient sets the signing region before applying the SLS auth version.
 func applyLogClientSignVersion(c *sls.Client, signVersion *sync.Map, apiProductCode string) {
 	if c == nil || signVersion == nil {
 		return
 	}
-	v, ok := signVersion.Load(apiProductCode)
-	if !ok {
-		return
+	if s := effectiveSignVersion(signVersion, apiProductCode); s != "" {
+		c.AuthVersion = sls.AuthVersionType(s)
 	}
-	s, ok := v.(string)
-	if !ok {
-		return
-	}
-	c.AuthVersion = sls.AuthVersionType(s)
 }
 
 func formatError(response map[string]interface{}, err error) error {
@@ -3577,7 +3796,9 @@ func formatError(response map[string]interface{}, err error) error {
 	if ok1 || ok2 {
 		statusCode := 200
 		if v, ok := response["StatusCode"]; ok {
-			statusCode = tea.IntValue(v.(*int))
+			if parsed, parsedOK := formatErrorStatusCode(v); parsedOK {
+				statusCode = parsed
+			}
 		}
 		return tea.NewSDKError(map[string]interface{}{
 			"statusCode": statusCode,
@@ -3587,6 +3808,36 @@ func formatError(response map[string]interface{}, err error) error {
 		})
 	}
 	return err
+}
+
+// formatErrorStatusCode accepts SDK pointers and values decoded from a raw JSON body.
+func formatErrorStatusCode(value interface{}) (int, bool) {
+	switch typed := value.(type) {
+	case *int:
+		if typed == nil {
+			return 0, false
+		}
+		return *typed, true
+	case int:
+		return typed, true
+	case int64:
+		return int(typed), true
+	case float64:
+		return int(typed), true
+	case json.Number:
+		parsed, err := typed.Int64()
+		if err != nil {
+			return 0, false
+		}
+		return int(parsed), true
+	case string:
+		parsed, err := strconv.Atoi(typed)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	}
+	return 0, false
 }
 
 type ossCredentials struct {

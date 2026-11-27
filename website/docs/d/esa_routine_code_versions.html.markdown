@@ -41,12 +41,19 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `versions` - A list of Routine Code Versions. Each element contains the following attributes:
-  * `id` - The ID of the code version. Same as `code_version`.
-  * `code_version` - The code version number.
-  * `code_description` - The description of the code version.
-  * `create_time` - The time when the code version was created, in RFC 3339 (UTC) format.
-  * `status` - The status of the code version.
-  * `deploy_env` - The environment bundled with the code version. Valid values: `staging`, `production`.
-  * `build_id` - The build ID of the code version.
-  * `has_env_vars` - Whether the code version bundles environment variables.
+* `versions` - A list of Routine Code Versions.
+
+---
+
+### `versions`
+
+The versions supports the following attributes:
+
+* `id` - The ID of the code version. Same as `code_version`.
+* `code_version` - The code version number.
+* `code_description` - The description of the code version.
+* `create_time` - The time when the code version was created, in RFC 3339 (UTC) format.
+* `status` - The status of the code version.
+* `deploy_env` - The environment bundled with the code version. Valid values: `staging`, `production`.
+* `build_id` - The build ID of the code version.
+* `has_env_vars` - Whether the code version bundles environment variables.

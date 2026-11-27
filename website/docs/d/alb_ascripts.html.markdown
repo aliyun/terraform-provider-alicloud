@@ -33,11 +33,10 @@ output "alicloud_alb_ascript_example_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed) A list of AScript IDs.
-* `ascript_name` - (ForceNew, Optional) Script name.
-* `listener_id` - (ForceNew, Optional) Listener ID of script attribution
-* `names` - (Optional, ForceNew) The name of the AScript. You can specify at most 10 names.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
+* `ids` - (Optional, Computed) A list of AScript IDs.
+* `ascript_name` - (Optional) Script name.
+* `listener_id` - (Optional) Listener ID of script attribution
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -46,17 +45,31 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of AScript IDs.
 * `names` - A list of name of AScripts.
-* `ascripts` - A list of AScript Entries. Each element contains the following attributes:
-  * `id` - The ID of the AScript.
-  * `ascript_id` - Script identification.
-  * `ascript_name` - Script name.
-  * `enabled` - Whether scripts are enabled.
-  * `ext_attribute_enabled` - Whether extension parameters are enabled.
-  * `ext_attributes` - Extended attribute list.
-    * `attribute_key` - The key of the extended attribute.
-    * `attribute_value` - The value of the extended attribute.
-  * `listener_id` - Listener ID of script attribution.
-  * `load_balancer_id` - The ID of the load balancer to which the listener belongs.
-  * `position` - Script execution location.
-  * `script_content` - Script content.
-  * `status` - Script status.
+* `ascripts` - A list of AScript Entries.
+
+---
+
+### `ascripts`
+
+The ascripts supports the following attributes:
+
+* `id` - The ID of the AScript.
+* `ascript_id` - Script identification.
+* `ascript_name` - Script name.
+* `enabled` - Whether scripts are enabled.
+* `ext_attribute_enabled` - Whether extension parameters are enabled.
+* `ext_attributes` - Extended attribute list.
+* `listener_id` - Listener ID of script attribution.
+* `load_balancer_id` - The ID of the load balancer to which the listener belongs.
+* `position` - Script execution location.
+* `script_content` - Script content.
+* `status` - Script status.
+
+---
+
+### `ascripts.ext_attributes`
+
+The ext_attributes supports the following attributes:
+
+* `attribute_key` - The key of the extended attribute.
+* `attribute_value` - The value of the extended attribute.

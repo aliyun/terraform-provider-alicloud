@@ -29,10 +29,10 @@ output "the_first_attachmented_instance_id" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The ID of the CEN instance.
-* `child_instance_region_id` - (Optional, ForceNew) The region to which the network to be queried belongs.
-* `child_instance_type` - (Optional, ForceNew) The type of the associated network. Valid values: `VPC`, `VBR` and `CCN`.
-* `status` - (Optional, ForceNew) The status of the Cen Child Instance Attachment. Valid value: `Attaching`, `Attached` and `Aetaching`.
+* `instance_id` - (Required) The ID of the CEN instance.
+* `child_instance_region_id` - (Optional) The region to which the network to be queried belongs.
+* `child_instance_type` - (Optional) The type of the associated network. Valid values: `VPC`, `VBR` and `CCN`.
+* `status` - (Optional) The status of the Cen Child Instance Attachment. Valid value: `Attaching`, `Attached` and `Aetaching`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -40,12 +40,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Instance Attachment IDs.
-* `attachments` - A list of CEN Instance Attachments. Each element contains the following attributes:
-  * `id` - The ID of the CEN Instance Attachment.
-  * `instance_id` - The ID of the CEN instance.
-  * `child_instance_attach_time` - The time when the network is associated with the CEN instance.
-  * `child_instance_id` - The ID of the network.
-  * `child_instance_owner_id` - The ID of the account to which the network belongs.
-  * `child_instance_region_id` - The ID of the region to which the network belongs.
-  * `status` - The status of the network.
-  * `child_instance_type` - The type of the associated network.
+* `attachments` - A list of CEN Instance Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `id` - The ID of the CEN Instance Attachment.
+* `instance_id` - The ID of the CEN instance.
+* `child_instance_attach_time` - The time when the network is associated with the CEN instance.
+* `child_instance_id` - The ID of the network.
+* `child_instance_owner_id` - The ID of the account to which the network belongs.
+* `child_instance_region_id` - The ID of the region to which the network belongs.
+* `status` - The status of the network.
+* `child_instance_type` - The type of the associated network.

@@ -216,8 +216,7 @@ The following arguments are supported:
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `db_cluster_ip_array` - (Optional, Type: list, Available since 1.130.0) db_cluster_ip_array defines how users can send requests to your API. See [`db_cluster_ip_array`](#db_cluster_ip_array) below.
-* `security_ips` - (Optional, Deprecated) This attribute has been deprecated from v1.130.0 and using `db_cluster_ip_array` sub-element `security_ips` instead.
-  Its value is same as `db_cluster_ip_array` sub-element `security_ips` value and its db_cluster_ip_array_name is "default".
+* `security_ips` - (Optional) Its value is same as `db_cluster_ip_array` sub-element `security_ips` value and its db_cluster_ip_array_name is "default".
 * `resource_group_id` (Optional, Computed, Available since 1.96.0) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
 
   -> **NOTE:** From version 1.250.0, `resource_group_id` can be modified.
@@ -255,8 +254,11 @@ The following arguments are supported:
 
   -> **NOTE:**  The single node, the single node version of the history library, and the cluster version of the history library do not support column save indexes.
 * `sub_category` - (Optional, Available since 1.177.0)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
-* `creation_option` - (Optional, Available since 1.179.0) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`,`RecoverFromRecyclebin`,`UpgradeFromPolarDB`. **NOTE:** From version 1.233.0, `creation_option` can be set to `RecoverFromRecyclebin`. From version 1.255.0, `creation_option` can be set to `UpgradeFromPolarDB`. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationOption`.
-* -> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby. If `creation_option` is RecoverFromRecyclebin, you need to pass in the released source PolarDB cluster ID for this parameter. The DBType of the cluster recovered from the recycle bin and the source cluster must be consistent. For example, if the source cluster is MySQL 8.0, the cluster recovered from the recycle bin also needs to have its DBType set to MySQL and DBVersion set to 8.0.
+* `creation_option` - (Optional, Available since 1.179.0) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`,`RecoverFromRecyclebin`,`UpgradeFromPolarDB`.
+
+  -> **NOTE:** From version 1.233.0, `creation_option` can be set to `RecoverFromRecyclebin`. From version 1.255.0, `creation_option` can be set to `UpgradeFromPolarDB`. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationOption`.
+
+  -> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby. If `creation_option` is RecoverFromRecyclebin, you need to pass in the released source PolarDB cluster ID for this parameter. The DBType of the cluster recovered from the recycle bin and the source cluster must be consistent. For example, if the source cluster is MySQL 8.0, the cluster recovered from the recycle bin also needs to have its DBType set to MySQL and DBVersion set to 8.0.
 * `creation_category` - (Optional, ForceNew, Computed, Available since 1.179.0) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`,`SENormal`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationCategory`.
 
   -> **NOTE:** You can set this parameter to Basic only when DBType is set to MySQL and DBVersion is set to 5.6, 5.7, or 8.0. You can set this parameter to Archive only when DBType is set to MySQL and DBVersion is set to 8.0. From version 1.188.0, `creation_category` can be set to `NormalMultimaster`. From version 1.203.0, `creation_category` can be set to `SENormal`.
@@ -350,15 +352,21 @@ The following arguments are supported:
 
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to PostgreSQL.
 
+---
+
 ### `db_cluster_ip_array`
 
 The db_cluster_ip_array supports the following:
 
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of a cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_cluster_ip_array_name` - (Optional) The name of the IP whitelist group. The group name must be 2 to 120 characters in length and consists of lowercase letters and digits. It must start with a letter, and end with a letter or a digit.
-  **NOTE:** If the specified whitelist group name does not exist, the whitelist group is created. If the specified whitelist group name exists, the whitelist group is modified. If you do not specify this parameter, the default group is modified. You can create a maximum of 50 IP whitelist groups for a cluster.
+
+  -> **NOTE:** If the specified whitelist group name does not exist, the whitelist group is created. If the specified whitelist group name exists, the whitelist group is modified. If you do not specify this parameter, the default group is modified. You can create a maximum of 50 IP whitelist groups for a cluster.
 * `modify_mode` - (Optional) The method for modifying the IP whitelist. Valid values are `Cover`, `Append`, `Delete`.
-  **NOTE:** There does not recommend setting modify_mode to `Append` or `Delete` and it will bring a potential diff error.  
+
+  -> **NOTE:** There does not recommend setting modify_mode to `Append` or `Delete` and it will bring a potential diff error.
+
+---
 
 ### `parameters`
 
@@ -386,15 +394,22 @@ The following attributes are exported:
 * `automatic_rotation` - (Available since v1.289.0) Indicates whether automatic rotation of the TDE encryption key is enabled.
 * `rotation_interval` - (Available since v1.289.0) The rotation interval of the TDE encryption key.
 
-* `db_revision_version_list` - (Available since v1.216.0) The db_revision_version_list supports the following:
-  * `release_type` - (Available since v1.216.0) Database version release status. Valid values are `Stable`, `Old`, `HighRisk`.
-  * `revision_version_code` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
-  * `revision_version_name` - (Available since v1.216.0) The revision version number of the database engine.
-  * `release_note` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
+* `db_revision_version_list` - (Available since v1.216.0) The db_revision_version_list.
+
+---
+
+### `db_revision_version_list`
+
+The db_revision_version_list supports the following attributes:
+
+* `release_type` - (Available since v1.216.0) Database version release status. Valid values are `Stable`, `Old`, `HighRisk`.
+* `revision_version_code` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
+* `revision_version_name` - (Available since v1.216.0) The revision version number of the database engine.
+* `release_note` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the polardb cluster (until it reaches the initial `Running` status).
 * `update` - (Defaults to 50 mins) Used when updating the polardb cluster (until it reaches the initial `Running` status).

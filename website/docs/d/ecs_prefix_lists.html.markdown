@@ -43,15 +43,29 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prefix List names.
-* `lists` - A list of Prefix Lists. Each element contains the following attributes:
-  * `address_family` - The address family of the prefix list. Valid values:`IPv4`,`IPv6`.
-  * `association_count` - The amount of associated resources.
-  * `create_time` - The time when the prefix list was created.
-  * `description` - The description of the prefix list.
-  * `max_entries` - The maximum number of entries that the prefix list supports.
-  * `prefix_list_id` - The ID of the prefix list.
-  * `id` - The ID of the prefix list.
-  * `prefix_list_name` - The name of the prefix list.
-  * `entry` - The entries of the prefix list.
-    * `cidr` - The CIDR block of the entry.
-    * `description` - The description of the entry.
+* `lists` - A list of Prefix Lists.
+
+---
+
+### `lists`
+
+The lists supports the following attributes:
+
+* `address_family` - The address family of the prefix list. Valid values:`IPv4`,`IPv6`.
+* `association_count` - The amount of associated resources.
+* `create_time` - The time when the prefix list was created.
+* `description` - The description of the prefix list.
+* `max_entries` - The maximum number of entries that the prefix list supports.
+* `prefix_list_id` - The ID of the prefix list.
+* `id` - The ID of the prefix list.
+* `prefix_list_name` - The name of the prefix list.
+* `entry` - The entries of the prefix list.
+
+---
+
+### `lists.entry`
+
+The entry supports the following attributes:
+
+* `cidr` - The CIDR block of the entry.
+* `description` - The description of the entry.

@@ -82,14 +82,15 @@ func resourceAlicloudCmsAlarmContactCreate(d *schema.ResourceData, meta interfac
 		request.Lang = v.(string)
 	}
 
-	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.PutContact(request)
-	})
+	raw, err := client.LegacySdkRpc(request, "/", cms.CreatePutContactResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cms_alarm_contact", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	logs.AddDebug(request.GetActionName(), raw)
-	response, _ := raw.(*cms.PutContactResponse)
+	response := &cms.PutContactResponse{}
+	if err := legacyCmsResponse(raw, response); err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cms_alarm_contact", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
 
 	if response.Code != "200" {
 		return errs.WrapError(errs.Error("PutContact failed for %s", response.Message))
@@ -150,17 +151,18 @@ func resourceAlicloudCmsAlarmContactUpdate(d *schema.ResourceData, meta interfac
 		request.Lang = d.Get("lang").(string)
 	}
 	if update {
-		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.PutContact(request)
-		})
+		raw, err := client.LegacySdkRpc(request, "/", cms.CreatePutContactResponse())
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
 		logs.AddDebug(request.GetActionName(), raw)
-		response, _ := raw.(*cms.PutContactResponse)
+		response := &cms.PutContactResponse{}
+		if err := legacyCmsResponse(raw, response); err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
 
 		if response.Code != "200" {
 			return errs.WrapError(errs.Error("PutContact failed for %s", response.Message))
-		}
-		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudCmsAlarmContactRead(d, meta)
@@ -169,20 +171,21 @@ func resourceAlicloudCmsAlarmContactDelete(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	request := cms.CreateDeleteContactRequest()
 	request.ContactName = d.Id()
-	raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.DeleteContact(request)
-	})
-	logs.AddDebug(request.GetActionName(), raw)
-	response, _ := raw.(*cms.DeleteContactResponse)
-
-	if response.Code != "200" {
-		return errs.WrapError(errs.Error("DeleteContact failed for %s", response.Message))
-	}
+	raw, err := client.LegacySdkRpc(request, "/", cms.CreateDeleteContactResponse())
 	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"400", "403", "404", "ContactNotExists"}) {
+		if cmsContactAbsent(err, "ContactNotExists") {
 			return nil
 		}
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+	logs.AddDebug(request.GetActionName(), raw)
+	response := &cms.DeleteContactResponse{}
+	if err := legacyCmsResponse(raw, response); err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	if response.Code != "200" {
+		return errs.WrapError(errs.Error("DeleteContact failed for %s", response.Message))
 	}
 	return nil
 }

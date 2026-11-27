@@ -79,6 +79,8 @@ The following arguments are supported:
 * `roles` - (Optional, List) List of roles owned by members. See [`roles`](#roles) below.
 * `user_id` - (Required, ForceNew) The user ID of the member.
 
+---
+
 ### `roles`
 
 The roles supports the following:
@@ -91,13 +93,20 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.The value is formulated as `<project_id>:<user_id>`.
 * `roles` - List of roles owned by members.
-  * `name` - project role name
-  * `type` - project role type
 * `status` - The status of the user in project
+
+---
+
+### `roles`
+
+The roles supports the following attributes:
+
+* `name` - project role name
+* `type` - project role type
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Project Member.
 * `delete` - (Defaults to 5 mins) Used when delete the Project Member.

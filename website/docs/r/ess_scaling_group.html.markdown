@@ -115,9 +115,11 @@ to create a scaling group, configuration and lifecycle hook one-click.
 The following arguments are supported:
 
 * `min_size` - (Required) Minimum number of ECS instances in the scaling group. Value range: [0, 2000].
-  **NOTE:** From version 1.204.1, `min_size` can be set to `2000`.
+
+  -> **NOTE:** From version 1.204.1, `min_size` can be set to `2000`.
 * `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 2000].
-  **NOTE:** From version 1.204.1, `max_size` can be set to `2000`.
+
+  -> **NOTE:** From version 1.204.1, `max_size` can be set to `2000`.
 * `desired_capacity` - (Optional, Available since v1.76.0) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain numbers, underscores `_`, hyphens `-`, and decimal points `.`. If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
@@ -172,6 +174,8 @@ The following arguments are supported:
 * `balance_mode` - (Optional, Available since v1.262.1) The zone balancing mode. This parameter takes effect only when zone balancing is enabled. Valid values: BalancedBestEffort, BalancedOnly.
 * `auto_rebalance` - (Optional, Available since v1.262.1) Specifies whether to enable automatic rebalancing for the scaling group. This parameter takes effect only when BalancedOnly is enabled for a zone-balanced scaling group. Valid values: false, true.
 
+---
+
 ### `alb_server_group`
 
 The AlbServerGroup mapping supports the following:
@@ -179,6 +183,8 @@ The AlbServerGroup mapping supports the following:
 * `alb_server_group_id` - (Optional) The ID of ALB server group.
 * `weight` - (Optional) The weight of the ECS instance as a backend server after Auto Scaling adds the ECS instance to ALB server group.
 * `port` - (Optional) The port number used by an ECS instance after Auto Scaling adds the ECS instance to ALB server group.
+
+---
 
 ### `launch_template_override`
 

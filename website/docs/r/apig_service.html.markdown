@@ -117,6 +117,8 @@ The following arguments are supported:
   - `DNS`: a DNS domain service (set `addresses`, optionally `dns_servers`).
   - `FC3`: a Function Compute service (set `qualifier`).
 
+---
+
 ### `health_check_config`
 
 The health_check_config supports the following:
@@ -130,6 +132,8 @@ The health_check_config supports the following:
 * `protocol` - (Optional) Health check protocol TCP|HTTP|GRPC
 * `timeout` - (Optional, Int) Health check response timeout
 * `unhealthy_threshold` - (Optional, Int) Unhealthy threshold
+
+---
 
 ### `outlier_detection_config`
 
@@ -149,18 +153,25 @@ The following attributes are exported:
 * `create_timestamp` - Creation timestamp.
 * `health_status` - Health status.
 * `outlier_endpoints` - Outlier endpoints.
-* `ports` - Port information derived by the gateway. Each element contains:
-  * `name` - Port name.
-  * `port` - Port number.
-  * `protocol` - Protocol (`TCP` or `UDP`).
+* `ports` - Port information derived by the gateway.
 * `runtime_detail_error_code` - Runtime detail error code.
 * `runtime_detail_status` - Runtime detail status.
 * `unhealthy_endpoints` - Unhealthy endpoints.
 * `update_timestamp` - Update timestamp.
 
+---
+
+### `ports`
+
+The ports supports the following attributes:
+
+* `name` - Port name.
+* `port` - Port number.
+* `protocol` - Protocol (`TCP` or `UDP`).
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Service.
 * `delete` - (Defaults to 5 mins) Used when delete the Service.

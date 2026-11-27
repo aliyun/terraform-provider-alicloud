@@ -55,27 +55,34 @@ output "oos_patch_baseline_id_4" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Patch Baseline IDs. Its element value is same as Patch Baseline Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Patch Baseline name.
-* `operation_system` - (Optional, ForceNew) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `CentOS`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
+* `ids` - (Optional, Computed)  A list of Patch Baseline IDs. Its element value is same as Patch Baseline Name.
+* `name_regex` - (Optional) A regex string to filter results by Patch Baseline name.
+* `operation_system` - (Optional) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `CentOS`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `share_type` - (Optional, ForceNew) Patch baseline sharing type. Valid values: `Private`, `Public`.
+* `share_type` - (Optional) Patch baseline sharing type. Valid values: `Private`, `Public`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Patch Baseline names.
-* `baselines` - A list of Oos Patch Baselines. Each element contains the following attributes:
-  * `approval_rules` - Accept the rules.
-  * `create_time` - The create time of patch baselines.
-  * `created_by` - The user who created the patch baselines.
-  * `description` - Patches baseline description information.
-  * `id` - The ID of the Patch Baseline. Its value is same as `patch_baseline_name`.
-  * `is_default` - Whether it is the default patch baseline.
-  * `operation_system` - Operating system type.
-  * `patch_baseline_id` - Patch baseline ID.
-  * `patch_baseline_name` - The name of the patch baseline.
-  * `share_type` - Patch baseline sharing type.
-  * `updated_by` - The user who updated the patch baselines.
-  * `updated_date` - The update time of patch baselines.
+* `baselines` - A list of Oos Patch Baselines.
+
+---
+
+### `baselines`
+
+The baselines supports the following attributes:
+
+* `approval_rules` - Accept the rules.
+* `create_time` - The create time of patch baselines.
+* `created_by` - The user who created the patch baselines.
+* `description` - Patches baseline description information.
+* `id` - The ID of the Patch Baseline. Its value is same as `patch_baseline_name`.
+* `is_default` - Whether it is the default patch baseline.
+* `operation_system` - Operating system type.
+* `patch_baseline_id` - Patch baseline ID.
+* `patch_baseline_name` - The name of the patch baseline.
+* `share_type` - Patch baseline sharing type.
+* `updated_by` - The user who updated the patch baselines.
+* `updated_date` - The update time of patch baselines.

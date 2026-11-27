@@ -62,6 +62,22 @@ func resourceAliCloudCrInstance() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"acl_enable": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"acl_entries": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"entry": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"domains": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -84,6 +100,22 @@ func resourceAliCloudCrInstance() *schema.Resource {
 						},
 						"enable": {
 							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"linked_vpcs": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"vpc_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"status": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -374,6 +406,34 @@ func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) er
 			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
 			instanceEndpointsMap["enable"] = endpointsChildRaw["Enable"]
 			instanceEndpointsMap["endpoint_type"] = endpointsChildRaw["EndpointType"]
+			instanceEndpointsMap["status"] = endpointsChildRaw["Status"]
+			instanceEndpointsMap["acl_enable"] = endpointsChildRaw["AclEnable"]
+
+			linkedVpcsRaw := endpointsChildRaw["LinkedVpcs"]
+			linkedVpcsMaps := make([]map[string]interface{}, 0)
+			if linkedVpcsRaw != nil {
+				for _, linkedVpcsChildRaw := range convert.ConvertToInterfaceArray(linkedVpcsRaw) {
+					linkedVpcsMap := make(map[string]interface{})
+					linkedVpcsChildRaw := linkedVpcsChildRaw.(map[string]interface{})
+					linkedVpcsMap["vpc_id"] = linkedVpcsChildRaw["VpcId"]
+
+					linkedVpcsMaps = append(linkedVpcsMaps, linkedVpcsMap)
+				}
+			}
+			instanceEndpointsMap["linked_vpcs"] = linkedVpcsMaps
+
+			aclEntriesRaw := endpointsChildRaw["AclEntries"]
+			aclEntriesMaps := make([]map[string]interface{}, 0)
+			if aclEntriesRaw != nil {
+				for _, aclEntriesChildRaw := range convert.ConvertToInterfaceArray(aclEntriesRaw) {
+					aclEntriesMap := make(map[string]interface{})
+					aclEntriesChildRaw := aclEntriesChildRaw.(map[string]interface{})
+					aclEntriesMap["entry"] = aclEntriesChildRaw["Entry"]
+
+					aclEntriesMaps = append(aclEntriesMaps, aclEntriesMap)
+				}
+			}
+			instanceEndpointsMap["acl_entries"] = aclEntriesMaps
 
 			domainsRaw := endpointsChildRaw["Domains"]
 			domainsMaps := make([]map[string]interface{}, 0)

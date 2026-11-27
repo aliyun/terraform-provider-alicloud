@@ -98,6 +98,8 @@ The following arguments are supported:
 * `notify_rules` - (Required) Sets the notification rule. See [`notify_rules`](#notify_rules) below. It will be ignored  when `dispatch_type = "DISCARD_ALERT"`.
 * `notify_template` - (Optional, Available since v1.238.0) Sets the notification template. See [`notify_template`](#notify_template) below.
 
+---
+
 ### `group_rules`
 
 The group_rules supports the following:
@@ -106,7 +108,9 @@ The group_rules supports the following:
 * `group_interval` - (Required) The duration for which the system waits after the first alert is sent. After the duration, all alerts are sent in a single notification to the handler.
 * `grouping_fields` - (Required， List<String>) The fields that are used to group events. Events with the same field content are assigned to a group. Alerts with the same specified grouping field are sent to the handler in separate notifications.
 * `repeat_interval` - (Optional) The silence period of repeated alerts. All alerts are repeatedly sent at specified intervals until the alerts are cleared. The minimum value is 61. Default to 600.
-* `group_id` - (Optional) The ID of the group rule.
+* `group_id` - (Computed) The ID of the group rule.
+
+---
 
 ### `label_match_expression_grid`
 
@@ -114,11 +118,15 @@ The label_match_expression_grid supports the following:
 
 * `label_match_expression_groups` - (Required) Sets the dispatch rule. See [`label_match_expression_groups`](#label_match_expression_grid-label_match_expression_groups) below.
 
+---
+
 ### `label_match_expression_grid-label_match_expression_groups`
 
 The label_match_expression_groups supports the following:
 
 * `label_match_expressions` - (Required) Sets the dispatch rule. See [`label_match_expressions`](#label_match_expression_grid-label_match_expression_groups-label_match_expressions) below.
+
+---
 
 ### `label_match_expression_grid-label_match_expression_groups-label_match_expressions`
 
@@ -139,6 +147,8 @@ The label_match_expressions supports the following:
   * eq: equals to.
   * re: matches a regular expression.
 
+---
+
 ### `notify_rules`
 
 The notify_rules supports the following:
@@ -147,6 +157,8 @@ The notify_rules supports the following:
 * `notify_channels` - (Required, List<String>) The notification method. Valid values: dingTalk, sms, webhook, email, and wechat.
 * `notify_start_time` - (Required, Available since v1.237.0) Start time of notification.
 * `notify_end_time` - (Required, Available since v1.237.0) End time of notification.
+
+---
 
 ### `notify_template`
 
@@ -161,6 +173,8 @@ The notify_template supports the following:
 * `tts_content` - (Required) The content of the TTS notification.
 * `tts_recover_content` - (Required) The content of the TTS notification for restored alerts.
 * `robot_content` - (Required) The content of the robot notification.
+
+---
 
 ### `notify_rules-notify_objects`
 

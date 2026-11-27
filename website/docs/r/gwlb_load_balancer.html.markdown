@@ -99,6 +99,8 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID.
 * `zone_mappings` - (Required, Set) The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones. See [`zone_mappings`](#zone_mappings) below.
 
+---
+
 ### `zone_mappings`
 
 The zone_mappings supports the following:
@@ -115,13 +117,27 @@ The following attributes are exported:
 * `status` - The GWLB instance status.
 
 * `zone_mappings` - The mappings between zones and vSwitches. You must specify at least one zone. You can specify at most 20 zones. If the region supports two or more zones, we recommend that you select two or more zones.
-  * `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
-    * `eni_id` - The ID of the elastic network interface (ENI) used by the GWLB instance.
-    * `private_ipv4_address` - The private IPv4 address.
+
+---
+
+### `zone_mappings`
+
+The zone_mappings supports the following attributes:
+
+* `load_balancer_addresses` - The information about the IP addresses used by the GWLB instance.
+
+---
+
+### `zone_mappings.load_balancer_addresses`
+
+The load_balancer_addresses supports the following attributes:
+
+* `eni_id` - The ID of the elastic network interface (ENI) used by the GWLB instance.
+* `private_ipv4_address` - The private IPv4 address.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.

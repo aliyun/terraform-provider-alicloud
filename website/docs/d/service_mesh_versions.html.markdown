@@ -30,8 +30,8 @@ output "service_mesh_version" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) The ASM versions available for the ASM instance of the current edition. Its element formats as `<edition>:<version>`.
-* `edition` - (Optional, ForceNew) The edition of the ASM instance. Valid values:
+* `ids` - (Optional, Computed) The ASM versions available for the ASM instance of the current edition. Its element formats as `<edition>:<version>`.
+* `edition` - (Optional) The edition of the ASM instance. Valid values:
   - Default: Standard Edition
   - Pro: Professional Edition
 
@@ -42,7 +42,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of ASM versions. Its element formats as `<edition>:<version>`.
-* `versions` - A list of Service Mesh Service Meshes. Each element contains the following attributes:
-  * `id` - The ASM version id. It formats as `<edition>:<version>`.
-  * `version` - The AMS version.
-  * `edition` - The edition of the ASM instance.
+* `versions` - A list of Service Mesh Service Meshes.
+
+---
+
+### `versions`
+
+The versions supports the following attributes:
+
+* `id` - The ASM version id. It formats as `<edition>:<version>`.
+* `version` - The AMS version.
+* `edition` - The edition of the ASM instance.

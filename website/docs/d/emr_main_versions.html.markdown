@@ -7,16 +7,16 @@ description: |-
     Provides a collection of emr main versions when create emr cluster according to the specified filters.
 ---
 
-# alicloud\_emr\_main\_versions
+# alicloud_emr_main_versions
 
-The `alicloud_emr_main_versions` data source provides a collection of emr 
+The `alicloud_emr_main_versions` data source provides a collection of emr
 main versions available in Alibaba Cloud account when create a emr cluster.
 
--> **NOTE:** Available in 1.59.0+
+-> **NOTE:** Available since v1.59.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_emr_main_versions" "default" {
   emr_version  = "EMR-3.22.0"
   cluster_type = ["HADOOP", "ZOOKEEPER"]
@@ -44,8 +44,15 @@ Possible values may be any one or combination of these: ["HADOOP", "DRUID", "KAF
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of emr instance types IDs. 
-* `main_versions` - A list of versions of the emr cluster instance. Each element contains the following attributes:
-  * `emr_version` - The version of the emr cluster instance.
-  * `image_id` - The image id of the emr cluster instance.
-  * `cluster_types` - A list of cluster types the emr cluster supported. Possible values: `HADOOP`, `ZOOKEEPER`, `KAFKA`, `DRUID`.
+* `ids` - A list of emr instance types IDs.
+* `main_versions` - A list of versions of the emr cluster instance.
+
+---
+
+### `main_versions`
+
+The main_versions supports the following attributes:
+
+* `emr_version` - The version of the emr cluster instance.
+* `image_id` - The image id of the emr cluster instance.
+* `cluster_types` - A list of cluster types the emr cluster supported. Possible values: `HADOOP`, `ZOOKEEPER`, `KAFKA`, `DRUID`.

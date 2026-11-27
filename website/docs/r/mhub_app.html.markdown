@@ -11,7 +11,7 @@ description: |-
 
 Provides a MHUB App resource.
 
-For information about MHUB App and how to use it, see [What is App](https://help.aliyun.com/product/65109.html).
+For information about MHUB App and how to use it, see [What is App](https://www.alibabacloud.com/help).
 
 -> **NOTE:** Available since v1.138.0+.
 
@@ -55,13 +55,16 @@ resource "alicloud_mhub_app" "default" {
 The following arguments are supported:
 
 * `app_name` - (Required) AppName.
-* `bundle_id` - (Optional) The app id of iOS. **NOTE:** Either `bundle_id` or `package_name` must be set.
+* `bundle_id` - (Optional) The app id of iOS.
+
+  -> **NOTE:** Either `bundle_id` or `package_name` must be set.
 * `encoded_icon` - (Optional) Base64 string of picture.
 * `product_id` - (Required)  The ID of the Product.
 * `type` - (Required) The type of the Product. Valid values: `Android` and `iOS`.  
 * `industry_id` - (Optional) The Industry ID of the app. For information about Industry and how to use it, MHUB[Industry](https://help.aliyun.com/document_detail/201638.html).
-* `package_name` - (Optional) Android App package name. **NOTE:** Either `bundle_id` or `package_name` must be set.
+* `package_name` - (Optional) Android App package name.
 
+  -> **NOTE:** Either `bundle_id` or `package_name` must be set.
 
 ## Attributes Reference
 

@@ -30,12 +30,16 @@ package validation.
   ordinary PRs. Master and shared documentation configuration/tool changes
   retain their original full checks. Content and Markdown lint remain diff-based
   to avoid newly enforcing historical findings in unchanged pages.
-  The original global `.md` link check remains global to avoid losing checks
-  on unchanged sources, and changed `.markdown` sources are also checked.
-  Link checks make at most three attempts when all reported failures have no
-  HTTP response and include a transient timeout, connection reset or DNS retry
-  error. Every attempt remains in the log. HTTP failures, tool failures and
-  failures after the last attempt still fail the check.
+  Link checks cover changed `.md` and `.markdown` files in `website/docs/r/`
+  and `website/docs/d/`, including when shared inputs trigger the full checks.
+  Changed pages retry on their own, so a transport reset no longer discards the
+  pages already checked: each page makes at most three attempts when all its
+  reported failures have no HTTP response and include a transient timeout,
+  connection reset or DNS retry error. The selected pages keep their group
+  retry, which also covers those network errors during the pinned checker
+  download when no link status was emitted. Every attempt remains in the log.
+  HTTP failures, non-network tool failures and failures after the last attempt
+  still fail the check.
 
 Older PR heads missing these wrappers use workflow fallbacks that execute the
 previous checker instead of skipping it. Direct invocations of the existing Go
@@ -66,22 +70,42 @@ Configure the protected repository secret `ACUBE_PROVIDER_RUN_TOKEN` for
 `https://pre-acube.aliyun-inc.com`; cloud account keys stay in FC. The authenticated
 capabilities check must pass before submissions. Deploy the compatible server and
 isolated preproduction FC before enabling the YAML. Keep the ACube receipt IDs
-and private `.acube-ci/` evidence; the same CI Run/plan/item key returns the original
+and private `.acube-ci/` evidence; the same run, environment, plan and item return the original
 receipt after lost responses or process restarts. A new CI Run is an explicit new
 attempt. Do not rerun until the original cloud execution/cleanup is reconciled.
 
-ACC additionally requires `accTestReuseQuery=complete-v1` and a per-response
-`X-AccTest-Reuse-Query: complete-v1` header. A confirmed empty result can authorize
-missing cases; a timeout, HTTP failure or response without completion proof cannot.
-Content reuse scans at most 1024 filtered history candidates in eight pages of 128.
-If unresolved cases remain at the limit, the service discards all tentative hits
-and returns an empty map with `X-AccTest-Reuse-Query: skipped-scan-limit-v1` and
-`X-AccTest-Reuse-Scan-Limit: 1024`. This explicit policy outcome authorizes a fresh
-plan to run every selected ACC case, records `reuseSkipReason=scan-limit-1024`,
-and appears as “超限不复用” in the CI Summary. It is not full-history completion.
-The 12-second query budget and storage/runner failures still fail closed.
-An existing plan with reused receipts must retain them; a skipped completion
-recheck cannot validate those receipts or silently submit replacement tasks.
+When publishing a result returns HTTP 409, CI checks the current execution
+environment and revalidates the MR head and base. With the same identity, CI
+retries the original result for up to five minutes. If the environment changed,
+CI checks the MR revision again and runs the affected job once with fresh cloud
+tasks and separate submission receipts. The original diagnostics remain under
+`diagnostics/previous-environment/`. A stale MR revision or another environment
+change ends the attempt. Use the latest revision's check to see its result.
+
+ACC requires `accTestReuseQuery=complete-v1`. Each response declares its outcome:
+`complete-v1` means the lookup completed; `partial-time-budget-v1` or
+`partial-scan-limit-v1` means the lookup stopped but its returned case/task pairs
+have already passed source, runner, result and newer-failure validation. CI keeps
+those pairs. When the lookup reaches its time budget, CI queries the unresolved
+cases in smaller groups, allowing up to five minutes to start follow-up queries.
+It records `reuseQueryStatus` and submits only cases without verified receipts
+after those queries. A partial result is not proof that the remaining cases have
+no history.
+The scan cap remains 1024 filtered candidates; scan-limit responses also carry
+`X-AccTest-Reuse-Scan-Limit: 1024`. The configurable query budget defaults to 60
+seconds, with a work cutoff at two thirds of that budget. Both soft and hard
+budget cutoffs preserve only fully verified pairs; in-flight candidates are excluded.
+Legacy `skipped-scan-limit-v1` and empty `skipped-time-budget-v1` remain supported.
+Unknown response markers, malformed receipts and storage/runner failures fail closed.
+Before delivery CI revalidates only the originally reused cases using the same
+lookup. It retains the original task references and never silently reruns revoked
+or unconfirmed evidence.
+A query-stage failure is reported as not submitted, with the planned case count
+and concrete cause, rather than an unexplained row of unknown execution counts.
+Server fingerprint caching uses bounded local memory, optional environment-scoped
+Redis entries with a seven-day TTL, and verified immutable OSS indexes. Redis reads
+wait at most 300 ms and writes are asynchronous; cache failures fall back to OSS.
+PASS/FAIL verdicts, revocation and runner identity are still verified live.
 Safe lookups and fenced submissions retry transient 429/502/503/504 failures,
 refused or dropped connections, timeouts, invalid HTTP status lines, and truncated
 response bodies until ACube has been unavailable for five minutes in a row
@@ -139,18 +163,40 @@ the candidate Provider's Go module/toolchain requirements.
 - Service changes follow declarations and method references in both snapshots,
   including removed call edges. Reached resource implementations select that
   type's cases and examples. Statically declared receiver types distinguish
-  same-name methods; uncertain receivers require review.
+  same-name methods. The analyzer follows tuple result positions, Framework
+  Protocol 5/6 provider callbacks, and the resource/data-source Configure contracts.
 - Shared test helpers in `_test.go` and `alicloud/acctest/` are traced across
   packages and import aliases. Literal package-relative fixture paths, including
   static `filepath.Join` arguments, select their actual consumers.
-- Deletions and both paths of renames participate. Removed acceptance cases,
-  unresolved helper/service/fixture consumers and unknown build/receiver effects
-  block rather than become a successful empty selection. Source-only changes to
-  CI tooling do not themselves request Provider ACC.
+- Literal SDK sweeper registrations in a resource's companion test file select
+  that registered resource. Other test initialization can affect its entire test
+  binary. Exported internal test helpers are available to the same directory's
+  external tests. Protocol methods on private mocks used exclusively by
+  standalone unit tests stay within unit coverage.
+- When helper or receiver impact stays ambiguous, `scope.fullPackages` records
+  package fallbacks. If one unresolved source would select whole test suites in
+  multiple service packages, or add unproven resource suites in a package with
+  several resource owners, planning stops before cloud dispatch and reports the
+  source and unresolved callers. Proven cross-service consumers still run.
+  A changed TestMain or a general test initializer affects its own test binary.
+  Test-only declarations stay within their directory.
+  Production changes include transitive importers from both snapshots. A
+  test-only import adds its test binary, and production importers contribute
+  their resource examples. In-module imports outside the indexed tree are
+  treated as possible indirect dependencies.
+- Each expanded package needs PASS evidence for every frozen case. ACube
+  revalidates eligible existing PASS receipts for the candidate and runs the
+  remaining cases in batches of at most 500 per remote task. Missing, duplicate,
+  skipped or failed results fail the job. Exact selections keep their existing reuse and
+  skip behavior. A package-wide PASS establishes the result of the existing
+  cases; requirements and assertions still receive their usual review.
+- Removed acceptance cases, missing direct coverage, layout, unresolved
+  registration, fixture and build constraints retain their own checks. Empty
+  fallback suites and unbounded linkname effects still require review.
 
 `.acube-ci/plan.json` records the exact cases, affected resource files, selection
 reasons and blockers. A blocked plan writes `diagnostics/scope.json` and fails
-before **any** ACube capability/source/task requests. Test-only changes do not
+before dispatching any cloud task. Test-only changes do not
 automatically submit the resource's documentation examples. Scope regression
 tests are part of `CI Adapter Regression`; they use synthetic source and real
 local Git snapshots without cloud calls or Provider builds.
@@ -265,11 +311,8 @@ selection, document contract, native evidence and reuse/recovery regressions.
 
 ### Explicit remaining differences
 
-- General production helpers, request/retry/authentication code and module
-  dependency changes require a maintainer's ACC scope decision under the shared
-  standard. This adapter has no authoritative input for that decision: it emits
-  a blocked plan, not automatic PASS or an implicit waiver. Provider registration
-  changes also require review when their type scope cannot be inferred here.
+- General production helper ambiguity uses the expanded suite above. Shared
+  dependency or unrecognized registration changes still require review.
 - This is a source reference analysis, not a typed runtime call graph. Reaching a
   resource implementation conservatively selects its type's tests; it cannot
   prove which lifecycle steps exercise a changed branch. Factory/interface

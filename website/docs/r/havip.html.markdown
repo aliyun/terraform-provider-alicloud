@@ -58,18 +58,9 @@ The following arguments are supported:
 * `ip_address` - (Optional, ForceNew) The ip address of the HaVip. If not filled, the default will be assigned one from the vswitch.
 * `description` - (Optional) The description of the HaVip instance.
 * `havip_name` - (Optional, Deprecated) The name of the HaVip instance.
-* `associated_instances` - (Optional) The ID of the instance with which the HAVIP is associated.
-* `ha_vip_id` - (Optional) The ID of the HAVIP.
 * `resource_group_id` - (Optional) The ID of the resource group to which the HAVIP belongs.
-* `associated_eip_addresses` - (Optional) The elastic IP address (EIP) associated with the HAVIP.
-* `associated_instance_type` - (Optional) The type of the instance with which the HAVIP is associated. Valid values:
-  - `EcsInstance`: an ECS instance.
-  - `NetworkInterface`: an ENI.
 * `ha_vip_name` - (Optional) The name of the HAVIP.
 * `tags` - (Optional) The list of tags.
-* `vpc_id` - (Optional) The ID of the VPC to which the HAVIP belongs.
-* `create_time` - (Optional) The time when the HAVIP was created.
-* `master_instance_id` - (Optional) The ID of the active instance that is associated with the HAVIP.
 
 ## Attributes Reference
 
@@ -77,12 +68,21 @@ The following attributes are exported:
 
 * `id` - The ID of the HaVip instance id.
 * `status` - (Available since v1.120.0) The status of the HaVip instance.
+* `associated_instances` - (Computed) The ID of the instance with which the HAVIP is associated.
+* `ha_vip_id` - (Computed) The ID of the HAVIP.
+* `associated_eip_addresses` - (Computed) The elastic IP address (EIP) associated with the HAVIP.
+* `associated_instance_type` - (Computed) The type of the instance with which the HAVIP is associated. Valid values:
+  - `EcsInstance`: an ECS instance.
+  - `NetworkInterface`: an ENI.
+* `vpc_id` - (Computed) The ID of the VPC to which the HAVIP belongs.
+* `create_time` - (Computed) The time when the HAVIP was created.
+* `master_instance_id` - (Computed) The ID of the active instance that is associated with the HAVIP.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.120.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the HaVip instance.
 * `update` - (Defaults to 5 mins) Used when updating the HaVip instance.

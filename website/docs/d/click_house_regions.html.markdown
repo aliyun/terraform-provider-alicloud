@@ -39,8 +39,22 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `regions` - A list of Click House Regions. Each element contains the following attributes:
-  * `region_id` - The Region ID.
-  * `zone_ids` -  A list of available zone ids in the region_id.
-    * `vpc_enabled` - Whether to support vpc network.
-    * `zone_id` - The zone ID.
+* `regions` - A list of Click House Regions.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `region_id` - The Region ID.
+* `zone_ids` -  A list of available zone ids in the region_id.
+
+---
+
+### `regions.zone_ids`
+
+The zone_ids supports the following attributes:
+
+* `vpc_enabled` - Whether to support vpc network.
+* `zone_id` - The zone ID.

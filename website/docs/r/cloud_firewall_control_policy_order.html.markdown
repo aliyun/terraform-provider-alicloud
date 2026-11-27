@@ -57,9 +57,11 @@ The following arguments are supported:
 
 * `acl_uuid` - (Required, ForceNew) The unique ID of the access control policy.
 * `direction` - (Required, ForceNew) The direction of the traffic to which the access control policy applies. Valid values: `in`, `out`.
-* `order` - (Required, Int) The priority of the access control policy. The priority value starts from 1. A small priority value indicates a high priority. **NOTE:** The value of `-1` indicates the lowest priority.
+* `order` - (Required, Int) The priority of the access control policy. The priority value starts from 1. A small priority value indicates a high priority.
 
   -> **NOTE:** From version 1.227.1, `order` must be set.
+
+  -> **NOTE:** The value of `-1` indicates the lowest priority.
 
 ## Attributes Reference
 

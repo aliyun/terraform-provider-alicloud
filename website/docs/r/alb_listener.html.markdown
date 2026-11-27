@@ -183,8 +183,14 @@ The following arguments are supported:
 * `status` - (Optional, Computed) The Current IP Address of the Listened State
 * `tags` - (Optional, Map, Available since v1.215.0) The tag of the resource
 * `x_forwarded_for_config` - (Optional, Computed, List, Available since v1.161.0) xforwardfor Related Attribute Configuration See [`x_forwarded_for_config`](#x_forwarded_for_config) below.
-* `xforwarded_for_config` - (Optional, Deprecated since v1.161.0) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated since provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
-* `acl_config` - (Optional, Deprecated since v1.163.0)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+* `xforwarded_for_config` - (Optional, Deprecated since v1.161.0) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.
+
+  -> **NOTE:** 'xforwarded_for_config' has been deprecated since provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
+* `acl_config` - (Optional, Deprecated since v1.163.0)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details.
+
+  -> **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+
+---
 
 ### `access_log_tracing_config`
 
@@ -199,17 +205,23 @@ The access_log_tracing_config supports the following:
 
   -> **NOTE:**  `tracingenabled` valued True When Effective.
 
+---
+
 ### `ca_certificates`
 
 The ca_certificates supports the following:
 
 * `certificate_id` - (Optional) The ID of the certificate. Currently, only server certificates are supported.
 
+---
+
 ### `certificates`
 
 The certificates supports the following:
 
 * `certificate_id` - (Optional, Available since v1.242.0) The ID of the certificate. Currently, only server certificates are supported.
+
+---
 
 ### `default_actions`
 
@@ -218,11 +230,15 @@ The default_actions supports the following:
 * `forward_group_config` - (Optional, List) Forwarding Action Configurations See [`forward_group_config`](#default_actions-forward_group_config) below.
 * `type` - (Required, ForceNew) The action type. Value: ForwardGroup, indicating forwarding to the server group.
 
+---
+
 ### `default_actions-forward_group_config`
 
 The default_actions-forward_group_config supports the following:
 
 * `server_group_tuples` - (Required, List) The Forwarding Destination Server Group See [`server_group_tuples`](#default_actions-forward_group_config-server_group_tuples) below.
+
+---
 
 ### `default_actions-forward_group_config-server_group_tuples`
 
@@ -230,12 +246,16 @@ The default_actions-forward_group_config-server_group_tuples supports the follow
 
 * `server_group_id` - (Required) Forwarded to the Destination Server Group ID
 
+---
+
 ### `quic_config`
 
 The quic_config supports the following:
 
 * `quic_listener_id` - (Optional) There Is a Need to Correlate the QuIC Listener ID. The Https Listener, in Effect at the Time. quicupgradeenabled True When Required.
 * `quic_upgrade_enabled` - (Optional, Computed) Indicates Whether to Enable the QuIC Upgrade
+
+---
 
 ### `x_forwarded_for_config`
 
@@ -278,6 +298,8 @@ The x_forwarded_for_config supports the following:
 * `x_forwarded_for_slb_id_enabled` - (Optional, Computed) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id
 * `x_forwarded_for_slb_port_enabled` - (Optional, Computed) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port
 
+---
+
 ### `xforwarded_for_config`
 
 The xforwarded_for_config supports the following:
@@ -296,6 +318,8 @@ The xforwarded_for_config supports the following:
 * `xforwardedforslbidenabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
 * `xforwardedforslbportenabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
 
+---
+
 ### `acl_config`
 
 The acl_config supports the following:
@@ -303,12 +327,14 @@ The acl_config supports the following:
 * `acl_relations` - (Optional, Available since v1.136.0) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
 * `acl_type` - (Optional, Available since v1.136.0) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
 
+---
+
 ### `acl_config-acl_relations`
 
 The acl_relations supports the following:
 
 * `acl_id` - (Optional, Available since v1.136.0) Snooping Binding of the Access Policy Group ID List.
-* `status` - (Optional) The status of the ACL relation.
+* `status` - (Computed) The status of the ACL relation.
 
 ## Attributes Reference
 
@@ -318,7 +344,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Listener.
 * `delete` - (Defaults to 5 mins) Used when delete the Listener.

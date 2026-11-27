@@ -155,6 +155,8 @@ The following arguments are supported:
 * `cost_optimization` - (Optional, Available since v1.232.0) Indicates whether the Cost Optimization feature is enabled. Valid values: true,false.
 * `instance_family_level` - (Optional, Available since v1.232.0) The level of the instance family, which is used to filter instance types that meet the specified criteria. This parameter takes effect only if you set CostOptimization to true. Valid values: EntryLevel, EnterpriseLevel, CreditEntryLevel.
 
+---
+
 ### `volumes`
 
 The volume supports the following:
@@ -182,6 +184,8 @@ The volume supports the following:
 
   -> **NOTE:** Every volume mounted must have a name and type attributes.
 
+---
+
 ### `volumes-config_file_volume_config_file_to_paths`
 
 The config_file_volume_config_file_to_path supports the following:
@@ -189,6 +193,8 @@ The config_file_volume_config_file_to_path supports the following:
 * `content` - (Optional) The content of the configuration file. Maximum size: 32 KB.
 * `path` - (Optional) The relative file path.
 * `mode` - (Optional, Available since v1.232.0) The permissions on the ConfigFileVolume directory.
+
+---
 
 ### `init_containers`
 
@@ -213,6 +219,8 @@ The init_container supports the following:
 * `security_context_read_only_root_file_system` - (Optional, Available since 1.215.0) Mounts the container's root filesystem as read-only.
 * `security_context_run_as_user` - (Optional, Available since 1.215.0) Specifies user ID  under which all processes run.
 
+---
+
 ### `init_containers-environment_vars`
 
 The environment_var supports the following:
@@ -223,12 +231,16 @@ The environment_var supports the following:
 * `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values:
   - status.podIP: IP of pod.
 
+---
+
 ### `init_containers-ports`
 
 The port supports the following:
 
-* `port` - (Optional, ForceNew) The port number. Valid values: 1 to 65535.
-* `protocol` - (Optional, ForceNew) Valid values: TCP and UDP.
+* `port` - (Optional) The port number. Valid values: 1 to 65535.
+* `protocol` - (Optional) Valid values: TCP and UDP.
+
+---
 
 ### `init_containers-volume_mounts`
 
@@ -241,6 +253,8 @@ The volume_mount supports the following:
 * `sub_path` - (Optional, Available since 1.232.0) The subdirectory of volume N.
 * `mount_propagation` - (Optional, Available since 1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional.
 
+---
+
 ### `image_registry_credentials`
 
 The image_registry_credential supports the following:
@@ -252,12 +266,16 @@ The image_registry_credential supports the following:
 * `username` - (Optional) The username used to log on to the image repository. It is required
   when `image_registry_credential` is configured.
 
+---
+
 ### `security_context_sysctls`
 
 The security_context_sysctl supports the following:
 
 * `name` - (Optional, Available since v1.232.0) The system name of the security context in which the elastic container instance is run.
 * `value` - (Optional, Available since v1.232.0) The system value of the security context in which the elastic container instance is run.
+
+---
 
 ### `dns_config_options`
 
@@ -266,12 +284,16 @@ The dns_config_option supports the following:
 * `name` - (Optional, Available since v1.232.0) The option name.
 * `value` - (Optional, Available since v1.232.0) The option value.
 
+---
+
 ### `host_aliases`
 
 The host_aliases supports the following:
 
 * `hostnames` - (Optional) Adds a host name.
 * `ip` - (Optional) Adds an IP address.
+
+---
 
 ### `containers`
 
@@ -320,6 +342,8 @@ The container supports the following:
 * `tty` - (Optional, Available since v1.232.0) Specifies whether to enable the Interaction feature. Valid values: true, false.
 * `stdin` - (Optional, Available since v1.232.0) Specifies whether container N allocates buffer resources to standard input streams during its active runtime. If you do not specify this parameter, an end-of-file (EOF) error occurs.
 
+---
+
 ### `containers-environment_vars`
 
 The environment_var supports the following:
@@ -330,12 +354,16 @@ The environment_var supports the following:
 * `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values:
   - status.podIP: IP of pod.
 
+---
+
 ### `containers-ports`
 
 The port supports the following:
 
-* `port` - (Optional, ForceNew) The port number. Valid values: 1 to 65535.
-* `protocol` - (Optional, ForceNew) Valid values: TCP and UDP.
+* `port` - (Optional) The port number. Valid values: 1 to 65535.
+* `protocol` - (Optional) Valid values: TCP and UDP.
+
+---
 
 ### `containers-volume_mounts`
 
@@ -347,6 +375,8 @@ The volume_mount supports the following:
 * `read_only` - (Optional) Default to `false`.
 * `sub_path` - (Optional, Available since v1.232.0) The subdirectory of volume N.
 * `mount_propagation` - (Optional, Available since v1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional.
+
+---
 
 ### `acr_registry_infos`
 

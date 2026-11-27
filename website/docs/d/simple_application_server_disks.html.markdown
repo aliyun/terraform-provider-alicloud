@@ -59,27 +59,34 @@ output "simple_application_server_disk_id_5" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Disk IDs.
-* `instance_id` - (Optional, ForceNew) The ID of the simple application server to which the disk is attached.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Disk name.
-* `disk_type` - (Optional, ForceNew) The type of the disk. Possible values: `System`, `Data`.
+* `ids` - (Optional, Computed)  A list of Disk IDs.
+* `instance_id` - (Optional) The ID of the simple application server to which the disk is attached.
+* `name_regex` - (Optional) A regex string to filter results by Disk name.
+* `disk_type` - (Optional) The type of the disk. Possible values: `System`, `Data`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the disk. Valid values: `ReIniting`, `Creating`, `In_Use`, `Available`, `Attaching`, `Detaching`.
+* `status` - (Optional) The status of the disk. Valid values: `ReIniting`, `Creating`, `In_Use`, `Available`, `Attaching`, `Detaching`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Disk names.
-* `disks` - A list of Simple Application Server Disks. Each element contains the following attributes:
-  * `category` - Disk type. Possible values: `ESSD`, `SSD`.
-  * `create_time` - The time when the disk was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
-  * `device` - The device name of the disk on the simple application server.
-  * `disk_id` - The first ID of the resource.
-  * `disk_name` - The name of the resource.
-  * `disk_type` - The type of the disk. Possible values: `System`, `Data`.
-  * `id` - The ID of the Disk.
-  * `instance_id` - Alibaba Cloud simple application server instance ID.
-  * `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`.
-  * `size` - The size of the disk. Unit: `GB`.
-  * `status` - The status of the disk. Valid values: `ReIniting`, `Creating`, `In_Use`, `Available`, `Attaching`, `Detaching`.
+* `disks` - A list of Simple Application Server Disks.
+
+---
+
+### `disks`
+
+The disks supports the following attributes:
+
+* `category` - Disk type. Possible values: `ESSD`, `SSD`.
+* `create_time` - The time when the disk was created. The time follows the ISO 8601 standard in the `yyyy-MM-ddTHH:mm:ssZ` format. The time is displayed in UTC.
+* `device` - The device name of the disk on the simple application server.
+* `disk_id` - The first ID of the resource.
+* `disk_name` - The name of the resource.
+* `disk_type` - The type of the disk. Possible values: `System`, `Data`.
+* `id` - The ID of the Disk.
+* `instance_id` - Alibaba Cloud simple application server instance ID.
+* `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`.
+* `size` - The size of the disk. Unit: `GB`.
+* `status` - The status of the disk. Valid values: `ReIniting`, `Creating`, `In_Use`, `Available`, `Attaching`, `Detaching`.

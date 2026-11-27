@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cr_repo
 
--> **DEPRECATION NOTICE:** This resource is deprecated and will be removed in a future release.
+-> **DEPRECATED:** This resource has been deprecated since v1.276.0 and will be removed in a future release.
 
 This resource will help you to manager Container Registry repositories, see [What is Repository](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createrepository).
 
@@ -63,10 +63,17 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The id of Container Registry repository. The value is in format `namespace/repository`.
-* `domain_list` - (Optional) A list of repository domain.
-  * `public` - Domain of public endpoint.
-  * `internal` - Domain of internal endpoint, only in some regions.
-  * `vpc` - Domain of vpc endpoint.
+* `domain_list` - (Computed) A list of repository domain.
+
+---
+
+### `domain_list`
+
+The domain_list supports the following attributes:
+
+* `public` - Domain of public endpoint.
+* `internal` - Domain of internal endpoint, only in some regions.
+* `vpc` - Domain of vpc endpoint.
 
 ## Import
 

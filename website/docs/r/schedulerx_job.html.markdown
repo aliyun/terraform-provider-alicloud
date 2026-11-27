@@ -150,12 +150,16 @@ The following arguments are supported:
 * `timezone` - (Optional) Time Zone
 * `x_attrs` - (Optional, Computed) Task Extension Field
 
+---
+
 ### `job_monitor_info`
 
 The job_monitor_info supports the following:
 
 * `contact_info` - (Optional, List) Contact information. See [`contact_info`](#job_monitor_info-contact_info) below.
 * `monitor_config` - (Optional, Computed, List) Alarm switch and threshold configuration. See [`monitor_config`](#job_monitor_info-monitor_config) below.
+
+---
 
 ### `job_monitor_info-contact_info`
 
@@ -165,6 +169,8 @@ The job_monitor_info-contact_info supports the following:
 * `user_mail` - (Optional) User Email Address
 * `user_name` - (Optional) The user name
 * `user_phone` - (Optional) The user's mobile phone number
+
+---
 
 ### `job_monitor_info-monitor_config`
 
@@ -185,6 +191,8 @@ The job_monitor_info-monitor_config supports the following:
   - `true`: On
   - `false`: closed
 
+---
+
 ### `map_task_xattrs`
 
 The map_task_xattrs supports the following:
@@ -195,6 +203,8 @@ The map_task_xattrs supports the following:
 * `queue_size` - (Optional, Int) The upper limit of the sub-task queue cache. The default value is 10000.
 * `task_attempt_interval` - (Optional, Int) Subtask failure retry interval.
 * `task_max_attempt` - (Optional, Int) The number of failed sub-task retries.
+
+---
 
 ### `time_config`
 
@@ -222,7 +232,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Job.
 * `delete` - (Defaults to 5 mins) Used when delete the Job.

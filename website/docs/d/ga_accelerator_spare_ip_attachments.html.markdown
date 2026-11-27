@@ -31,17 +31,24 @@ output "ga_accelerator_spare_ip_attachment_id_1" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the global acceleration instance.
-* `ids` - (Optional, ForceNew, Computed)  A list of Accelerator Spare Ip Attachment IDs.
+* `accelerator_id` - (Required) The ID of the global acceleration instance.
+* `ids` - (Optional, Computed)  A list of Accelerator Spare Ip Attachment IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the standby CNAME IP address. Valid values: `active`, `inuse`.
+* `status` - (Optional) The status of the standby CNAME IP address. Valid values: `active`, `inuse`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `attachments` - A list of Ga Accelerator Spare Ip Attachments. Each element contains the following attributes:
-  * `accelerator_id` - The ID of the global acceleration instance.
-  * `id` - The ID of the Accelerator Spare Ip Attachment.
-  * `spare_ip` - The standby IP address of CNAME. When the acceleration area is abnormal, the traffic is switched to the standby IP address.
-  * `status` - The status of the standby CNAME IP address. Valid values: `active`, `inuse`.
+* `attachments` - A list of Ga Accelerator Spare Ip Attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `accelerator_id` - The ID of the global acceleration instance.
+* `id` - The ID of the Accelerator Spare Ip Attachment.
+* `spare_ip` - The standby IP address of CNAME. When the acceleration area is abnormal, the traffic is switched to the standby IP address.
+* `status` - The status of the standby CNAME IP address. Valid values: `active`, `inuse`.

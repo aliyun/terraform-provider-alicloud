@@ -35,9 +35,9 @@ output "oos_application_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Application IDs. Its element value is same as Application Name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Application name.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `ids` - (Optional, Computed)  A list of Application IDs. Its element value is same as Application Name.
+* `name_regex` - (Optional) A regex string to filter results by Application name.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -45,11 +45,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of oss application names.
-* `applications` - A list of Oos Applications. Each element contains the following attributes:
-  * `application_name` - The name of the application.
-  * `create_time` - The Created time of the application.
-  * `update_time` - The Updated time of the application.
-  * `description` - Application group description information.
-  * `id` - The ID of the Application. The value is formate as <application_name>.
-  * `resource_group_id` - The ID of the resource group.
-  * `tags` - The tag of the resource.
+* `applications` - A list of Oos Applications.
+
+---
+
+### `applications`
+
+The applications supports the following attributes:
+
+* `application_name` - The name of the application.
+* `create_time` - The Created time of the application.
+* `update_time` - The Updated time of the application.
+* `description` - Application group description information.
+* `id` - The ID of the Application. The value is formate as <application_name>.
+* `resource_group_id` - The ID of the resource group.
+* `tags` - The tag of the resource.

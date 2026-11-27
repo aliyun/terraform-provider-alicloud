@@ -15,7 +15,7 @@ For information about ECS Network Interface and how to use it, see [What is Netw
 
 -> **NOTE:** Available since v1.123.1.
 
--> **NOTE** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs.
+-> **NOTE:** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs.
 
 ## Example Usage
 
@@ -84,12 +84,18 @@ The following arguments are supported:
 * `queue_number` - (Optional, Int) The queue number of the ENI.
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `secondary_private_ip_address_count` - (Optional, Int) The number of private IP addresses that can be automatically created by ECS.
-* `security_group_ids` - (Optional, List) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added. **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
+* `security_group_ids` - (Optional, List) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
+
+  -> **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `ipv6_address_count` - (Optional, Int, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
+* `ipv6_address_count` - (Optional, Int, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10.
+
+  -> **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, List, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
-* `ipv4_prefix_count` - (Optional, Int, Available since v1.213.0) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
+* `ipv4_prefix_count` - (Optional, Int, Available since v1.213.0) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10.
+
+  -> **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
 * `ipv4_prefixes` - (Optional, List, Available since v1.213.0) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
 * `instance_type` - (Optional, ForceNew, Available since v1.223.0) The type of the ENI. Default value: `Secondary`. Valid values: `Secondary`, `Trunk`.
 * `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.0) The communication mode of the ENI. Default value: `Standard`. Valid values: `Standard`, `HighPerformance`.
@@ -99,7 +105,9 @@ The following arguments are supported:
 * `private_ip` - (Optional, ForceNew, Deprecated since v1.123.1) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
 * `private_ips` - (Optional, List, Deprecated since v1.123.1) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead
 * `private_ips_count` - (Optional, Int, Deprecated since v1.123.1) Field `private_ips_count` has been deprecated from provider version 1.123.1. New field `secondary_private_ip_address_count` instead
-* `security_groups` - (Optional, List, Deprecated since v1.123.1) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead. **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
+* `security_groups` - (Optional, List, Deprecated since v1.123.1) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead.
+
+  -> **NOTE:** Either `security_group_ids` or `security_groups` must be set with valid security group IDs.
 
 ## Attributes Reference
 
@@ -111,7 +119,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Network Interface.
 * `update` - (Defaults to 1 mins) Used when update the Network Interface.

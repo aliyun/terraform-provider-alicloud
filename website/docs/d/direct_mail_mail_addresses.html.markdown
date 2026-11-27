@@ -30,27 +30,34 @@ output "direct_mail_mail_address_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Mail Address IDs.
-* `key_word` - (Optional, ForceNew) The key word about account email address.
+* `ids` - (Optional, Computed)  A list of Mail Address IDs.
+* `key_word` - (Optional) The key word about account email address.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `sendtype` - (Optional, ForceNew) Account type. Valid values: `batch`, `trigger`.
-* `status` - (Optional, ForceNew) Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.
+* `sendtype` - (Optional) Account type. Valid values: `batch`, `trigger`.
+* `status` - (Optional) Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `addresses` - A list of Direct Mail Mail Addresses. Each element contains the following attributes:
-  * `id` - The ID of the Mail Address.
-  * `account_name` - The sender address.
-  * `create_time` - The creation of the record time.
-  * `daily_count` - On the quota limit.
-  * `daily_req_count` - On the quota.
-  * `domain_status` - Domain name status. Valid values: `0`, `1`.
-  * `mail_address_id` - The sender address ID.
-  * `month_count` - Monthly quota limit.
-  * `month_req_count` - Months amount.
-  * `reply_address` - Return address.
-  * `reply_status` - If using STMP address status.
-  * `sendtype` - Account type.
-  * `status` - Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.
+* `addresses` - A list of Direct Mail Mail Addresses.
+
+---
+
+### `addresses`
+
+The addresses supports the following attributes:
+
+* `id` - The ID of the Mail Address.
+* `account_name` - The sender address.
+* `create_time` - The creation of the record time.
+* `daily_count` - On the quota limit.
+* `daily_req_count` - On the quota.
+* `domain_status` - Domain name status. Valid values: `0`, `1`.
+* `mail_address_id` - The sender address ID.
+* `month_count` - Monthly quota limit.
+* `month_req_count` - Months amount.
+* `reply_address` - Return address.
+* `reply_status` - If using STMP address status.
+* `sendtype` - Account type.
+* `status` - Account Status. Valid values: `0`, `1`. Freeze: 1, normal: 0.

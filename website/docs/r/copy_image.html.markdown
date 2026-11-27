@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_copy_image
 
--> **DEPRECATED:** `alicloud_copy_image` is a deprecated alias of [alicloud_image_copy](https://www.terraform.io/docs/providers/alicloud/r/image_copy). Use `alicloud_image_copy` instead. The two resources share the same schema and backend `CopyImage` API; this page is retained only for backward compatibility and will be removed in a future release.
+-> **DEPRECATED:** `alicloud_copy_image` is a deprecated alias of [alicloud_image_copy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/image_copy). Use `alicloud_image_copy` instead. The two resources share the same schema and backend `CopyImage` API; this page is retained only for backward compatibility and will be removed in a future release.
 
 Copies a custom image from one region to another. You can use copied images to perform operations in the target region, such as creating instances (RunInstances) and replacing system disks (ReplaceSystemDisk).
 
@@ -78,7 +78,7 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when copying the image (until it reaches the initial `Available` status).
 * `delete` - (Defaults to 10 mins) Used when terminating the image.

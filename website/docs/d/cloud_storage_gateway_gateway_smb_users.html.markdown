@@ -61,16 +61,23 @@ output "cloud_storage_gateway_gateway_smb_user_id_1" {
 
 The following arguments are supported:
 
-* `gateway_id` - (Required, ForceNew) The Gateway ID.
-* `ids` - (Optional, ForceNew, Computed)  A list of Gateway SMB User IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Gateway SMB username.
+* `gateway_id` - (Required) The Gateway ID.
+* `ids` - (Optional, Computed)  A list of Gateway SMB User IDs.
+* `name_regex` - (Optional) A regex string to filter results by Gateway SMB username.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `users` - A list of Cloud Storage Gateway SMB Users. Each element contains the following attributes:
-  * `gateway_id` - The Gateway ID.
-  * `id` - The ID of the Gateway SMB User.
-  * `username` - The username of the Gateway SMB User.
+* `users` - A list of Cloud Storage Gateway SMB Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `gateway_id` - The Gateway ID.
+* `id` - The ID of the Gateway SMB User.
+* `username` - The username of the Gateway SMB User.

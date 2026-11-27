@@ -425,10 +425,26 @@ type SchemaAttribute struct {
 // get the attribute which have been tested
 func getTestCaseAttr(filePath string, resourceName string,
 	testMustSet, testModifySet, testIgnoreSet *mapset.Set) bool {
+	resourceTest, ok := scanTestCaseSteps(filePath, testIgnoreSet)
+	if !ok {
+		return false
+	}
+	return parseConfig(resourceTest, testMustSet, testModifySet)
+}
+
+// scanTestCaseSteps reads a Go test file and captures, per TestAccAliCloud*
+// test function, every step's Config literal (stepStr), the attribute source
+// recoverable from the Check-block fallback, and the plan-only flag
+// (stepPlanOnly). It is split from getTestCaseAttr so unit tests can assert
+// the captured step attribution directly — e.g. that a helper-Config step
+// whose `PlanOnly: true` line arrives while the Check fallback is still
+// waiting for its map is marked plan-only — without depending on the coverage
+// scoring in parseConfig.
+func scanTestCaseSteps(filePath string, testIgnoreSet *mapset.Set) (ResourceTest, bool) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Errorf("fail to open test file %s. Error: %s", filePath, err)
-		return false
+		return ResourceTest{}, false
 	}
 	defer file.Close()
 
@@ -454,6 +470,28 @@ func getTestCaseAttr(filePath string, resourceName string,
 	inCheckFallback := false
 	checkFallbackStr := ""
 	checkFallbackStep := 0
+	// planOnlySeenStepOpen tracks whether a step-literal `{` has opened since
+	// the last Config capture ended (or the function started). It lets a
+	// `PlanOnly: true` line written outside an active capture be attributed to
+	// the right step: to the step that is about to capture its Config when a
+	// new literal already opened, or to the step whose capture just closed on
+	// an earlier sentinel (field order inside a TestStep literal is free).
+	planOnlySeenStepOpen := false
+	// planOnlyPending defers the attribution of a `PlanOnly: true` line seen
+	// after a step literal opened but before its Config capture closes. The
+	// flag is only written onto the step index when that step's capture really
+	// ends, so a step without any Config (e.g. one holding only
+	// ResourceName/ImportState fields) cannot spill the flag onto the next
+	// captured step; the pending flag is dropped when such a literal closes.
+	planOnlyPending := false
+	// planOnlyBraceDepth counts the braces open in the step literal the
+	// plan-only attribution state currently tracks: 1 for the literal's own
+	// `{`, one more per nested block (e.g. ConfigPlanChecks) opened inside it.
+	// A `}`-prefixed line only ends the attribution window (dropping a pending
+	// flag) when it closes the step literal itself, not a nested block: a
+	// nested block between the `PlanOnly: true` line and the `Config:` line
+	// must not make the scanner lose the pending attribution.
+	planOnlyBraceDepth := 0
 	for scanner.Scan() {
 		line += 1
 		text := scanner.Text()
@@ -470,6 +508,9 @@ func getTestCaseAttr(filePath string, resourceName string,
 			configStr = ""
 			inCheckFallback = false
 			checkFallbackStr = ""
+			planOnlySeenStepOpen = false
+			planOnlyPending = false
+			planOnlyBraceDepth = 0
 		} else if normalFuncRegex.MatchString(text) {
 			if unitFuncRegex.MatchString(text) {
 				continue
@@ -488,9 +529,13 @@ func getTestCaseAttr(filePath string, resourceName string,
 			configStr = ""
 			inCheckFallback = false
 			checkFallbackStr = ""
+			planOnlySeenStepOpen = false
+			planOnlyPending = false
+			planOnlyBraceDepth = 0
 			resourceTest.funcs[funcName] = FuncTest{
 				stepStr:        map[int]string{},
 				stepAttributes: map[int]map[string]interface{}{},
+				stepPlanOnly:   map[int]bool{},
 			}
 		}
 		if inFunc {
@@ -507,6 +552,18 @@ func getTestCaseAttr(filePath string, resourceName string,
 				isCheck := checkRegex.MatchString(text)
 				isSentinel := !isCheck && stepEndSentinelRegex.MatchString(text)
 				if isCheck || isSentinel {
+					// A `PlanOnly: true` line closing the capture marks the step
+					// being recorded here as plan-only.
+					if isSentinel && planOnlyStep(text) {
+						resourceTest.funcs[funcName].stepPlanOnly[stepNumber] = true
+					}
+					if planOnlyPending {
+						// A `PlanOnly: true` line seen before this step's Config
+						// line: the capture that just closed is the step it
+						// belongs to.
+						resourceTest.funcs[funcName].stepPlanOnly[stepNumber] = true
+						planOnlyPending = false
+					}
 					resourceTest.funcs[funcName].stepStr[stepNumber] = configStr
 					// If Config had no inline map AND we hit a Check line,
 					// arm the Check-block fallback so we record the Check's
@@ -521,6 +578,7 @@ func getTestCaseAttr(filePath string, resourceName string,
 					inConfig = false
 					configStr = ""
 					stepNumber++
+					planOnlySeenStepOpen = false
 				} else {
 					// remove extra spaces and '\'
 					text = symbolRegex.ReplaceAllString(text, "")
@@ -532,6 +590,13 @@ func getTestCaseAttr(filePath string, resourceName string,
 			} else if inCheckFallback {
 				trimmed := symbolRegex.ReplaceAllString(text, "")
 				if len(trimmed) == 0 || strings.HasPrefix(trimmed, "//") {
+					continue
+				}
+				// While the fallback is still waiting for the Check map to
+				// open, a `PlanOnly: true` field of the same step must mark
+				// that step instead of being swallowed as check-map text.
+				if checkFallbackStr == "" && planOnlyStep(text) {
+					resourceTest.funcs[funcName].stepPlanOnly[checkFallbackStep] = true
 					continue
 				}
 				// Open bracket: start of the testAccCheck map.
@@ -553,6 +618,51 @@ func getTestCaseAttr(filePath string, resourceName string,
 					continue
 				}
 				checkFallbackStr += trimmed + "\n"
+			} else {
+				// Outside an active capture: track step-literal boundaries and
+				// `PlanOnly: true` lines so a plan-only flag written before the
+				// step's Config line (or after the capture already closed on an
+				// earlier Check/sentinel within the same step) still marks the
+				// right step.
+				trimmed := strings.TrimSpace(text)
+				if trimmed == "{" || strings.Contains(trimmed, "TestStep{") {
+					// A step literal opened, either as a bare `{` element or
+					// with the literal's `{` on the `resource.TestStep{` line
+					// itself (repo layouts use both). Brace bookkeeping for the
+					// plan-only attribution restarts from this brace.
+					planOnlySeenStepOpen = true
+					planOnlyBraceDepth = 1
+				} else if strings.HasPrefix(trimmed, "}") {
+					if planOnlyBraceDepth > 1 {
+						// A nested block inside the step literal (e.g.
+						// ConfigPlanChecks written between the PlanOnly line and
+						// the Config line) closed: the pending attribution must
+						// survive until the step's capture really ends.
+						planOnlyBraceDepth--
+					} else {
+						// Step literal closed without a Config capture (e.g. a
+						// step holding only ResourceName/ImportState/Destroy
+						// fields): drop the pending plan-only attribution
+						// instead of letting it tag the next captured step.
+						planOnlySeenStepOpen = false
+						planOnlyPending = false
+						planOnlyBraceDepth = 0
+					}
+				} else if planOnlySeenStepOpen && strings.HasSuffix(trimmed, "{") {
+					// A nested block opened inside the step literal.
+					planOnlyBraceDepth++
+				} else if planOnlyStep(text) {
+					if planOnlySeenStepOpen {
+						// A new step literal already opened: the flag belongs to
+						// the step whose Config is captured next, but only if
+						// that capture really happens — defer it.
+						planOnlyPending = true
+					} else if stepNumber > 0 {
+						// Still inside the literal whose capture just closed on
+						// Check/sentinel: the flag belongs to that step.
+						resourceTest.funcs[funcName].stepPlanOnly[stepNumber-1] = true
+					}
+				}
 			}
 			if ignoreRegex.MatchString(text) {
 				inIgnore = true
@@ -581,7 +691,7 @@ func getTestCaseAttr(filePath string, resourceName string,
 
 	}
 
-	return parseConfig(resourceTest, testMustSet, testModifySet)
+	return resourceTest, true
 
 }
 
@@ -590,7 +700,17 @@ func parseConfig(resourceTest ResourceTest,
 	for funcName, f := range resourceTest.funcs {
 		// attribute-value map in a test func
 		attributeValueMap := map[string]string{}
+		// appliedSteps counts the non-plan-only steps seen so far (skipped
+		// helper-Config steps included), so a key first seen in a later step
+		// only counts as a modification when a real apply step already
+		// established the baseline. A leading plan-only step does not.
+		appliedSteps := 0
 		for configIndex := 0; configIndex < len(f.stepStr); configIndex++ {
+			planOnly := f.stepPlanOnly[configIndex]
+			applyOrdinal := appliedSteps
+			if !planOnly {
+				appliedSteps++
+			}
 			configStr := f.stepStr[configIndex]
 			// Some tests (e.g. cross-account order_type tests) pass a helper
 			// function name instead of an inline map[string]interface{} to
@@ -717,10 +837,24 @@ func parseConfig(resourceTest ResourceTest,
 
 			f.stepAttributes[configIndex] = data
 
-			parseAttr(configIndex, "", data, attributeValueMap, testMustSet, testModifySet)
+			// Plan-only steps still contribute attribute coverage (must-set),
+			// but they never apply, so parseAttr skips the modification
+			// accounting and the value bookkeeping for them. applyOrdinal is
+			// the count of apply steps that precede this one: a key absent
+			// from the value map is only a first-occurrence update (not a
+			// baseline) when such a step exists.
+			parseAttr(applyOrdinal, "", data, attributeValueMap, testMustSet, testModifySet, planOnly)
 		}
 	}
 	return true
+}
+
+// planOnlyStep reports whether a TestStep field line enables PlanOnly. Only
+// `PlanOnly: true` makes the step plan-only (plan refresh, no apply); an
+// explicit `PlanOnly: false` keeps the step a normal apply step.
+func planOnlyStep(text string) bool {
+	m := planOnlyValueRegex.FindStringSubmatch(text)
+	return m != nil && m[2] == "true"
 }
 
 func bracketMatch(funcName string, configIndex int, s []rune) bool {
@@ -756,33 +890,44 @@ func bracketMatch(funcName string, configIndex int, s []rune) bool {
 	return true
 }
 
-func parseAttr(configIndex int, rootName string, data interface{}, attributeValueMap map[string]string,
-	testMustSet, testModifySet *mapset.Set) {
+// parseAttr walks a captured Config's attribute tree. For plan-only steps
+// (planOnly=true) the attributes still populate testMustSet, but they are
+// excluded from modification coverage: the step never applies, and its values
+// must not clobber the last applied value that later apply steps are compared
+// against. appliedSteps is the number of apply steps processed before this
+// one: a key absent from the value map counts as a first-occurrence update
+// only when at least one apply step already established the baseline.
+func parseAttr(appliedSteps int, rootName string, data interface{}, attributeValueMap map[string]string,
+	testMustSet, testModifySet *mapset.Set, planOnly bool) {
 	if d, ok := data.(map[string]interface{}); ok {
 		for key, value := range d {
 			if rootName != "" {
 				key = rootName + "." + key
 			}
 			addCoverageKey(testMustSet, key)
-			// check if the attribute has been updated
-			updated := false
-			if v, ok := attributeValueMap[key]; ok {
-				if fmt.Sprintf("%v", value) != v {
+			if !planOnly {
+				// check if the attribute has been updated
+				updated := false
+				if v, ok := attributeValueMap[key]; ok {
+					if fmt.Sprintf("%v", value) != v {
+						updated = true
+					}
+				} else if appliedSteps > 0 {
 					updated = true
 				}
-			} else if configIndex > 0 {
-				updated = true
+				if updated {
+					addCoverageKey(testModifySet, key)
+				}
+				attributeValueMap[key] = fmt.Sprintf("%v", value)
 			}
-			if updated {
-				addCoverageKey(testModifySet, key)
-			}
-			attributeValueMap[key] = fmt.Sprintf("%v", value)
-			parseAttr(configIndex, key, value, attributeValueMap, testMustSet, testModifySet)
+			parseAttr(appliedSteps, key, value, attributeValueMap, testMustSet, testModifySet, planOnly)
 		}
 	} else if d, ok := data.([]interface{}); ok {
 		for _, v := range d {
-			attributeValueMap[rootName] = fmt.Sprintf("%v", data)
-			parseAttr(configIndex, rootName, v, attributeValueMap, testMustSet, testModifySet)
+			if !planOnly {
+				attributeValueMap[rootName] = fmt.Sprintf("%v", data)
+			}
+			parseAttr(appliedSteps, rootName, v, attributeValueMap, testMustSet, testModifySet, planOnly)
 		}
 	}
 }
@@ -824,6 +969,84 @@ func addCoverageKey(set *mapset.Set, key string) {
 	}
 }
 
+// indexLikeSegmentRegex matches dotted path segments that can only be index
+// attempts, never schema attribute names: an optional sign followed by
+// digits. Schema attribute names are [a-zA-Z_0-9] and never start with a
+// sign or a digit, so such a segment has no legal spelling in either a real
+// state key or a schema path.
+var indexLikeSegmentRegex = regexp.MustCompile(`^[+-]?[0-9]+$`)
+
+// legalIndexSegment reports whether a dotted path segment is a legal
+// positional index: one or more ASCII digits and nothing else. A signed
+// segment (e.g. "-1" in "block.-1.leaf") looks like an index but is not a
+// legal one — no real state key or schema path carries it — so an
+// ImportStateVerifyIgnore entry containing one is invalid and must keep
+// failing the original gates instead of being normalized alongside legal
+// indexed entries.
+func legalIndexSegment(seg string) bool {
+	if seg == "" {
+		return false
+	}
+	for _, r := range seg {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// normalizeIgnoreEntry aligns an ImportStateVerifyIgnore entry with the
+// schema's index-free dotted leaf paths: every legal index segment (pure
+// digits) is dropped, reusing the same stripping the Check-coverage keys
+// already go through (stripNumericIndexParts). It returns ok=false when the
+// entry contains an index-like segment that is not a legal non-negative
+// integer index (e.g. "block.-1.leaf"); such an entry is not normalized, so
+// its original spelling keeps failing the coverage and ignore gates.
+func normalizeIgnoreEntry(entry string) (string, bool) {
+	if !strings.Contains(entry, ".") {
+		return entry, true
+	}
+	for _, p := range strings.Split(entry, ".") {
+		if indexLikeSegmentRegex.MatchString(p) && !legalIndexSegment(p) {
+			return entry, false
+		}
+	}
+	return stripNumericIndexParts(entry), true
+}
+
+// normalizeIgnoreSet builds the CI-side view of ImportStateVerifyIgnore for
+// the set comparisons in checkAttributeSet: an indexed entry such as
+// "db_cluster_ip_array.0.white_list_type" additionally contributes its
+// schema leaf path ("db_cluster_ip_array.white_list_type") so the
+// modification-coverage Difference can offset the schema-side key. The
+// original strings stay untouched in testIgnoreSet — the SDK import
+// comparison matches them with strings.HasPrefix against real state keys,
+// so the runtime behavior of ImportStateVerifyIgnore does not change, and
+// no parent path or sibling field is added to any exemption. Entries with
+// invalid index segments are returned separately, unnormalized: they keep
+// the original spelling and keep blocking.
+func normalizeIgnoreSet(set mapset.Set) (mapset.Set, []string) {
+	normalized := mapset.NewSet()
+	var invalid []string
+	for _, v := range set.ToSlice() {
+		entry, ok := v.(string)
+		if !ok {
+			continue
+		}
+		normalized.Add(entry)
+		stripped, valid := normalizeIgnoreEntry(entry)
+		if !valid {
+			invalid = append(invalid, entry)
+			continue
+		}
+		if stripped != entry {
+			normalized.Add(stripped)
+		}
+	}
+	sort.Strings(invalid)
+	return normalized, invalid
+}
+
 var (
 	commentedRegex    = regexp.MustCompile("^[\t]*//")
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
@@ -840,14 +1063,17 @@ var (
 	// bracket/JSON syntax error (the step-boundary `},`/`{` tokens become
 	// part of the captured config body).
 	stepEndSentinelRegex = regexp.MustCompile(`(^[\t]*)(ExpectError|ExpectNonEmptyPlan|PreventDiskCleanup|Destroy|ImportState|PlanOnly):`)
-	ignoreRegex          = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
-	hasNumRegex          = regexp.MustCompile(`[0-9]+`)
-	attrRegex            = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
-	symbolRegex          = regexp.MustCompile(`\s`)
-	variableRegex        = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
-	valueFuncRegex       = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
-	valueOnlySymbol      = regexp.MustCompile(`.*([^\\\"])(\\)([^\\\"]).*`)
-	bracket              = map[string]string{
+	// planOnlyValueRegex identifies a TestStep field that enables PlanOnly and
+	// captures its literal value. Only `PlanOnly: true` makes a step plan-only;
+	// an explicit `PlanOnly: false` keeps it a normal apply step.
+	planOnlyValueRegex = regexp.MustCompile(`(^[\t ]*)PlanOnly:\s*(true|false)`)
+	ignoreRegex        = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
+	attrRegex          = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
+	symbolRegex        = regexp.MustCompile(`\s`)
+	variableRegex      = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
+	valueFuncRegex     = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
+	valueOnlySymbol    = regexp.MustCompile(`.*([^\\\"])(\\)([^\\\"]).*`)
+	bracket            = map[string]string{
 		"{": "}",
 		"[": "]",
 	}
@@ -874,6 +1100,11 @@ type ResourceTest struct {
 type FuncTest struct {
 	stepStr        map[int]string
 	stepAttributes map[int]map[string]interface{}
+	// stepPlanOnly marks captured steps whose TestStep sets PlanOnly: true.
+	// A plan-only step only refreshes the plan — it never applies — so fields
+	// whose values change only inside such a step do not count as actual
+	// modification coverage (they still count towards attribute coverage).
+	stepPlanOnly map[int]bool
 }
 
 // TreeNode represents a node in the attribute tree
@@ -1035,6 +1266,20 @@ var apiNonRoundTripRegistry = map[string]map[string]string{
 		// report, not as the sole public proof.)
 		"end_date": "aligreen_oss_stock_task",
 	},
+	"instance": {
+		// alicloud_instance Read: DescribeInstances returns CpuOptions with
+		// CoreCount/ThreadsPerCore/TopologyType but never Accelerators, so Read
+		// preserves the configured accelerators from prior state via
+		// d.Set("cpu_options", ...). An import starts from empty state, so the
+		// imported cpu_options carries no accelerators and a real
+		// ImportStateVerify observes the imported value diverge from the
+		// configured "vqat" member (the only member value the ECS API accepts,
+		// InvalidParameter.CpuOptionsAccelerators otherwise). The field is
+		// retained in ImportStateVerifyIgnore for that observed import
+		// divergence only; remove this entry once DescribeInstances echoes
+		// CpuOptions.Accelerators and the import path round-trips it.
+		"cpu_options.accelerators": "instance",
+	},
 }
 
 func apiNonRoundTripAttributes(resourceName string, testIgnoreSet mapset.Set) mapset.Set {
@@ -1071,21 +1316,39 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
 	}
 
+	// Align indexed ImportStateVerifyIgnore entries (e.g.
+	// "db_cluster_ip_array.0.white_list_type") with the schema's index-free
+	// leaf paths for the set comparisons below. The original strings stay in
+	// testIgnoreSet: the SDK import comparison matches them with
+	// strings.HasPrefix against real state keys, so the runtime behavior of
+	// ImportStateVerifyIgnore is unchanged. Entries whose index-like segments
+	// are not legal non-negative integers (e.g. "block.-1.leaf") are invalid:
+	// they are not normalized and fail the ignore gate.
+	normalizedIgnore, invalidIndexedIgnore := normalizeIgnoreSet(testIgnoreSet)
+	if len(invalidIndexedIgnore) != 0 {
+		isIgnoreLegal = false
+		invalidIndexedIgnoreStr, _ := json.Marshal(invalidIndexedIgnore)
+		log.Errorf("resource %s attributes %v in ImportStateVerifyIgnore contain invalid index segments; only non-negative integer indexes may align with schema paths", resourceName, string(invalidIndexedIgnoreStr))
+	}
+
 	// ForceNew attributes in ImportStateVerifyIgnore usually mean the resource
 	// should be fixed to read them back. Create-only input attributes that the
 	// Get/List API never returns are the exception: Read never writes them back
 	// with d.Set, so the imported state can never contain them and listing them
 	// in ImportStateVerifyIgnore is the only workable pattern. Exempt exactly
-	// those attributes.
-	unreadAttrs := neverReadBackAttributes(resourceName, fileType, testIgnoreSet, implPath)
-	apiNonRoundTrip := apiNonRoundTripAttributes(resourceName, testIgnoreSet)
-	forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).Difference(unreadAttrs).Difference(apiNonRoundTrip).ToSlice()
+	// those attributes. The comparison runs against the normalized ignore view
+	// so an indexed ForceNew ignore ("block.0.fn_attr") is judged exactly like
+	// its schema path ("block.fn_attr") — indexed and non-indexed spellings of
+	// the same field cannot diverge on this gate.
+	unreadAttrs := neverReadBackAttributes(resourceName, fileType, normalizedIgnore, implPath)
+	apiNonRoundTrip := apiNonRoundTripAttributes(resourceName, normalizedIgnore)
+	forceNewButIgnore := schemaForceNewSet.Intersect(normalizedIgnore).Difference(unreadAttrs).Difference(apiNonRoundTrip).ToSlice()
 	if len(forceNewButIgnore) != 0 {
 		isIgnoreLegal = false
 		forceNewButIgnoreStr, _ := json.Marshal(forceNewButIgnore)
 		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
 	}
-	exempted := schemaForceNewSet.Intersect(testIgnoreSet).Intersect(unreadAttrs).Union(apiNonRoundTrip)
+	exempted := schemaForceNewSet.Intersect(normalizedIgnore).Intersect(unreadAttrs).Union(apiNonRoundTrip)
 	if exempted.Cardinality() > 0 {
 		exemptedStr, _ := json.Marshal(exempted.ToSlice())
 		log.Infof("resource %s [ForceNew] attributes %v stay in ImportStateVerifyIgnore because the resource Read never writes them back (neverReadBack) or the API does not round-trip the configured value (apiNonRoundTrip, proven per-attr)", resourceName, string(exemptedStr))
@@ -1093,34 +1356,32 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 	// Attributes in ImportStateVerifyIgnore that are neither part of the
 	// active schema nor deprecated are genuinely redundant. Deprecated fields
 	// are allowed to stay in ImportStateVerifyIgnore to suppress diffs during
-	// the deprecation window without being flagged by coverage checks.
+	// the deprecation window without being flagged by coverage checks. Indexed
+	// entries are judged through the same normalization: an entry is legal
+	// when its schema leaf path exists; invalid-index entries were already
+	// reported above and are not normalized here.
 	redundantAttr := testIgnoreSet.Difference(schemaAllSet).Difference(schemaDeprecatedSet).ToSlice()
 	redundantAttrFinal := []string{}
 	for _, v := range redundantAttr {
 		vStr := v.(string)
-		if hasNumRegex.MatchString(vStr) && strings.Contains(vStr, ".") {
-			parts := strings.Split(vStr, ".")
-			attrStr := parts[0]
-			for _, subAttr := range parts[1:] {
-				if _, err := strconv.Atoi(subAttr); err == nil {
-					continue
-				} else {
-					attrStr += "." + subAttr
-				}
-			}
-			if !schemaAllSet.Contains(attrStr) && !schemaDeprecatedSet.Contains(attrStr) {
-				redundantAttrFinal = append(redundantAttrFinal, vStr)
-			}
-		} else {
-			redundantAttrFinal = append(redundantAttrFinal, vStr)
+		normalized, valid := normalizeIgnoreEntry(vStr)
+		if !valid {
+			continue
 		}
+		if schemaAllSet.Contains(normalized) || schemaDeprecatedSet.Contains(normalized) {
+			continue
+		}
+		redundantAttrFinal = append(redundantAttrFinal, vStr)
 	}
 	if len(redundantAttrFinal) != 0 {
 		isIgnoreLegal = false
 		redundantAttrFinalStr, _ := json.Marshal(redundantAttrFinal)
 		log.Errorf("resource %s attributes %v should not in ImportStateVerifyIgnore array", resourceName, string(redundantAttrFinalStr))
 	}
-	schemaModifySet = schemaModifySet.Difference(testIgnoreSet)
+	// The modification-coverage Difference runs against the normalized ignore
+	// view: an indexed ignore offsets exactly its schema leaf path (and only
+	// that leaf — parent paths and sibling fields are never added).
+	schemaModifySet = schemaModifySet.Difference(normalizedIgnore)
 
 	// Get immutable attributes from documentation
 	immutableAttrs := getImmutableAttributesFromDoc(resourceName, fileType)

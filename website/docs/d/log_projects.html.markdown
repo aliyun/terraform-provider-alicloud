@@ -31,9 +31,9 @@ output "first_log_project_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of project IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by project name.
-* `status` - (Optional, ForceNew) The status of log project. Valid values `Normal` and `Disable`.
+* `ids` - (Optional, Computed) A list of project IDs.
+* `name_regex` - (Optional) A regex string to filter results by project name.
+* `status` - (Optional) The status of log project. Valid values `Normal` and `Disable`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -41,12 +41,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of project names.
-* `projects` - A list of Log Project. Each element contains the following attributes:
-  * `description` - The description of the project.
-  * `id` - The ID of the project.
-  * `project_name` - The name of the project.
-  * `last_modify_time` - The last modify time of project.
-  * `owner` - The owner of project.
-  * `region` - The region of project.
-  * `status` - The status of project.
-  * `policy` - (Available in 1.198.0+) The policy of project.
+* `projects` - A list of Log Project.
+
+---
+
+### `projects`
+
+The projects supports the following attributes:
+
+* `description` - The description of the project.
+* `id` - The ID of the project.
+* `project_name` - The name of the project.
+* `last_modify_time` - The last modify time of project.
+* `owner` - The owner of project.
+* `region` - The region of project.
+* `status` - The status of project.
+* `policy` - (Available in 1.198.0+) The policy of project.

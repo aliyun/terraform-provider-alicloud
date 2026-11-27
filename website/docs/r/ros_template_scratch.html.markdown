@@ -60,6 +60,8 @@ The following arguments are supported:
 * `source_resources` - (Optional) Source resource. See [`source_resources`](#source_resources) below.
 * `template_scratch_type` - (Required, ForceNew) The type of the Template scan. Valid Values: `ResourceImport` or `ArchitectureReplication`.
 
+---
+
 ### `source_resources`
 
 The source_resources supports the following:
@@ -67,19 +69,31 @@ The source_resources supports the following:
 * `resource_id` - (Required) The ID of the Source Resource.
 * `resource_type` - (Required) The type of the Source resource.
 
+---
+
 ### `source_resource_group`
 
 The source_resource_group supports the following:
 
 * `resource_group_id` - (Required) The ID of the Source Resource Group.
-* `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
+* `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group.
+
+  -> **NOTE:** A maximum of `20` resource type filter can be configured.
+
+---
 
 ### `source_tag`
 
 The source_tag supports the following:
 
-* `resource_tags` - (Required) Source label. **NOTE:** A maximum of 10 source labels can be configured.
-* `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group. **NOTE:** A maximum of `20` resource type filter can be configured.
+* `resource_tags` - (Required) Source label.
+
+  -> **NOTE:** A maximum of 10 source labels can be configured.
+* `resource_type_filter` - (Optional) Source resource type filter list. If the resource type list is specified, it means to scan the resources of the specified resource type and in the specified resource group; Otherwise, it means to scan all resources in the specified resource group.
+
+  -> **NOTE:** A maximum of `20` resource type filter can be configured.
+
+---
 
 ### `preference_parameters`
 
@@ -97,7 +111,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Template Scratch.
 * `delete` - (Defaults to 1 mins) Used when delete the Template Scratch.

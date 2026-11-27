@@ -129,13 +129,17 @@ The following arguments are supported:
   -> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
 
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
-* `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
+* `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://.
+
+  -> **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
 * `system_disk_category` - (Optional, ForceNew, String) Valid values: `all`, `local_disk`, `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`, `cloud_essd_entry`, `cloud_essd_xc0`, `cloud_essd_xc1`. only is used to some none I/O optimized instance. `cloud_auto` is Available since v1.184.0. `cloud_essd_xc0` and `cloud_essd_xc1` are Available since v2.2.0 and only supported in government cloud (政务云) regions.
 * `system_disk_name` - (Optional, Available since v1.101.0) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available since v1.101.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}.
 * `system_disk_performance_level` - (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
-* `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk. **NOTE:** If you want to use `system_disk_auto_snapshot_policy_id`, We recommend you to use the resource [alicloud_ecs_auto_snapshot_policy_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_auto_snapshot_policy_attachment).
+* `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk.
+
+  -> **NOTE:** If you want to use `system_disk_auto_snapshot_policy_id`, We recommend you to use the resource [alicloud_ecs_auto_snapshot_policy_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_auto_snapshot_policy_attachment).
 * `system_disk_storage_cluster_id` - (Optional, ForceNew, Available since v1.177.0) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters.
 * `system_disk_encrypted` - (Optional, ForceNew, Available since v1.177.0) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`.
   - `true`: Encrypts the system disk.
@@ -147,8 +151,12 @@ The following arguments are supported:
   - `true`: Enables the performance burst feature for the system disk.
   - `false`: Disables the performance burst feature for the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
-* `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic". **NOTE:** From version 1.243.0, the default value `PayByTraffic` will be removed.
-* `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth to the public network, measured in Mbps (Mega bit per second). Value range:  [0, 100]. **NOTE:** From version 1.243.0, the default value `0` will be removed.
+* `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
+
+  -> **NOTE:** From version 1.243.0, the default value `PayByTraffic` will be removed.
+* `internet_max_bandwidth_out` - (Optional) Maximum outgoing bandwidth to the public network, measured in Mbps (Mega bit per second). Value range:  [0, 100].
+
+  -> **NOTE:** From version 1.243.0, the default value `0` will be removed.
 * `host_name` - (Optional) Host name of the ECS, which is a string of at least two characters. “hostname” cannot start or end with “.” or “-“. In addition, two or more consecutive “.” or “-“ symbols are not allowed. On Windows, the host name can contain a maximum of 15 characters, which can be a combination of uppercase/lowercase letters, numerals, and “-“. The host name cannot contain dots (“.”) or contain only numeric characters. When it is changed, the instance will reboot to make the change take effect.
   On other OSs such as Linux, the host name can contain a maximum of 64 characters, which can be segments separated by dots (“.”), where each segment can contain uppercase/lowercase letters, numerals, or “_“. When it is changed, the instance will reboot to make the change take effect.
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
@@ -156,10 +164,13 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
 * `vpc_id` - (Optional, Available since v1.227.1) The ID of the VPC.
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect.
-* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`. **NOTE:** From version 1.243.0, the default value `PostPaid` will be removed.
-  **NOTE:** Since 1.9.6, it can be changed each other between `PostPaid` and `PrePaid`.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`.
+
+  -> **NOTE:** Since 1.9.6, it can be changed each other between `PostPaid` and `PrePaid`.
   However, since [some limitation about CPU core count in one month](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/modifyinstancechargetype),
   there strongly recommends that `Don't change instance_charge_type frequentlly in one month`.
+
+  -> **NOTE:** From version 1.243.0, the default value `PostPaid` will be removed.
 
 * `resource_group_id` - (Optional, Available since v1.57.0, Modifiable in 1.115.0) The Id of resource group which the instance belongs.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
@@ -190,9 +201,11 @@ The following arguments are supported:
   It supports to setting a [base64-encoded value](https://developer.hashicorp.com/terraform/language/functions/base64encode), and it is the recommended usage.
   From version 1.60.0, it can be updated in-place. If updated, the instance will reboot to make the change take effect.
   Note: Not all changes will take effect, and it depends on [cloud-init module type](https://cloudinit.readthedocs.io/en/latest/topics/modules.html).
-* `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid. **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
+* `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 
   -> **NOTE:** When modifying `key_name`, if the instance status is `Running`, the ECS instance will be rebooted; If the instance status is `Stopped`, the ECS instance status will be changed to `Running`.
+
+  -> **NOTE:** From version 1.268.0, `key_name` can be modified. If you want to use `key_name`, We recommend you to use the resource [alicloud_ecs_key_pair_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_key_pair_attachment).
 * `include_data_disks` - (Optional) Whether to change instance disks charge type when changing instance charge type.
 * `dry_run` - (Optional) Specifies whether to send a dry-run request. Default to false.
   - true: Only a dry-run request is sent and no instance is created. The system checks whether the required parameters are set, and validates the request format, service permissions, and available ECS instances. If the validation fails, the corresponding error code is returned. If the validation succeeds, the `DryRunOperation` error code is returned.
@@ -227,15 +240,24 @@ The following arguments are supported:
   - Deactive: Disable security enhancement strategy, it works on all images.
 
   -> **NOTE:** The ECS API does not return `security_enhancement_strategy`, so the provider cannot read it back into the state. For an imported instance (or an instance created without this field), the state value is empty; in this case, configuring or changing `security_enhancement_strategy` is ignored and will not force the instance to be recreated.
-* `data_disks` - (Optional, ForceNew, Available since v1.23.1) The list of data disks created with instance. **Note: The parameter is immutable after resource creation.** This resource only configures these disks during instance creation; it does not update or refresh the inline disk settings. See [`data_disks`](#data_disks) below.
-* `network_interfaces` - (Optional, ForceNew, Available since v1.212.0) The list of network interfaces created with instance. **Note: The parameter is immutable after resource creation.** See [`network_interfaces`](#network_interfaces) below.
+* `data_disks` - (Optional, Available since v1.23.1) The list of data disks created with instance. **Note: The parameter is immutable after resource creation.** This resource only configures these disks during instance creation; it does not update or refresh the inline disk settings. See [`data_disks`](#data_disks) below.
+* `network_interfaces` - (Optional, Available since v1.212.0) The list of network interfaces created with instance. **Note: The parameter is immutable after resource creation.** See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 * `hpc_cluster_id` - (Optional, ForceNew, Available since v1.144.0) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available since v1.144.0) A list of Secondary private IP addresses which is selected from within the CIDR block of the vSwitch.
-* `secondary_private_ip_address_count` - (Optional, Available since v1.145.0) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
-* `deployment_set_id` - (Optional, Available since v1.176.0) The ID of the deployment set to which to deploy the instance. **NOTE:** From version 1.176.0, instance's deploymentSetId can be removed when 'deployment_set_id' = "".
-* `operator_type` - (Optional, Available since v1.164.0) The operation type. It is valid when `instance_charge_type` is `PrePaid`. Default value: `upgrade`. Valid values: `upgrade`, `downgrade`. **NOTE:**  When the new instance type specified by the `instance_type` parameter has lower specifications than the current instance type, you must set `operator_type` to `downgrade`.
-* `stopped_mode` - (Optional, Available since v1.170.0) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`, `Not-applicable`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
+* `secondary_private_ip_address_count` - (Optional, Available since v1.145.0) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch.
+
+  -> **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
+* `deployment_set_id` - (Optional, Available since v1.176.0) The ID of the deployment set to which to deploy the instance.
+
+  -> **NOTE:** From version 1.176.0, instance's deploymentSetId can be removed when 'deployment_set_id' = "".
+* `operator_type` - (Optional, Available since v1.164.0) The operation type. It is valid when `instance_charge_type` is `PrePaid`. Default value: `upgrade`. Valid values: `upgrade`, `downgrade`.
+
+  -> **NOTE:** When the new instance type specified by the `instance_type` parameter has lower specifications than the current instance type, you must set `operator_type` to `downgrade`.
+* `stopped_mode` - (Optional, Available since v1.170.0) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`, `Not-applicable`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`.
+
+  -> **NOTE:** `Not-applicable`: Economical mode is not applicable to the instance.`
+
   * `KeepCharging`: standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
   * `StopCharging`: economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
 * `maintenance_time` - (Optional, Available since v1.181.0) The time of maintenance. See [`maintenance_time`](#maintenance_time) below.
@@ -254,14 +276,22 @@ The following arguments are supported:
   - optional: does not forcefully use the security-enhanced mode (IMDSv2).
   - required: forcefully uses the security-enhanced mode (IMDSv2). After you set this parameter to required, you cannot access instance metadata in normal mode.
 * `http_endpoint` - (Optional, Available since v1.192.0) Specifies whether to enable the access channel for instance metadata. Valid values: `enabled`, `disabled`. Default value: `enabled`.
-* `http_put_response_hop_limit` - (Optional, ForceNew) **NOTE:**: This parameter is not available for use yet. The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
+* `http_put_response_hop_limit` - (Optional, ForceNew)
+
+  -> **NOTE:** : This parameter is not available for use yet. The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
 * `instance_metadata_tags` - (Optional, Available since v1.291.0) Specifies whether to expose the tags of the instance in the instance metadata. Valid values: `enabled`, `disabled`. Default value: `disabled`.
-* `ipv6_address_count` - (Optional, ForceNew, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
-* `ipv6_addresses` - (Optional, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10. **NOTE:** From version 1.241.0, `ipv6_addresses` can be modified.
+* `ipv6_address_count` - (Optional, ForceNew, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10.
+
+  -> **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
+* `ipv6_addresses` - (Optional, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
+
+  -> **NOTE:** From version 1.241.0, `ipv6_addresses` can be modified.
 * `dedicated_host_id` - (Optional, ForceNew, Available since v1.201.0) The ID of the dedicated host on which to create the instance. If you set the DedicatedHostId parameter, the `spot_strategy` and `spot_price_limit` parameters cannot be set. This is because preemptible instances cannot be created on dedicated hosts.
-* `managed_host_id` - (Optional, ForceNew, Available since v2.1.0) The ID of the managed host on which to create the instance, such as `mh-f2d3647ca21****`. The managed host refers to the physical machine in the intelligent fully-managed resource pool. **NOTE:** You cannot specify both the `managed_host_id` and `dedicated_host_id` parameters.
+* `managed_host_id` - (Optional, ForceNew, Available since v2.1.0) The ID of the managed host on which to create the instance, such as `mh-f2d3647ca21****`. The managed host refers to the physical machine in the intelligent fully-managed resource pool.
 
   -> **NOTE:** The managed host of an instance cannot be changed after creation. Modifying it in the configuration triggers a replacement of the instance. The API returns the managed host ID only when `additional_attributes` contains `MANAGED_HOST_ID`, and the value is refreshed into the state only while `managed_host_id` is configured.
+
+  -> **NOTE:** You cannot specify both the `managed_host_id` and `dedicated_host_id` parameters.
 * `launch_template_id` - (Optional, ForceNew, Available since v1.213.1) The ID of the launch template. For more information, see [DescribeLaunchTemplates](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-describelaunchtemplates).To use a launch template to create an instance, you must use the `launch_template_id` or `launch_template_name` parameter to specify the launch template.
 * `launch_template_name` - (Optional, ForceNew, Available since v1.213.1) The name of the launch template.
 * `launch_template_version` - (Optional, ForceNew, Available since v1.213.1) The version of the launch template. If you set `launch_template_id` or `launch_template_name` parameter but do not set the version number of the launch template, the default template version is used.
@@ -287,15 +317,17 @@ The following arguments are supported:
   -> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
 * `private_pool_options_match_criteria` - (Optional, Available since v1.253.0) The type of the private pool. Default value: `None`. Valid values:
   - `Open`: Open private pool.
-  - `Target`: Specified private pool. **NOTE:** If `private_pool_options_match_criteria` is set to `Target`, `private_pool_options_id` is required.
+  - `Target`: Specified private pool.
   - `None`: No private pool. The capacity in private pools is not used.
+
+  -> **NOTE:** If `private_pool_options_match_criteria` is set to `Target`, `private_pool_options_id` is required.
 * `private_pool_options_id` - (Optional, Available since v1.253.0) The ID of the private pool.
 
 * `image_options` - (Optional, Set, Available since v1.237.0) The options of images. **Note: The parameter is immutable after resource creation.** See [`image_options`](#image_options) below.
 * `cpu_options` - (Optional, Set, Available since v1.267.0) The options of cpu. See [`cpu_options`](#cpu_options) below.
 * `allocate_public_ip` - (Optional, Bool, Deprecated since v1.7.0) Field `allocate_public_ip` has been deprecated from provider version 1.7.0. Setting  `internet_max_bandwidth_out` larger than 0 will allocate public ip for instance.
 * `internet_max_bandwidth_in` - (Optional, Int, Deprecated since v1.121.2) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
-* `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role. **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
+* `role_name` - (Optional, Deprecated since v1.275.0) The name of the Resource Access Management (RAM) role.
 
   -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -310,6 +342,10 @@ The following arguments are supported:
   However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
 
   -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
+
+  -> **NOTE:** From version 1.250.0, If you want to use `role_name`, We recommend you to use the resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment). Field `role_name` has been deprecated from provider version 1.275.0. New resource [alicloud_ecs_ram_role_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/ecs_ram_role_attachment) instead. From version 1.276.0, `role_name` can be modified.
+
+---
 
 ### `data_disks`
 
@@ -337,7 +373,7 @@ The data_disks supports the following:
   - `elastic_ephemeral_disk_premium` (Available since v1.274.0) : The premium elastic ephemeral disk.
   - `cloud_essd_xc0` (Available since v2.2.0) : The ESSD XC0 disk, only supported in government cloud (政务云) regions.
   - `cloud_essd_xc1` (Available since v2.2.0) : The ESSD XC1 disk, only supported in government cloud (政务云) regions.
-* `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
+* `performance_level` - (Optional) The performance level of the ESSD used as data disk:
   - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
   - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
   - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
@@ -355,6 +391,8 @@ The data_disks supports the following:
   - `true`: Enables the performance burst feature for the data disk.
   - `false`: Disables the performance burst feature for the data disk.
 
+---
+
 ### `network_interfaces`
 
 The network_interfaces supports the following.
@@ -369,6 +407,8 @@ The network_interfaces supports the following.
 * `source_dest_check` - (Optional, ForceNew, Bool, Available since v1.284.0) Specifies whether to enable the source and destination IP address check feature. We recommend that you enable the feature to improve network security. Valid values: `true`, `false`.
 * `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign Secondary ENI N.
 
+---
+
 ### `maintenance_time`
 
 The maintenance_time supports the following:
@@ -376,11 +416,15 @@ The maintenance_time supports the following:
 * `start_time` - (Optional) The start time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
 * `end_time` - (Optional) The end time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
 
+---
+
 ### `image_options`
 
 The image_options supports the following:
 
 * `login_as_non_root` - (Optional, ForceNew) Whether to allow the instance logging in with the ecs-user user.
+
+---
 
 ### `cpu_options`
 
@@ -414,7 +458,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.46.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status).
   `Note`: There are extra at most 2 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.

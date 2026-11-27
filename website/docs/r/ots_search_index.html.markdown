@@ -242,6 +242,8 @@ The following arguments are supported:
   If the retention period exceeds the TTL value, OTS automatically deletes expired data.
 * `schema` - (Required, ForceNew) The schema of the search index. If changed, a new index would be created. See [`schema`](#schema) below.
 
+---
+
 ### `schema`
 
 The schema supports the following:
@@ -249,6 +251,8 @@ The schema supports the following:
 * `field_schema` - (Required, ForceNew, List) A list of field schemas. The Provider ignores field order when comparing the enclosing `schema` block. See [`field_schema`](#schema-field_schema) below.
 * `index_setting` - (Optional, ForceNew) The settings of the search index, including routingFields. See [`index_setting`](#schema-index_setting) below.
 * `index_sort` - (Optional, ForceNew) The presorting settings of the search index, including sorters. If no value is specified for the indexSort parameter, field values are sorted by primary key by default. See [`index_sort`](#schema-index_sort) below.
+
+---
 
 ### `schema-field_schema`
 
@@ -269,6 +273,8 @@ The field_schema supports the following:
 
   -> **NOTE:** The Provider rejects attributes that do not apply to a `Nested` container itself (`is_array = true`, `store = true`, a non-empty `analyzer`, `enable_sort_and_agg = true` and `is_virtual_field = true`). `Vector` fields are not supported as `Nested` sub-fields.
 
+---
+
 ### `schema-field_schema-vector_options`
 
 The vector_options supports the following:
@@ -276,6 +282,8 @@ The vector_options supports the following:
 * `data_type` - (Optional, ForceNew) The data type of the vector. Type: String. Valid values: `float32`. Required by the service. Available since v2.4.0.
 * `dimension` - (Optional, ForceNew) The number of dimensions of the vector. Type: Int. Valid values: 1 to 4096. Required by the service. Available since v2.4.0.
 * `metric_type` - (Optional, ForceNew) The similarity metric. Type: String. Valid values: `euclidean`, `cosine`, `dot_product`. Required by the service. Available since v2.4.0.
+
+---
 
 ### `schema-field_schema-sub_field_schemas`
 
@@ -292,17 +300,23 @@ The sub_field_schemas describes one sub-field of a `Nested` field and supports t
 * `is_virtual_field` - (Optional, ForceNew) Specifies whether the sub-field is a virtual column. Type: Boolean. When set to `true`, `source_field_name` is required and `index` must be `true`. Available since v2.4.0.
 * `source_field_name` - (Optional, ForceNew) Specifies the data table column that provides the values of a virtual sub-field. Type: String. Exactly one source column is supported, it must exist in the data table, and its type must map to the target search index sub-field type. Only valid together with `is_virtual_field = true`. See [Virtual columns](https://help.aliyun.com/zh/tablestore/table-store-service/virtual-columns). Available since v2.4.0.
 
+---
+
 ### `schema-index_setting`
 
 The index_setting supports the following:
 
 * `routing_fields` - (Optional, ForceNew) Specifies custom routing fields. You can specify some primary key columns as routing fields. Tablestore distributes data that is written to a search index across different partitions based on the specified routing fields. The data whose routing field values are the same is distributed to the same partition.
 
+---
+
 ### `schema-index_sort`
 
 The index_sort supports the following:
 
 * `sorter` - (Required, ForceNew)  Specifies the presorting method for the search index. PrimaryKeySort and FieldSort are supported. See [`sorter`](#schema-index_sort-sorter) below.
+
+---
 
 ### `schema-index_sort-sorter`
 
@@ -324,7 +338,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the OTS search index.
 * `delete` - (Defaults to 2 mins) Used when delete the OTS search index.

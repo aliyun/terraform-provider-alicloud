@@ -105,23 +105,30 @@ output "vpn_gateway_vco_route_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Vco Route IDs.
-* `vpn_connection_id` - (Required, ForceNew) The id of the vpn connection.
+* `ids` - (Optional, Computed) A list of Vco Route IDs.
+* `vpn_connection_id` - (Required) The id of the vpn connection.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `route_entry_type` - (Optional, ForceNew) The Routing input type. Valid values: `custom`, `bgp`.
-* `status` - (Optional, ForceNew) The status of the vpn route entry. Valid values: `normal`, `published`.
+* `route_entry_type` - (Optional) The Routing input type. Valid values: `custom`, `bgp`.
+* `status` - (Optional) The status of the vpn route entry. Valid values: `normal`, `published`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `routes` - A list of Vpn Gateway Vco Routes. Each element contains the following attributes:
-  * `as_path` - List of autonomous system numbers through which BGP routing entries pass.
-  * `create_time` - The creation time of the VPN destination route.
-  * `source` - The source CIDR block of the destination route.
-  * `status` - The status of the vpn route entry.
-  * `weight` - The weight value of the destination route.
-  * `next_hop` - The next hop of the destination route.
-  * `vpn_connection_id` - The id of the vpn connection.
-  * `route_dest` - The destination network segment of the destination route.
-  * `id` - The ID of the Vpn Gateway Vco Routes.
+* `routes` - A list of Vpn Gateway Vco Routes.
+
+---
+
+### `routes`
+
+The routes supports the following attributes:
+
+* `as_path` - List of autonomous system numbers through which BGP routing entries pass.
+* `create_time` - The creation time of the VPN destination route.
+* `source` - The source CIDR block of the destination route.
+* `status` - The status of the vpn route entry.
+* `weight` - The weight value of the destination route.
+* `next_hop` - The next hop of the destination route.
+* `vpn_connection_id` - The id of the vpn connection.
+* `route_dest` - The destination network segment of the destination route.
+* `id` - The ID of the Vpn Gateway Vco Routes.

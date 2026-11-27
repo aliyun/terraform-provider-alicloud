@@ -140,7 +140,6 @@ The following arguments are supported:
 * `target_value` - (Optional, Available since v1.58.0) The target value for the metric.
 * `disable_scale_in` - (Optional, Available since v1.58.0) Indicates whether scale in by the target tracking policy is disabled. Default to false.
 * `step_adjustment` - (Optional, Available since v1.58.0) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
-* `ari` - (Optional) The unique identifier of the scaling rule.
 * `alarm_dimension` - (Optional, ForceNew, Available since v1.216.0) AlarmDimension for StepScalingRule. See [`alarm_dimension`](#alarm_dimension) below.
 * `predictive_scaling_mode` - (Optional, Available since v1.222.0) The mode of the predictive scaling rule. Valid values: PredictAndScale, PredictOnly.
 * `initial_max_size` - (Optional, Available since v1.222.0) The maximum number of ECS instances that can be added to the scaling group. If you specify InitialMaxSize, you must also specify PredictiveValueBehavior.
@@ -151,6 +150,8 @@ The following arguments are supported:
 * `metric_type` - (Optional, Available since v1.245.0) The type of the metric. Valid values: system, custom, hybrid.
 * `hybrid_metrics` - (Optional, Available since v1.245.0) The Hybrid Cloud Monitoring metrics. See [`hybrid_metrics`](#hybrid_metrics) below.
 
+---
+
 ### `step_adjustment`
 
 The stepAdjustment mapping supports the following:
@@ -158,6 +159,8 @@ The stepAdjustment mapping supports the following:
 * `metric_interval_lower_bound` - (Optional) The lower bound of step.
 * `metric_interval_upper_bound` - (Optional) The upper bound of step.
 * `scaling_adjustment` - (Optional) The adjust value of step.
+
+---
 
 ### `hybrid_metrics`
 
@@ -170,12 +173,16 @@ The HybridMetrics mapping supports the following:
 * `dimensions` - (Optional) The structure of volumeMounts.
   See [`dimensions`](#hybrid_metrics-dimensions) below for details.
 
+---
+
 ### `hybrid_metrics-dimensions`
 
 The dimensions supports the following:
 
 * `dimension_key` - (Optional) The key of the metric dimension.
 * `dimension_value` - (Optional) The value of the metric dimension.
+
+---
 
 ### `alarm_dimension`
 
@@ -189,6 +196,7 @@ The alarmDimension mapping supports the following:
 The following attributes are exported:
 
 * `id` - The scaling rule ID.
+* `ari` - (Computed) The unique identifier of the scaling rule.
 
 ## Import
 

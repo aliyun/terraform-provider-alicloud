@@ -48,6 +48,8 @@ The following arguments are supported:
 * `query_args` - (Optional, Set) The query parameters sent to the server. At most one block is supported. See [`query_args`](#query_args) below.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+---
+
 ### `query_args`
 
 The query_args supports the following:
@@ -68,11 +70,18 @@ QueryArgs values are passed unchanged for server-side interpretation; filtering 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of List names.
-* `lists` - A list of Lists. Each element contains the following attributes:
-  * `id` - The ID of the List.
-  * `list_id` - The ID of the List.
-  * `name` - The name of the List.
-  * `kind` - The type of the List.
-  * `description` - The description of the List.
-  * `length` - The number of items contained in the List.
-  * `update_time` - The last modification time of the List.
+* `lists` - A list of Lists.
+
+---
+
+### `lists`
+
+The lists supports the following attributes:
+
+* `id` - The ID of the List.
+* `list_id` - The ID of the List.
+* `name` - The name of the List.
+* `kind` - The type of the List.
+* `description` - The description of the List.
+* `length` - The number of items contained in the List.
+* `update_time` - The last modification time of the List.

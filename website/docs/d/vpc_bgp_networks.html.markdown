@@ -44,17 +44,24 @@ output "vpc_bgp_network_id_3" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Bgp Network IDs.
+* `ids` - (Optional, Computed)  A list of Bgp Network IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `router_id` - (Optional, ForceNew) The ID of the router to which the route table belongs.
-* `status` - (Optional, ForceNew) The state of the advertised BGP network. Valid values: `Available`, `Pending`, `Deleting`.
+* `router_id` - (Optional) The ID of the router to which the route table belongs.
+* `status` - (Optional) The state of the advertised BGP network. Valid values: `Available`, `Pending`, `Deleting`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `networks` - A list of Vpc Bgp Networks. Each element contains the following attributes:
-  * `dst_cidr_block` - Advertised BGP networks.
-  * `id` - The ID of the Bgp Network. The value formats as `<router_id>:<dst_cidr_block>`.
-  * `router_id` - The ID of the vRouter.
-  * `status` - The state of the advertised BGP network.
+* `networks` - A list of Vpc Bgp Networks.
+
+---
+
+### `networks`
+
+The networks supports the following attributes:
+
+* `dst_cidr_block` - Advertised BGP networks.
+* `id` - The ID of the Bgp Network. The value formats as `<router_id>:<dst_cidr_block>`.
+* `router_id` - The ID of the vRouter.
+* `status` - The state of the advertised BGP network.

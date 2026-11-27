@@ -32,18 +32,25 @@ output "ga_additional_certificate_id_1" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
-* `ids` - (Optional, ForceNew, Computed)  A list of Additional Certificate IDs.
-* `listener_id` - (Required, ForceNew) The ID of the listener. Only HTTPS listeners support this parameter.
+* `accelerator_id` - (Required) The ID of the GA instance.
+* `ids` - (Optional, Computed)  A list of Additional Certificate IDs.
+* `listener_id` - (Required) The ID of the listener. Only HTTPS listeners support this parameter.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `certificates` - A list of Ga Additional Certificates. Each element contains the following attributes:
-  * `accelerator_id` - The ID of the GA instance.
-  * `certificate_id` - The Certificate ID.
-  * `domain` - The domain name specified by the certificate.
-  * `id` - The ID of the Additional Certificate. The value formats as `<accelerator_id>:<listener_id>:<domain>`.
-  * `listener_id` - The ID of the listener. Only HTTPS listeners support this parameter.
+* `certificates` - A list of Ga Additional Certificates.
+
+---
+
+### `certificates`
+
+The certificates supports the following attributes:
+
+* `accelerator_id` - The ID of the GA instance.
+* `certificate_id` - The Certificate ID.
+* `domain` - The domain name specified by the certificate.
+* `id` - The ID of the Additional Certificate. The value formats as `<accelerator_id>:<listener_id>:<domain>`.
+* `listener_id` - The ID of the listener. Only HTTPS listeners support this parameter.

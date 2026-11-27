@@ -33,10 +33,10 @@ output "waf_certificate" {
 
 The following arguments are supported:
 
-* `domain` - (Optional, ForceNew) WAF domain name.
-* `ids` - (Optional, ForceNew, Computed)  A list of Certificate IDs.
-* `instance_id` - (Required, ForceNew) WAF instance ID.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Certificate name.
+* `domain` - (Optional) WAF domain name.
+* `ids` - (Optional, Computed)  A list of Certificate IDs.
+* `instance_id` - (Required) WAF instance ID.
+* `name_regex` - (Optional) A regex string to filter results by Certificate name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,12 +44,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Certificate names.
-* `certificates` - A list of Waf Certificates. Each element contains the following attributes:
-  * `certificate_id` - Certificate recording ID.
-  * `certificate_name` - Your certificate name.
-  * `common_name` - Certificate bound to the domain name.
-  * `domain` - The domain that you want to add to WAF.
-  * `id` - The ID of the Certificate.
-  * `instance_id` - WAF instance ID.
-  * `is_using` - Indicates whether the certificate is in use.
-  * `sans` - The Subject Alternative Names (SAN) of the certificate.
+* `certificates` - A list of Waf Certificates.
+
+---
+
+### `certificates`
+
+The certificates supports the following attributes:
+
+* `certificate_id` - Certificate recording ID.
+* `certificate_name` - Your certificate name.
+* `common_name` - Certificate bound to the domain name.
+* `domain` - The domain that you want to add to WAF.
+* `id` - The ID of the Certificate.
+* `instance_id` - WAF instance ID.
+* `is_using` - Indicates whether the certificate is in use.
+* `sans` - The Subject Alternative Names (SAN) of the certificate.

@@ -152,6 +152,8 @@ The following arguments are supported:
 * `tags` - (Optional, Map) Resource tags
 * `version_management` - (Optional) Version management enabled. When true, version management is turned on for the table site.
 
+---
+
 ### `site_waf_settings`
 
 The site_waf_settings supports the following:
@@ -163,17 +165,23 @@ The site_waf_settings supports the following:
 * `client_ip_identifier` - (Optional, Set, Available since v1.276.0) Client IP Identification. See [`client_ip_identifier`](#site_waf_settings-client_ip_identifier) below.
 * `security_level` - (Optional, Set, Available since v1.276.0) Security Level. See [`security_level`](#site_waf_settings-security_level) below.
 
+---
+
 ### `site_waf_settings-add_bot_protection_headers`
 
 The site_waf_settings-add_bot_protection_headers supports the following:
 
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
+---
+
 ### `site_waf_settings-add_security_headers`
 
 The site_waf_settings-add_security_headers supports the following:
 
 * `enable` - (Optional, Available since v1.276.0) Switch.
+
+---
 
 ### `site_waf_settings-bandwidth_abuse_protection`
 
@@ -185,6 +193,8 @@ The site_waf_settings-bandwidth_abuse_protection supports the following:
   - `captcha`: Captcha.
 * `status` - (Optional, Available since v1.276.0) Anti-theft brush Rule Status.
 
+---
+
 ### `site_waf_settings-bot_management`
 
 The site_waf_settings-bot_management supports the following:
@@ -195,6 +205,8 @@ The site_waf_settings-bot_management supports the following:
 * `likely_bots` - (Optional, Set, Available since v1.276.0) Likely Bot. See [`likely_bots`](#site_waf_settings-bot_management-likely_bots) below.
 * `verified_bots` - (Optional, Set, Available since v1.276.0) Verified Bot. See [`verified_bots`](#site_waf_settings-bot_management-verified_bots) below.
 
+---
+
 ### `site_waf_settings-client_ip_identifier`
 
 The site_waf_settings-client_ip_identifier supports the following:
@@ -203,6 +215,8 @@ The site_waf_settings-client_ip_identifier supports the following:
 * `mode` - (Optional, Available since v1.276.0) Identification Mode.Valid values:
   - `headers`: Specify headers.
   - `connection_ip`: Connection IP.
+
+---
 
 ### `site_waf_settings-security_level`
 
@@ -216,6 +230,8 @@ The site_waf_settings-security_level supports the following:
   - `essentially_off`: Essentially off.
   - `off`: Completely off.
 
+---
+
 ### `site_waf_settings-bot_management-definite_bots`
 
 The site_waf_settings-bot_management-definite_bots supports the following:
@@ -226,17 +242,23 @@ The site_waf_settings-bot_management-definite_bots supports the following:
   - `monitor`: Monitor.
   - `captcha`: Captcha.
 
+---
+
 ### `site_waf_settings-bot_management-effect_on_static`
 
 The site_waf_settings-bot_management-effect_on_static supports the following:
 
 * `enable` - (Optional, Available since v1.276.0) Switch.
 
+---
+
 ### `site_waf_settings-bot_management-js_detection`
 
 The site_waf_settings-bot_management-js_detection supports the following:
 
 * `enable` - (Optional, Available since v1.276.0) Switch.
+
+---
 
 ### `site_waf_settings-bot_management-likely_bots`
 
@@ -247,6 +269,8 @@ The site_waf_settings-bot_management-likely_bots supports the following:
   - `deny`: Deny.
   - `monitor`: Monitor.
   - `captcha`: Captcha.
+
+---
 
 ### `site_waf_settings-bot_management-verified_bots`
 
@@ -265,20 +289,62 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the website was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `site_waf_settings` - Site WAF Configuration Details.
-  * `bandwidth_abuse_protection` - Anti-theft brush.
-    * `id` - Anti-theft brush Rule ID.
-  * `bot_management` - Bot Management.
-    * `definite_bots` - Definitely Bot.
-      * `id` - Rule ID.
-    * `likely_bots` - Likely Bot.
-      * `id` - Rule ID.
-    * `verified_bots` - Verified Bot.
-      * `id` - Rule ID.
 * `status` - The status of the resource
+
+---
+
+### `site_waf_settings`
+
+The site_waf_settings supports the following attributes:
+
+* `bandwidth_abuse_protection` - Anti-theft brush.
+* `bot_management` - Bot Management.
+
+---
+
+### `site_waf_settings.bandwidth_abuse_protection`
+
+The bandwidth_abuse_protection supports the following attributes:
+
+* `id` - Anti-theft brush Rule ID.
+
+---
+
+### `site_waf_settings.bot_management`
+
+The bot_management supports the following attributes:
+
+* `definite_bots` - Definitely Bot.
+* `likely_bots` - Likely Bot.
+* `verified_bots` - Verified Bot.
+
+---
+
+### `site_waf_settings.bot_management.definite_bots`
+
+The definite_bots supports the following attributes:
+
+* `id` - Rule ID.
+
+---
+
+### `site_waf_settings.bot_management.likely_bots`
+
+The likely_bots supports the following attributes:
+
+* `id` - Rule ID.
+
+---
+
+### `site_waf_settings.bot_management.verified_bots`
+
+The verified_bots supports the following attributes:
+
+* `id` - Rule ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 45 mins) Used when create the Site.
 * `delete` - (Defaults to 15 mins) Used when delete the Site.

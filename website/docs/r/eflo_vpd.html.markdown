@@ -48,7 +48,9 @@ resource "alicloud_eflo_vpd" "default" {
 The following arguments are supported:
 
 * `cidr` - (Required, ForceNew) The CIDR block of the VPD.
-* `resource_group_id` - (Optional) The Resource group ID. **NOTE:** From version 1.263.0, `resource_group_id` can be modified.
+* `resource_group_id` - (Optional) The Resource group ID.
+
+  -> **NOTE:** From version 1.263.0, `resource_group_id` can be modified.
 * `secondary_cidr_blocks` - (Optional, List, Available since v1.263.0) The additional CIDR block.
 * `tags` - (Optional, Map, Available since v1.263.0) The tag of the resource.
 * `vpd_name` - (Required) The name of the VPD instance.
@@ -65,7 +67,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vpd.
 * `delete` - (Defaults to 5 mins) Used when delete the Vpd.

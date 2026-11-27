@@ -34,20 +34,27 @@ output "first_brain_industrial_pid_project_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Pid Project IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Pid Project name.
+* `ids` - (Optional, Computed)  A list of Pid Project IDs.
+* `name_regex` - (Optional) A regex string to filter results by Pid Project name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `pid_organization_id` - (Optional, ForceNew) The ID of Pid Organization.
-* `pid_project_name` - (Optional, ForceNew) The name of Pid Project.
+* `pid_organization_id` - (Optional) The ID of Pid Organization.
+* `pid_project_name` - (Optional) The name of Pid Project.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Pid Project names.
-* `projects` - A list of Brain Industrial Pid Projects. Each element contains the following attributes:
-	* `id` - The ID of the Pid Project.
-	* `pid_organization_id` - The ID of Pid Organization.
-	* `pid_project_desc` - The description of Pid Project.
-	* `pid_project_id` - The ID of Pid Project.
-	* `pid_project_name` - The name of Pid Project.
+* `projects` - A list of Brain Industrial Pid Projects.
+
+---
+
+### `projects`
+
+The projects supports the following attributes:
+
+* `id` - The ID of the Pid Project.
+* `pid_organization_id` - The ID of Pid Organization.
+* `pid_project_desc` - The description of Pid Project.
+* `pid_project_id` - The ID of Pid Project.
+* `pid_project_name` - The name of Pid Project.

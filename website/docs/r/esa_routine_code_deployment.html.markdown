@@ -63,6 +63,8 @@ The following arguments are supported:
 * `strategy` - (Optional, ForceNew) The deployment strategy. Valid values: `percentage`. Default value: `percentage`.
 * `code_versions` - (Required, ForceNew) The list of code versions and their traffic percentages. At most two versions are supported, and the percentages must sum to 100. See [`code_versions`](#code_versions) below.
 
+---
+
 ### `code_versions`
 
 The `code_versions` supports the following:
@@ -79,7 +81,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Routine Code Deployment.
 * `delete` - (Defaults to 5 mins) Used when delete the Routine Code Deployment.

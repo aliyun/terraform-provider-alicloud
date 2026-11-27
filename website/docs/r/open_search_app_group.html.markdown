@@ -60,6 +60,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the resource.
 * `current_version` - (Optional) The version of Application Group Name.
 
+---
+
 ### `quota`
 
 The quota supports the following:
@@ -68,6 +70,8 @@ The quota supports the following:
 * `compute_resource` - (Required) Computing resources. Unit: LCU.
 * `qps` - (Optional) Search request. Unit: times/second.
 * `spec` - (Required) Specification. Valid values: `opensearch.share.junior` (Entry-level), `opensearch.share.common` (Shared universal), `opensearch.share.compute` (Shared computing), `opensearch.share.storage` (Shared storage type), `opensearch.private.common` (Exclusive universal type), `opensearch.private.compute` (Exclusive computing type), `opensearch.private.storage` (Exclusive storage type).
+
+---
 
 ### `order`
 

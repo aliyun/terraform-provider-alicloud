@@ -4,6 +4,8 @@ package slb
 // replace the transport entry without exporting production symbols.
 var ListenerAclAttachmentRPCPostForTest = &listenerAclAttachmentRpcPost
 
+var LoadBalancerCreateRetryableForTest = isLoadBalancerCreateRetryable
+
 // ListenerAclAttachmentConfirmTimeoutForTest lets tests shorten the bounded
 // confirmation window without adding production configuration.
 var ListenerAclAttachmentConfirmTimeoutForTest = &listenerAclAttachmentConfirmTimeout

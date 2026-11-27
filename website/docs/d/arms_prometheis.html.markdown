@@ -66,9 +66,9 @@ output "arms_prometheis_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Prometheus IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Prometheus name.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `ids` - (Optional, Computed) A list of Prometheus IDs.
+* `name_regex` - (Optional) A regex string to filter results by Prometheus name.
+* `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `enable_details` - (Optional) Whether to query details about the instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -78,24 +78,31 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prometheus names.
-* `prometheis` - A list of Prometheus. Each element contains the following attributes:
-  * `id` - The ID of the Prometheus.
-  * `cluster_id` - The ID of the cluster.
-  * `cluster_type` - The type of the cluster.
-  * `cluster_name` - The name of the cluster.
-  * `vpc_id` - The ID of the VPC.
-  * `vswitch_id` - The ID of the vSwitch.
-  * `security_group_id` - The ID of the security group.
-  * `sub_clusters_json` - The child instance json string of the globalView instance.
-  * `grafana_instance_id` - The ID of the Grafana workspace.
-  * `resource_group_id` - The ID of the resource group.
-  * `remote_read_intra_url` - RemoteRead intranet Url.
-  * `remote_read_inter_url` - Public Url of remoteRead.
-  * `remote_write_intra_url` - RemoteWrite Intranet Url.
-  * `remote_write_inter_url` - RemoteWrite public Url.
-  * `push_gate_way_intra_url` - PushGateway intranet Url.
-  * `push_gate_way_inter_url` - PushGateway public network Url.
-  * `http_api_intra_url` - Http api intranet address.
-  * `http_api_inter_url` - Http api public network address.
-  * `auth_token` - The token used to access the data source.
-  * `tags` - The tag of the Prometheus.
+* `prometheis` - A list of Prometheus.
+
+---
+
+### `prometheis`
+
+The prometheis supports the following attributes:
+
+* `id` - The ID of the Prometheus.
+* `cluster_id` - The ID of the cluster.
+* `cluster_type` - The type of the cluster.
+* `cluster_name` - The name of the cluster.
+* `vpc_id` - The ID of the VPC.
+* `vswitch_id` - The ID of the vSwitch.
+* `security_group_id` - The ID of the security group.
+* `sub_clusters_json` - The child instance json string of the globalView instance.
+* `grafana_instance_id` - The ID of the Grafana workspace.
+* `resource_group_id` - The ID of the resource group.
+* `remote_read_intra_url` - RemoteRead intranet Url.
+* `remote_read_inter_url` - Public Url of remoteRead.
+* `remote_write_intra_url` - RemoteWrite Intranet Url.
+* `remote_write_inter_url` - RemoteWrite public Url.
+* `push_gate_way_intra_url` - PushGateway intranet Url.
+* `push_gate_way_inter_url` - PushGateway public network Url.
+* `http_api_intra_url` - Http api intranet address.
+* `http_api_inter_url` - Http api public network address.
+* `auth_token` - The token used to access the data source.
+* `tags` - The tag of the Prometheus.

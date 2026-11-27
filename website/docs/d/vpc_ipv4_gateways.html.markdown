@@ -35,25 +35,32 @@ output "vpc_ipv4_gateway_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Ipv4 Gateway IDs.
-* `ipv4_gateway_name` - (Optional, ForceNew) The name of the IPv4 gateway.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Ipv4 Gateway name.
+* `ids` - (Optional, Computed)  A list of Ipv4 Gateway IDs.
+* `ipv4_gateway_name` - (Optional) The name of the IPv4 gateway.
+* `name_regex` - (Optional) A regex string to filter results by Ipv4 Gateway name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Creating`, `Created`, `Deleting`, `Pending`, `Deleted`.
-* `vpc_id` - (Optional, ForceNew) The ID of the VPC associated with the IPv4 Gateway.
+* `status` - (Optional) The status of the resource. Valid values: `Creating`, `Created`, `Deleting`, `Pending`, `Deleted`.
+* `vpc_id` - (Optional) The ID of the VPC associated with the IPv4 Gateway.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Ipv4 Gateway names.
-* `gateways` - A list of Vpc Ipv4 Gateways. Each element contains the following attributes:
-	* `create_time` - The creation time of the resource.
-	* `enabled` - Indicates whether the IPv4 gateway is activated.
-	* `id` - The ID of the Ipv4 Gateway.
-	* `ipv4_gateway_description` - The description of the IPv4 gateway.
-	* `ipv4_gateway_id` - The resource attribute field that represents the resource level 1 ID.
-	* `ipv4_gateway_name` - The name of the IPv4 gateway.
-	* `ipv4_gateway_route_table_id` - ID of the route table associated with IPv4 Gateway.
-	* `status` - The status of the resource.
-	* `vpc_id` - The ID of the VPC associated with the IPv4 Gateway.
+* `gateways` - A list of Vpc Ipv4 Gateways.
+
+---
+
+### `gateways`
+
+The gateways supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `enabled` - Indicates whether the IPv4 gateway is activated.
+* `id` - The ID of the Ipv4 Gateway.
+* `ipv4_gateway_description` - The description of the IPv4 gateway.
+* `ipv4_gateway_id` - The resource attribute field that represents the resource level 1 ID.
+* `ipv4_gateway_name` - The name of the IPv4 gateway.
+* `ipv4_gateway_route_table_id` - ID of the route table associated with IPv4 Gateway.
+* `status` - The status of the resource.
+* `vpc_id` - The ID of the VPC associated with the IPv4 Gateway.

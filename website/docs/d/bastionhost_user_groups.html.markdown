@@ -40,20 +40,27 @@ output "bastionhost_user_group_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of User Group self IDs.
-* `instance_id` - (Required, ForceNew) Specify the New Group of the Bastion Host of Instance Id.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by User Group name.
+* `ids` - (Optional, Computed)  A list of User Group self IDs.
+* `instance_id` - (Required) Specify the New Group of the Bastion Host of Instance Id.
+* `name_regex` - (Optional) A regex string to filter results by User Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `user_group_name` - (Optional, ForceNew) Specify the New Group Name. Supports up to 128 Characters.
+* `user_group_name` - (Optional) Specify the New Group Name. Supports up to 128 Characters.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of User Group names.
-* `groups` - A list of Bastionhost User Groups. Each element contains the following attributes:
-  * `comment` - Specify the New Group of Remark Information. Supports up to 500 Characters.
-  * `id` - The ID of the User Group.
-  * `instance_id` - Specify the New Group of the Bastion Host of Instance Id.
-  * `user_group_id` - The User Group ID.
-  * `user_group_name` - Specify the New Group Name. Supports up to 128 Characters.
+* `groups` - A list of Bastionhost User Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `comment` - Specify the New Group of Remark Information. Supports up to 500 Characters.
+* `id` - The ID of the User Group.
+* `instance_id` - Specify the New Group of the Bastion Host of Instance Id.
+* `user_group_id` - The User Group ID.
+* `user_group_name` - Specify the New Group Name. Supports up to 128 Characters.

@@ -92,7 +92,10 @@ The alicloud_alikafka_instance resource allows you to manage your alikafka insta
 
 The following arguments are supported:
 
-* `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
+* `deploy_type` - (Required) The deployment type of the instance.
+
+  -> **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
+
   - `4`: eip/vpc instance
   - `5`: vpc instance.
 * `instance_type` - (Optional, ForceNew, Available since v1.253.0) The type of the Instance. Default value: `alikafka`. Valid values:
@@ -117,13 +120,17 @@ The following arguments are supported:
   - You should specify one of the `io_max` and `io_max_spec` parameters, and `io_max_spec` is recommended.
   - For more information about the valid values, see [Billing](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/billing-overview).
 * `eip_max` - (Optional) The max bandwidth of the instance. It will be ignored when `deploy_type = 5`. When modify this value, it only supports adjust to a greater value.
-* `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group.
+
+  -> **NOTE:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
 * `paid_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PostPaid`, `PrePaid`. When modify this value, it only support adjust from `PostPaid` to `PrePaid`.
 * `spec_type` - (Optional) The instance edition. Default value: `normal`. Valid values:
   - If `instance_type` is set to `alikafka`. Valid values: `normal`, `professional`, `professionalForHighRead`.
-  - If `instance_type` is set to `alikafka_serverless`. Valid values: `basic`, `normal`, `professional`. **NOTE:** `basic` is not supported when `paid_type` is set to `PrePaid`.
+  - If `instance_type` is set to `alikafka_serverless`. Valid values: `basic`, `normal`, `professional`.
   - If `instance_type` is set to `alikafka_confluent`. Valid values: `professional`, `enterprise`.
+
+  -> **NOTE:** `basic` is not supported when `paid_type` is set to `PrePaid`.
 * `vswitch_id` - (Optional, ForceNew) The ID of attaching vswitch to instance.
 * `security_group` - (Optional, ForceNew, Available since v1.93.0) The ID of security group for this instance. If the security group is empty, system will create a default one.
 * `service_version` - (Optional, Available since v1.112.0) The version of the Instance. Valid values:
@@ -134,7 +141,9 @@ The following arguments are supported:
 * `kms_key_id` - (Optional, ForceNew, Available since v1.180.0) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance. For more information, see [How to use it](https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/developer-reference/api-alikafka-2019-09-16-updateinstanceconfig).
 * `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
-* `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format. **NOTE**: When the available zone is insufficient, another availability zone may be deployed.
+* `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format.
+
+  -> **NOTE:** : When the available zone is insufficient, another availability zone may be deployed.
 * `enable_auto_group` - (Optional, Bool, Available since v1.241.0) Specify whether to enable the flexible group creation feature. Default value: `false`. Valid values:
   - `true`: Enables the flexible group creation feature.
   - `false`: Disabled the flexible group creation feature.
@@ -142,7 +151,9 @@ The following arguments are supported:
   - `enable`: Enables the automatic topic creation feature.
   - `disable`: Disabled the automatic topic creation feature.
 * `default_topic_partition_num` - (Optional, Int, Available since v1.241.0) The number of partitions in a topic that is automatically created.
-* `password` - (Optional, Available since v1.253.0) The instance password. **NOTE:** If `instance_type` is set to `alikafka_confluent`, `password` is required.
+* `password` - (Optional, Available since v1.253.0) The instance password.
+
+  -> **NOTE:** If `instance_type` is set to `alikafka_confluent`, `password` is required.
 * `vswitch_ids` - (Optional, ForceNew, List, Available since v1.241.0) The IDs of the vSwitches with which the instance is associated.
 
   -> **NOTE:** If `instance_type` is set to `alikafka` or `alikafka_serverless`, `vswitch_ids` is required. When `instance_type` is set to `alikafka_confluent`, you must specify at least one of the `vswitch_id` and `vswitch_ids`, and if you specify both `vswitch_id` and `vswitch_ids`, only the `vswitch_ids` takes effect.
@@ -164,12 +175,16 @@ The following arguments are supported:
 | 90     | 2100-6100:100          |        100-450:1         |       1-500:1        |
 | 120    | 2700-6100:100          |        150-450:1         |       1-500:1        |
 
+---
+
 ### `serverless_config`
 
 The serverless_config supports the following:
 
 * `reserved_publish_capacity` - (Optional, Int) The reserved capacity for publishing messages. The minimum value is `60`.
 * `reserved_subscribe_capacity` - (Optional, Int) The reserved capacity for subscribing to message. The minimum value is `20`.
+
+---
 
 ### `confluent_config`
 
@@ -219,7 +234,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.180.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the resource.
 * `update` - (Defaults to 120 mins) Used when update the resource.

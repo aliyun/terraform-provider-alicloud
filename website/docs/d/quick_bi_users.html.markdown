@@ -31,22 +31,29 @@ output "quick_bi_user_id_1" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of User IDs.
-* `keyword` - (Optional, ForceNew) The keywords of the nicknames or usernames of the members of the organization.
+* `ids` - (Optional, Computed)  A list of User IDs.
+* `keyword` - (Optional) The keywords of the nicknames or usernames of the members of the organization.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `users` - A list of Quick BI Users. Each element contains the following attributes:
-  * `account_id` - Alibaba Cloud account ID.
-  * `account_name` - An Alibaba Cloud account, Alibaba Cloud name.
-  * `admin_user` - Whether it is the administrator. Valid values: `true` and `false`.
-  * `auth_admin_user` - Whether this is a permissions administrator. Valid values: `true` and `false`.
-  * `email` - The email of the user.
-  * `id` - The ID of the User.
-  * `nick_name` - The nickname of the user.
-  * `phone` - The phone number of the user.
-  * `user_id` - The ID of the User.
-  * `user_type` - The members of the organization of the type of role separately. Valid values: `Analyst`, `Developer` and `Visitor`.
+* `users` - A list of Quick BI Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `account_id` - Alibaba Cloud account ID.
+* `account_name` - An Alibaba Cloud account, Alibaba Cloud name.
+* `admin_user` - Whether it is the administrator. Valid values: `true` and `false`.
+* `auth_admin_user` - Whether this is a permissions administrator. Valid values: `true` and `false`.
+* `email` - The email of the user.
+* `id` - The ID of the User.
+* `nick_name` - The nickname of the user.
+* `phone` - The phone number of the user.
+* `user_id` - The ID of the User.
+* `user_type` - The members of the organization of the type of role separately. Valid values: `Analyst`, `Developer` and `Visitor`.

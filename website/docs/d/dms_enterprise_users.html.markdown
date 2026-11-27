@@ -7,11 +7,11 @@ description: |-
     Provides a list of available DMS Enterprise Users.
 ---
 
-# alicloud\_dms\_enterprise\_users
+# alicloud_dms_enterprise_users
 
 This data source provides a list of DMS Enterprise Users in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.90.0+
+-> **NOTE:** Available since v1.90.0.
 
 ## Example Usage
 
@@ -46,13 +46,21 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of DMS Enterprise User IDs (UID).
 * `names` - A list of DMS Enterprise User names.
-* `users` - A list of DMS Enterprise Users. Each element contains the following attributes:
-  * `mobile` - The DingTalk number or mobile number of the user.
-  * `nick_name` - The nickname of the user.
-  * `user_name` - The nickname of the user.
-  * `parent_uid` - The Alibaba Cloud unique ID (UID) of the parent account if the user corresponds to a Resource Access Management (RAM) user.
-  * `role_ids` - The list ids of the role that the user plays.
-  * `role_names` - The list names of the role that he user plays.
-  * `status` - The status of the user.
-  * `id` - The Alibaba Cloud unique ID (UID) of the user.
-  * `user_id` - The ID of the user.
+* `users` - A list of DMS Enterprise Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `mobile` - The DingTalk number or mobile number of the user.
+* `nick_name` - The nickname of the user.
+* `user_name` - The nickname of the user.
+* `parent_uid` - The Alibaba Cloud unique ID (UID) of the parent account if the user corresponds to a Resource Access Management (RAM) user.
+* `role_ids` - The list ids of the role that the user plays.
+* `role_names` - The list names of the role that he user plays.
+* `status` - The status of the user.
+* `id` - The Alibaba Cloud unique ID (UID) of the user.
+* `uid` - The UID of the user.
+* `user_id` - The ID of the user.

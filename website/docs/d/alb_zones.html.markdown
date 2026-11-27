@@ -36,7 +36,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of alb instance zone IDs.
-* `zones` - A list of alb Instance zones. Each element contains the following attributes:
-  * `id` - The ID of zone.
-  * `zone_id` - The zone ID.
-  * `local_name` - The local name.
+* `zones` - A list of alb Instance zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `id` - The ID of zone.
+* `zone_id` - The zone ID.
+* `local_name` - The local name.

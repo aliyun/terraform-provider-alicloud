@@ -56,12 +56,16 @@ The following arguments are supported:
 * `source_type` - (Required) The type of the source address in the access control policy. Valid values: `net`, `group`, `location`.
 * `destination` - (Required) The destination address in the access control policy.
 * `destination_type` - (Required) The type of the destination address in the access control policy. Valid values: `net`, `group`, `domain`, `location`.
-* `proto` - (Required) The protocol type supported by the access control policy. Valid values: `ANY`, ` TCP`, `UDP`, `ICMP`.
+* `proto` - (Required) The protocol type supported by the access control policy. Valid values: `ANY`, `TCP`, `UDP`, `ICMP`.
 * `application_name` - (Optional) The application type supported by the access control policy. Valid values: `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
 
   -> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
-* `dest_port` - (Optional) The destination port in the access control policy. **Note:** If `dest_port_type` is set to `port`, you must specify `dest_port`.
-* `dest_port_group` - (Optional) The name of the destination port address book in the access control policy. **Note:** If `dest_port_type` is set to `group`, you must specify `dest_port_group`.
+* `dest_port` - (Optional) The destination port in the access control policy.
+
+  -> **NOTE:** If `dest_port_type` is set to `port`, you must specify `dest_port`.
+* `dest_port_group` - (Optional) The name of the destination port address book in the access control policy.
+
+  -> **NOTE:** If `dest_port_type` is set to `group`, you must specify `dest_port_group`.
 * `dest_port_type` - (Optional) The type of the destination port in the access control policy. Valid values: `port`, `group`.
 * `ip_version` - (Optional, ForceNew) The IP version supported by the access control policy. Default value: `4`. Valid values:
   - `4`: IPv4.
@@ -108,7 +112,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.232.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Control Policy.
 * `update` - (Defaults to 5 mins) Used when update the Control Policy.

@@ -269,8 +269,13 @@ def document_path(manifest):
     return 'website/docs/' + suffix[:-5] + '.html.markdown'
 
 
-def extract(doc, text):
-    """Keep exact fence bytes and source locations; never guess an incomplete scene."""
+def extract(doc, text, *, strict=True):
+    """Keep exact fence bytes and source locations; never guess an incomplete scene.
+
+    `strict=False` is for the base revision only. That side exists to prove a page
+    did not change, and a page that already carried an unlabelled HCL fence must
+    not block the change which finally labels it.
+    """
     lines, blocks, heading, i = text.splitlines(keepends=True), [], '', 0
     fence_pattern = r' {0,3}([' + chr(96) + r'~]{3,})[ \t]*(.*?)[ \t]*\r?\n?'
     while i < len(lines):
@@ -294,7 +299,7 @@ def extract(doc, text):
         if language.lower() in ('hcl', 'terraform', 'tf'):
             blocks.append(dict(index=len(blocks)+1, line=start+1, heading=heading,
                                content=raw, sha256=sha(raw)))
-        elif re.search(r'(?m)^\s*(?:resource|data|provider|terraform|variable|locals|output|module|import)\b.*\{', raw):
+        elif strict and re.search(r'(?m)^\s*(?:resource|data|provider|terraform|variable|locals|output|module|import)\b.*\{', raw):
             raise ValueError('Label the HCL fence before execution: ' + doc + ':' + str(start))
         i += 1
     return blocks
@@ -344,11 +349,11 @@ def validate_configuration(text, *, snapshot):
                 raise ValueError('Adapt placeholder input before running the example')
 
 
-def _inventory(ref, doc, read):
+def _inventory(ref, doc, read, *, strict=True):
     text = read(ref, doc)
     if text is None:
         return None
-    blocks = extract(doc, text)
+    blocks = extract(doc, text, strict=strict)
     metadata = read(ref, manifest_path(doc))
     if metadata is None:
         if not blocks or linked_sources(doc, text):
@@ -530,13 +535,13 @@ def plan(base, head, full_docs, git, read):
             # Prose-only edits do not activate historical unchanged example defects.
             if (doc not in full_docs and doc not in dependencies and prior_text is not None and
                     [block['content'] for block in extract(doc, current_text)] ==
-                    [block['content'] for block in extract(doc, prior_text)] and
+                    [block['content'] for block in extract(doc, prior_text, strict=False)] and
                     read(head, manifest_path(doc)) == read(base, manifest_path(doc)) and
                     linked_sources(doc, current_text) == linked_sources(doc, prior_text)):
                 continue
             current = _inventory(head, doc, read)
             try:
-                prior = _inventory(base, doc, read)
+                prior = _inventory(base, doc, read, strict=False)
             except (ValueError, KeyError, TypeError):
                 prior = None
             if prior and prior['metadata'] is not None and current['metadata'] is None:

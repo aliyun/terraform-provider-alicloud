@@ -36,7 +36,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Cddc Zone IDs.
-* `zones` - A list of Cddc Zones. Each element contains the following attributes:
-  * `region_id` - The ID of the region.
-  * `zone_id` - The ID of the zone.
-  * `id` - The ID of the zone.
+* `zones` - A list of Cddc Zones.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `region_id` - The ID of the region.
+* `zone_id` - The ID of the zone.
+* `id` - The ID of the zone.

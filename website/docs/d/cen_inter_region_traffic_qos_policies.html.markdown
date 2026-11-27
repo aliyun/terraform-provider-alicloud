@@ -43,14 +43,14 @@ output "cen_inter_region_traffic_qos_policy_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Inter Region Traffic Qos Policy IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Inter Region Traffic Qos Policy name.
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_attachment_id` - (Required, ForceNew) The ID of the inter-region connection.
-* `traffic_qos_policy_id` - (Optional, ForceNew) The ID of the QoS policy.
-* `traffic_qos_policy_name` - (Optional, ForceNew) The name of the QoS policy.
-* `traffic_qos_policy_description` - (Optional, ForceNew) The description of the QoS policy.
-* `status` - (Optional, ForceNew) The status of the traffic scheduling policy. Valid Value: `Creating`, `Active`, `Modifying`, `Deleting`, `Deleted`.
+* `ids` - (Optional, Computed)  A list of Inter Region Traffic Qos Policy IDs.
+* `name_regex` - (Optional) A regex string to filter results by Inter Region Traffic Qos Policy name.
+* `transit_router_id` - (Required) The ID of the transit router.
+* `transit_router_attachment_id` - (Required) The ID of the inter-region connection.
+* `traffic_qos_policy_id` - (Optional) The ID of the QoS policy.
+* `traffic_qos_policy_name` - (Optional) The name of the QoS policy.
+* `traffic_qos_policy_description` - (Optional) The description of the QoS policy.
+* `status` - (Optional) The status of the traffic scheduling policy. Valid Value: `Creating`, `Active`, `Modifying`, `Deleting`, `Deleted`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -58,11 +58,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Inter Region Traffic Qos Policy names.
-* `policies` - A list of Cen Inter Region Traffic Qos Policies. Each element contains the following attributes:
-  * `id` - The ID of the Inter Region Traffic Qos Policy.
-  * `transit_router_id` - The ID of the transit router.
-  * `transit_router_attachment_id` - The ID of the inter-region connection.
-  * `inter_region_traffic_qos_policy_id` - The ID of the Inter Region Traffic Qos Policy.
-  * `inter_region_traffic_qos_policy_name` - The name of the Inter Region Traffic Qos Policy.
-  * `inter_region_traffic_qos_policy_description` - The description of the Inter Region Traffic Qos Policy.
-  * `status` - The status of the Inter Region Traffic Qos Policy.
+* `policies` - A list of Cen Inter Region Traffic Qos Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the Inter Region Traffic Qos Policy.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_attachment_id` - The ID of the inter-region connection.
+* `inter_region_traffic_qos_policy_id` - The ID of the Inter Region Traffic Qos Policy.
+* `inter_region_traffic_qos_policy_name` - The name of the Inter Region Traffic Qos Policy.
+* `inter_region_traffic_qos_policy_description` - The description of the Inter Region Traffic Qos Policy.
+* `status` - The status of the Inter Region Traffic Qos Policy.

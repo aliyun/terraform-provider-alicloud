@@ -31,17 +31,24 @@ output "click_house_backup_policy_id_1" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required, ForceNew) The db cluster id.
+* `db_cluster_id` - (Required) The db cluster id.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `policies` - A list of Click House Backup Policies. Each element contains the following attributes:
-  * `backup_retention_period` - Data backup days. Valid values: `7` to `730`.
-  * `db_cluster_id` - The db cluster id.
-  * `id` - The ID of the Backup Policy.
-  * `preferred_backup_period` - DBCluster Backup period.
-  * `preferred_backup_time` - Backup Time, UTC time.
-  * `status` - The status of the resource.
+* `policies` - A list of Click House Backup Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `backup_retention_period` - Data backup days. Valid values: `7` to `730`.
+* `db_cluster_id` - The db cluster id.
+* `id` - The ID of the Backup Policy.
+* `preferred_backup_period` - DBCluster Backup period.
+* `preferred_backup_time` - Backup Time, UTC time.
+* `status` - The status of the resource.

@@ -164,7 +164,7 @@ $ terraform import alicloud_cs_autoscaling_config.example <cluster_id>
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.

@@ -92,20 +92,27 @@ The following attributes are exported:
 * `pending_result` - The reason the application is pending, if the review has not passed.
 * `certificate_id` - The ID of the certificate produced by this application. Populated only after the certificate has been issued.
 * `cert_identifier` - The global certificate identifier of the certificate produced by this application. Populated only after the certificate has been issued.
-* `domain_validation_list` - The domain ownership validation records that have to be published before the certificate authority can validate the domains. It contains the following attributes:
-  * `domain` - The domain name to be validated.
-  * `root_domain` - The root domain of the domain name to be validated. Use this value to locate the DNS zone when adding the validation record.
-  * `validation_type` - The type of the validation record. Valid values: `TXT`, `CNAME` and `FILE`.
-  * `validation_key` - The host record of the validation record.
-  * `validation_value` - The value of the validation record.
-  * `cname` - The record value used when the domain is validated through a CNAME record.
-  * `cname_key` - The host record used when the domain is validated through a CNAME record.
+* `domain_validation_list` - The domain ownership validation records that have to be published before the certificate authority can validate the domains.
 
   -> **NOTE:** Reference `certificate_id` and `cert_identifier` from `alicloud_ssl_certificates_service_certificate_validation` rather than from this resource. The values here are only populated once the certificate happens to have been issued by the time of a refresh, whereas the validation resource guarantees issuance has completed.
 
+---
+
+### `domain_validation_list`
+
+The domain_validation_list supports the following attributes:
+
+* `domain` - The domain name to be validated.
+* `root_domain` - The root domain of the domain name to be validated. Use this value to locate the DNS zone when adding the validation record.
+* `validation_type` - The type of the validation record. Valid values: `TXT`, `CNAME` and `FILE`.
+* `validation_key` - The host record of the validation record.
+* `validation_value` - The value of the validation record.
+* `cname` - The record value used when the domain is validated through a CNAME record.
+* `cname_key` - The host record used when the domain is validated through a CNAME record.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Certificate Apply.
 * `delete` - (Defaults to 20 mins) Used when delete the Certificate Apply. Withdrawing the application is processed asynchronously and the instance can stay in the pending state for several minutes afterwards; it has to leave that state before the instance itself can be refunded and removed.

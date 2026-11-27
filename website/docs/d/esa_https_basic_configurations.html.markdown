@@ -70,21 +70,28 @@ The following attributes are exported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Https Basic Configuration names.
-* `configurations` - A list of Https Basic Configurations. Each element contains the following attributes:
-  * `id` - The ID of the Https Basic Configuration.
-  * `config_id` - The ID of the Configuration.
-  * `config_type` - The type of the Configuration.
-  * `rule_enable` - Rule switch.
-  * `rule_name` - Rule name.
-  * `rule` - Rule content.
-  * `sequence` - The rule execution order prioritizes lower numerical values.
-  * `ciphersuite` - Custom cipher suite, indicating the specific encryption algorithm selected when CiphersuiteGroup is set to custom.
-  * `ciphersuite_group` - Cipher suite group.
-  * `ocsp_stapling` - Whether to enable OCSP.
-  * `http2` - Whether to enable HTTP2.
-  * `http3` - Whether to enable HTTP3.
-  * `https` - Whether to enable HTTPS.
-  * `tls10` - Whether to enable TLS1.0.
-  * `tls11` - Whether to enable TLS1.1.
-  * `tls12` - Whether to enable TLS1.2.
-  * `tls13` - Whether to enable TLS1.3.
+* `configurations` - A list of Https Basic Configurations.
+
+---
+
+### `configurations`
+
+The configurations supports the following attributes:
+
+* `id` - The ID of the Https Basic Configuration.
+* `config_id` - The ID of the Configuration.
+* `config_type` - The type of the Configuration.
+* `rule_enable` - Rule switch.
+* `rule_name` - Rule name.
+* `rule` - Rule content.
+* `sequence` - The rule execution order prioritizes lower numerical values.
+* `ciphersuite` - Custom cipher suite, indicating the specific encryption algorithm selected when CiphersuiteGroup is set to custom.
+* `ciphersuite_group` - Cipher suite group.
+* `ocsp_stapling` - Whether to enable OCSP.
+* `http2` - Whether to enable HTTP2.
+* `http3` - Whether to enable HTTP3.
+* `https` - Whether to enable HTTPS.
+* `tls10` - Whether to enable TLS1.0.
+* `tls11` - Whether to enable TLS1.1.
+* `tls12` - Whether to enable TLS1.2.
+* `tls13` - Whether to enable TLS1.3.

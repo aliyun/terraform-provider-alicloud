@@ -44,6 +44,8 @@ The following arguments are supported:
 
 * `filter` - (Optional, Set) The component filter rules. See [`filter`](#filter) below.
 
+---
+
 ### `filter`
 
 The filter supports the following:

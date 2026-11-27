@@ -97,37 +97,52 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Desktop Group IDs.
 * `names` - A list of name of Desktop Groups.
-* `groups` - A list of Desktop Group Entries. Each element contains the following attributes:
-  * `allow_auto_setup` - **NOTE:** This field is only available when `enable_details` is `true`. Whether cloud desktops can be automatically created for the subscription desktop group.
-  * `allow_buffer_count` - **NOTE:** This field is only available when `enable_details` is `true`. The number of cloud desktops that are reserved in the desktop group.
-  * `bundle_id` - The ID of the desktop template.
-  * `comments` - The remarks of the desktop group.
-  * `cpu` - The number of vCPUs.
-  * `create_time` - The time when the desktop group was created. The time follows the ISO 8601 standard in UTC.
-  * `creator` - The ID of the Alibaba Cloud account that created the desktop group.
-  * `data_disk_category` - The category of the data disk.
-  * `data_disk_size` - The size of the data disk. Unit: GiB.
-  * `desktop_group_id` - The ID of the desktop group.
-  * `desktop_group_name` - The name of the desktop group.
-  * `directory_id` - The ID of the directory.
-  * `directory_type` - The type of the directory.
-  * `end_user_count` - The number of end users authorized to use the desktop group.
-  * `end_user_ids` - **NOTE:** This field is only available when `enable_details` is `true`. The list of IDs of the end users authorized to use the desktop group.
-  * `expired_time` - The time when the subscription desktop group expires. The time follows the ISO 8601 standard in UTC.
-  * `gpu_count` - The number of GPUs.
-  * `gpu_spec` - The GPU specifications.
-  * `keep_duration` - The retention duration of a session after it is disconnected. Unit: milliseconds.
-  * `max_desktops_count` - The maximum number of cloud desktops that the desktop group can contain.
-  * `memory` - The memory size. Unit: MiB.
-  * `min_desktops_count` - The minimum number of cloud desktops that the desktop group automatically creates.
-  * `office_site_id` - The ID of the office network.
-  * `office_site_name` - The name of the office network.
-  * `office_site_type` - The type of the account system of the office network.
-  * `own_bundle_name` - The name of the desktop template.
-  * `pay_type` - The billing method.
-  * `policy_group_id` - The ID of the policy group.
-  * `policy_group_name` - The name of the policy group.
-  * `res_type` - **NOTE:** This field is only available when `enable_details` is `true`. The type of the resource.
-  * `system_disk_category` - The category of the system disk.
-  * `system_disk_size` - The size of the system disk. Unit: GiB.
-  * `id` - The ID of the resource supplied above.
+* `groups` - A list of Desktop Group Entries.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `allow_auto_setup` - Whether cloud desktops can be automatically created for the subscription desktop group.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `allow_buffer_count` - The number of cloud desktops that are reserved in the desktop group.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `bundle_id` - The ID of the desktop template.
+* `comments` - The remarks of the desktop group.
+* `cpu` - The number of vCPUs.
+* `create_time` - The time when the desktop group was created. The time follows the ISO 8601 standard in UTC.
+* `creator` - The ID of the Alibaba Cloud account that created the desktop group.
+* `data_disk_category` - The category of the data disk.
+* `data_disk_size` - The size of the data disk. Unit: GiB.
+* `desktop_group_id` - The ID of the desktop group.
+* `desktop_group_name` - The name of the desktop group.
+* `directory_id` - The ID of the directory.
+* `directory_type` - The type of the directory.
+* `end_user_count` - The number of end users authorized to use the desktop group.
+* `end_user_ids` - The list of IDs of the end users authorized to use the desktop group.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `expired_time` - The time when the subscription desktop group expires. The time follows the ISO 8601 standard in UTC.
+* `gpu_count` - The number of GPUs.
+* `gpu_spec` - The GPU specifications.
+* `keep_duration` - The retention duration of a session after it is disconnected. Unit: milliseconds.
+* `max_desktops_count` - The maximum number of cloud desktops that the desktop group can contain.
+* `memory` - The memory size. Unit: MiB.
+* `min_desktops_count` - The minimum number of cloud desktops that the desktop group automatically creates.
+* `office_site_id` - The ID of the office network.
+* `office_site_name` - The name of the office network.
+* `office_site_type` - The type of the account system of the office network.
+* `own_bundle_name` - The name of the desktop template.
+* `pay_type` - The billing method.
+* `policy_group_id` - The ID of the policy group.
+* `policy_group_name` - The name of the policy group.
+* `res_type` - The type of the resource.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `system_disk_category` - The category of the system disk.
+* `system_disk_size` - The size of the system disk. Unit: GiB.
+* `id` - The ID of the resource supplied above.

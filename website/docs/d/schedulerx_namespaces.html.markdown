@@ -35,8 +35,8 @@ output "schedulerx_namespace_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Namespace IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Namespace name.
+* `ids` - (Optional, Computed)  A list of Namespace IDs.
+* `name_regex` - (Optional) A regex string to filter results by Namespace name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,8 +44,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Namespace names.
-* `namespaces` - A list of Schedulerx Namespaces. Each element contains the following attributes:
-  * `description` - The description of the resource.
-  * `id` - The ID of the resource.
-  * `namespace_id` - The ID of the Namespace.
-  * `namespace_name` - The name of the resource.
+* `namespaces` - A list of Schedulerx Namespaces.
+
+---
+
+### `namespaces`
+
+The namespaces supports the following attributes:
+
+* `description` - The description of the resource.
+* `id` - The ID of the resource.
+* `namespace_id` - The ID of the Namespace.
+* `namespace_name` - The name of the resource.

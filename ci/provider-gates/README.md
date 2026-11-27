@@ -1,0 +1,7 @@
+# Provider merge request gates
+
+Aone code-template pipelines should reference the Provider repository's `blob/master/ci/templates/` URL. A new run gets its pipeline definition from that branch. The five generated templates pin the target branch checker SHA once per run and log it alongside the candidate SHA. A job retry uses the original pin. The Provider checkout, Go module, docs and diff still belong to the candidate. PipelineSafety exercises candidate checker changes. Integration uses its own existing template and ACube receipt protocol.
+
+Edit the job definitions in `.aoneci/` or the checker selection in `ci/provider-gates/render.py`. With PyYAML 6.0.2 installed, run `python3 ci/provider-gates/render.py` and commit the generated YAML. Run `make check-provider-templates` locally to verify template freshness and the checker restore regression. The original file-backed pipelines can serve as rollback targets after the template pipelines are enabled.
+
+When replacing a file-backed gate, first run the new template on an unchanged MR head with its automatic triggers restricted to a validation branch. Verify the checker SHA, candidate SHA and Code check result. Disable the old pipeline before enabling the original trigger rules on the replacement. Preserve project-level notification, concurrency and required-check settings. Roll back by restoring the validation-only triggers before enabling the previous pipeline.

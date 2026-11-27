@@ -48,20 +48,27 @@ output "cloud_monitor_service_hybrid_double_writes_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Hybrid Double Write IDs.
-* `source_namespace` - (Optional, ForceNew) Source Namespace.
-* `source_user_id` - (Optional, ForceNew) Source UserId.
-* `namespace` - (Optional, ForceNew) Target Namespace.
-* `user_id` - (Optional, ForceNew) Target UserId.
+* `ids` - (Optional, List) A list of Hybrid Double Write IDs.
+* `source_namespace` - (Optional) Source Namespace.
+* `source_user_id` - (Optional) Source UserId.
+* `namespace` - (Optional) Target Namespace.
+* `user_id` - (Optional) Target UserId.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `hybrid_double_writes` - A list of Hybrid Double Writes. Each element contains the following attributes:
-  * `id` - The ID of the Hybrid Double Write. It formats as `<source_namespace>:<source_user_id>`.
-  * `source_namespace` - Source Namespace.
-  * `source_user_id` - Source UserId.
-  * `namespace` - Target Namespace.
-  * `user_id` - Target UserId.
+* `hybrid_double_writes` - A list of Hybrid Double Writes.
+
+---
+
+### `hybrid_double_writes`
+
+The hybrid_double_writes supports the following attributes:
+
+* `id` - The ID of the Hybrid Double Write. It formats as `<source_namespace>:<source_user_id>`.
+* `source_namespace` - Source Namespace.
+* `source_user_id` - Source UserId.
+* `namespace` - Target Namespace.
+* `user_id` - Target UserId.

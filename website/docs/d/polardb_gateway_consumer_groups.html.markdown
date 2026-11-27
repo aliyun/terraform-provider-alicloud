@@ -28,11 +28,18 @@ data "alicloud_polardb_gateway_consumer_groups" "example" {
 
 ## Attributes Reference
 
-* `groups` - A list of consumer groups. Each element contains the following attributes:
-  * `id` - The consumer group ID.
-  * `name` - The consumer group name.
-  * `nickname` - The consumer group nickname.
-  * `is_default` - Whether the group is the default group.
-  * `allowed_models` - The models the group is allowed to access.
-  * `create_time` - The creation time.
-  * `modify_time` - The last modification time.
+* `groups` - A list of consumer groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `id` - The consumer group ID.
+* `name` - The consumer group name.
+* `nickname` - The consumer group nickname.
+* `is_default` - Whether the group is the default group.
+* `allowed_models` - The models the group is allowed to access.
+* `create_time` - The creation time.
+* `modify_time` - The last modification time.

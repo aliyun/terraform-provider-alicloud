@@ -55,6 +55,8 @@ The following arguments are supported:
 * `description` - (Optional) Routine The description of the routine.
 * `env_conf` - (Optional) The configurations of the specified environment. See [`env_conf`](#env_conf) below.
 
+---
+
 ### `env_conf`
 
 The env_conf supports the following:
@@ -97,6 +99,8 @@ The env_conf supports the following:
 * `preset_canary_zhejiang` - (Optional) The configuration of a presetCanaryZhejiang environment. See [`preset_canary_zhejiang`](#env_conf-preset_canary_zhejiang) below.
 * `preset_canary_overseas` - (Optional) The configuration of a presetCanaryOverseas environment. See [`preset_canary_overseas`](#env_conf-preset_canary_overseas) below.
 
+---
+
 ### `env_conf-staging`
 
 The staging supports the following:
@@ -104,6 +108,8 @@ The staging supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-production`
 
@@ -113,6 +119,8 @@ The production supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_anhui`
 
 The preset_canary_anhui supports the following:
@@ -120,6 +128,8 @@ The preset_canary_anhui supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_beijing`
 
@@ -129,6 +139,8 @@ The preset_canary_beijing supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_chongqing`
 
 The preset_canary_chongqing supports the following:
@@ -136,6 +148,8 @@ The preset_canary_chongqing supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_fujian`
 
@@ -145,6 +159,8 @@ The preset_canary_fujian supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_gansu`
 
 The preset_canary_gansu supports the following:
@@ -152,6 +168,8 @@ The preset_canary_gansu supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_guangdong`
 
@@ -161,6 +179,8 @@ The preset_canary_guangdong supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_guangxi`
 
 The preset_canary_guangxi supports the following:
@@ -168,6 +188,8 @@ The preset_canary_guangxi supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_guizhou`
 
@@ -177,6 +199,8 @@ The preset_canary_guizhou supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_hainan`
 
 The preset_canary_hainan supports the following:
@@ -184,6 +208,8 @@ The preset_canary_hainan supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_hebei`
 
@@ -193,6 +219,8 @@ The preset_canary_hebei supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_heilongjiang`
 
 The preset_canary_heilongjiang supports the following:
@@ -200,6 +228,8 @@ The preset_canary_heilongjiang supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_henan`
 
@@ -209,6 +239,8 @@ The preset_canary_henan supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_hong_kong`
 
 The preset_canary_hong_kong supports the following:
@@ -216,6 +248,8 @@ The preset_canary_hong_kong supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_hubei`
 
@@ -225,6 +259,8 @@ The preset_canary_hubei supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_hunan`
 
 The preset_canary_hunan supports the following:
@@ -232,6 +268,8 @@ The preset_canary_hunan supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_jiangsu`
 
@@ -241,6 +279,8 @@ The preset_canary_jiangsu supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_jiangxi`
 
 The preset_canary_jiangxi supports the following:
@@ -248,6 +288,8 @@ The preset_canary_jiangxi supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_jilin`
 
@@ -257,6 +299,8 @@ The preset_canary_jilin supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_liaoning`
 
 The preset_canary_liaoning supports the following:
@@ -264,6 +308,8 @@ The preset_canary_liaoning supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_macau`
 
@@ -273,6 +319,8 @@ The preset_canary_macau supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_neimenggu`
 
 The preset_canary_neimenggu supports the following:
@@ -280,6 +328,8 @@ The preset_canary_neimenggu supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_ningxia`
 
@@ -289,6 +339,8 @@ The preset_canary_ningxia supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_qinghai`
 
 The preset_canary_qinghai supports the following:
@@ -296,6 +348,8 @@ The preset_canary_qinghai supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_shaanxi`
 
@@ -305,6 +359,8 @@ The preset_canary_shaanxi supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_shandong`
 
 The preset_canary_shandong supports the following:
@@ -312,6 +368,8 @@ The preset_canary_shandong supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_shanghai`
 
@@ -321,6 +379,8 @@ The preset_canary_shanghai supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_shanxi`
 
 The preset_canary_shanxi supports the following:
@@ -328,6 +388,8 @@ The preset_canary_shanxi supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_sichuan`
 
@@ -337,6 +399,8 @@ The preset_canary_sichuan supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_taiwan`
 
 The preset_canary_taiwan supports the following:
@@ -344,6 +408,8 @@ The preset_canary_taiwan supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_tianjin`
 
@@ -353,6 +419,8 @@ The preset_canary_tianjin supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_xinjiang`
 
 The preset_canary_xinjiang supports the following:
@@ -360,6 +428,8 @@ The preset_canary_xinjiang supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_xizang`
 
@@ -369,6 +439,8 @@ The preset_canary_xizang supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_yunnan`
 
 The preset_canary_yunnan supports the following:
@@ -377,6 +449,8 @@ The preset_canary_yunnan supports the following:
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
 
+---
+
 ### `env_conf-preset_canary_zhejiang`
 
 The preset_canary_zhejiang supports the following:
@@ -384,6 +458,8 @@ The preset_canary_zhejiang supports the following:
 * `spec_name` - (Optional) The specification of the CPU time slice. Valid values: `5ms`, `50ms`, `100ms`.
 * `code_rev` - (Optional) The version number of the code.
 * `allowed_hosts` - (Optional) Allowed DCDN domain names.
+
+---
 
 ### `env_conf-preset_canary_overseas`
 
@@ -401,7 +477,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Er.
 * `update` - (Defaults to 5 mins) Used when update the Er.

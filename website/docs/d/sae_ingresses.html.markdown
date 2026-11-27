@@ -94,20 +94,27 @@ output "sae_ingress_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Ingress IDs.
-* `namespace_id` - (Required, ForceNew) The Id of Namespace.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
+* `ids` - (Optional, Computed)  A list of Ingress IDs.
+* `namespace_id` - (Required) The Id of Namespace.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ingresses` - A list of Sae Ingresses. Each element contains the following attributes:
-  * `cert_id` - Cert Id.
-  * `default_rule` - Default Rule.
-  * `description` - Description.
-  * `id` - The ID of the Ingress.
-  * `ingress_id` - The first ID of the resource.
-  * `listener_port` - SLB listening port.
-  * `namespace_id` - The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
-  * `slb_id` - SLB ID.
+* `ingresses` - A list of Sae Ingresses.
+
+---
+
+### `ingresses`
+
+The ingresses supports the following attributes:
+
+* `cert_id` - Cert Id.
+* `default_rule` - Default Rule.
+* `description` - Description.
+* `id` - The ID of the Ingress.
+* `ingress_id` - The first ID of the resource.
+* `listener_port` - SLB listening port.
+* `namespace_id` - The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
+* `slb_id` - SLB ID.

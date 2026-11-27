@@ -359,3 +359,8 @@ macarm:
 	GOOS=darwin GOARCH=arm64 go build -o bin/terraform-provider-alicloud_v1.0.0
 	cp bin/terraform-provider-alicloud_v1.0.0 ~/.terraform.d/plugins/registry.terraform.io/aliyun/alicloud/1.0.0/darwin_arm64/
 	mv bin/terraform-provider-alicloud_v1.0.0 ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/1.0.0/darwin_arm64/
+
+.PHONY: check-provider-templates
+check-provider-templates:
+	python3 ci/provider-gates/render.py --check
+	python3 -m unittest discover -s ci/provider-gates -p 'test_*.py'

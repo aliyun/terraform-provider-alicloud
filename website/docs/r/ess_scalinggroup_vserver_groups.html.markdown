@@ -154,12 +154,16 @@ The following arguments are supported:
 * `vserver_groups` - (Required) A list of vserver groups attached on scaling group. See [`vserver_groups`](#vserver_groups) below.
 * `force` - (Optional, Available in 1.64.0+) If instances of scaling group are attached/removed from slb backend server when attach/detach vserver group from scaling group. Default to true.
 
+---
+
 ### `vserver_groups`
 
 the vserver_group supports the following:
 
 * `loadbalancer_id` - (Required) Loadbalancer server ID of VServer Group.
 * `vserver_attributes` - (Required) A list of VServer Group attributes. See [`vserver_attributes`](#vserver_groups-vserver_attributes) below.
+
+---
 
 ### `vserver_groups-vserver_attributes`
 

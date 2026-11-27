@@ -37,4 +37,11 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Zone IDs.
 * `zones` - A list of availability zone information collection.
-  * `zone_id` - String to filter results by zone id.
+
+---
+
+### `zones`
+
+The zones supports the following attributes:
+
+* `zone_id` - String to filter results by zone id.

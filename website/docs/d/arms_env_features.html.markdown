@@ -112,9 +112,9 @@ output "arms_env_features_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of ARMS Env Feature IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by ARMS Env Feature name.
-* `environment_id` - (Required, ForceNew) The ID of the environment instance.
+* `ids` - (Optional, List) A list of ARMS Env Feature IDs.
+* `name_regex` - (Optional) A regex string to filter results by ARMS Env Feature name.
+* `environment_id` - (Required) The ID of the environment instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -122,10 +122,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ARMS Env Feature names.
-* `features` - A list of ARMS Env Features. Each element contains the following attributes:
-  * `id` - The ID of the Env Feature. It formats as `<environment_id>:<env_feature_name>`.
-  * `aliyun_lang` - The language.
-  * `env_feature_name` - The name of the feature.
-  * `environment_id` - The ID of the environment instance.
-  * `feature_version` - The version of the feature.
-  * `status` - The status of the feature.
+* `features` - A list of ARMS Env Features.
+
+---
+
+### `features`
+
+The features supports the following attributes:
+
+* `id` - The ID of the Env Feature. It formats as `<environment_id>:<env_feature_name>`.
+* `aliyun_lang` - The language.
+* `env_feature_name` - The name of the feature.
+* `environment_id` - The ID of the environment instance.
+* `feature_version` - The version of the feature.
+* `status` - The status of the feature.

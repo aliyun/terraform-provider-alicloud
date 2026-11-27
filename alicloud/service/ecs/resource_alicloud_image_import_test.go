@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// collection-order: bypass disk_device_mapping -- stock attribute not touched by this change; members are create-time OSS import mappings written back from the DescribeImages echo (FlattenImageImportDiskDeviceMappings d.Set's the response order with computed members like device/progress), and the ForceNew list makes any reorder a full image-import replacement, so a convergent two-apply reorder cannot be constructed within this client-call migration
+
 func TestAccAliCloudImageImport_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_image_import.default"

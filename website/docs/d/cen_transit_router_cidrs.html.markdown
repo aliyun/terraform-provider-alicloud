@@ -41,10 +41,10 @@ output "cen_transit_router_cidr_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Cen Transit Router Cidr IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Transit Router Cidr name.
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
-* `transit_router_cidr_id` - (Optional, ForceNew) The ID of the transit router cidr.
+* `ids` - (Optional, Computed) A list of Cen Transit Router Cidr IDs.
+* `name_regex` - (Optional) A regex string to filter results by Transit Router Cidr name.
+* `transit_router_id` - (Required) The ID of the transit router.
+* `transit_router_cidr_id` - (Optional) The ID of the transit router cidr.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -52,12 +52,19 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Transit Router Cidr names.
-* `cidrs` - A list of Cen Transit Router Cidrs. Each element contains the following attributes:
-  * `id` - The ID of the Cen Transit Router Cidr. It formats as `<transit_router_id>:<transit_router_cidr_id>`.
-  * `transit_router_id` - The ID of the transit router.
-  * `transit_router_cidr_id` - The ID of the transit router cidr.
-  * `cidr` - The cidr of the transit router.
-  * `transit_router_cidr_name` - The name of the transit router.
-  * `description` - The description of the transit router.
-  * `publish_cidr_route` - Whether to allow automatically adding Transit Router Cidr in Transit Router Route Table.
-  * `family` - The type of the transit router cidr.
+* `cidrs` - A list of Cen Transit Router Cidrs.
+
+---
+
+### `cidrs`
+
+The cidrs supports the following attributes:
+
+* `id` - The ID of the Cen Transit Router Cidr. It formats as `<transit_router_id>:<transit_router_cidr_id>`.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_cidr_id` - The ID of the transit router cidr.
+* `cidr` - The cidr of the transit router.
+* `transit_router_cidr_name` - The name of the transit router.
+* `description` - The description of the transit router.
+* `publish_cidr_route` - Whether to allow automatically adding Transit Router Cidr in Transit Router Route Table.
+* `family` - The type of the transit router cidr.

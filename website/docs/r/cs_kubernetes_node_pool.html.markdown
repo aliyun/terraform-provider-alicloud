@@ -817,7 +817,9 @@ resource "alicloud_cs_kubernetes_node_pool" "upgrade_nodepool" {
 
 The following arguments are supported:
 
-* `auto_mode` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) Whether to enable auto mode. When enabled, the system will automatically manage the node pool with optimized default configurations. **Note:** When `auto_mode` is enabled, many parameters will be automatically set to default values and cannot be modified. See `auto_mode.enable` below for details. See [`auto_mode`](#auto_mode) below.
+* `auto_mode` - (Optional, ForceNew, Computed, Set, Available since v1.266.0) Whether to enable auto mode. When enabled, the system will automatically manage the node pool with optimized default configurations.
+
+  -> **NOTE:** When `auto_mode` is enabled, many parameters will be automatically set to default values and cannot be modified. See `auto_mode.enable` below for details. See [`auto_mode`](#auto_mode) below.
 * `auto_renew` - (Optional) Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `false`. Valid values:
   - `true`: Automatic renewal.
   - `false`: Do not renew automatically.
@@ -979,6 +981,8 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 * `name` - (Deprecated since v1.219.0). Field 'name' has been deprecated from provider version 1.219.0. New field 'node_pool_name' instead.
 
+---
+
 ### `auto_mode`
 
 The auto_mode supports the following:
@@ -993,8 +997,12 @@ The auto_mode supports the following:
 
 * `scaling_config.max_size`: default `50`, can be specified during creation and modified afterward
 * `scaling_config.min_size`: default `0`, can be specified during creation and modified afterward
-* `instance_types`: can be specified during creation and modified afterward. **Note:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
-* `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward. **Note:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
+* `instance_types`: can be specified during creation and modified afterward.
+
+  -> **NOTE:** `instance_types` and `instance_patterns` are mutually exclusive - you can only specify one of them.
+* `instance_patterns`: has default instance specification configuration (4-16 CPU cores, 8-32GB memory, etc.), can be specified during creation and modified afterward.
+
+  -> **NOTE:** `instance_patterns` and `instance_types` are mutually exclusive - you can only specify one of them.
 * `data_disks`: can be specified during creation and modified afterward. If not specified during creation, default data disk configuration will be used (120GB size, supports cloud_auto, cloud_essd, cloud_ssd types). When specified, can configure `size`, `category`, `categories`, `performance_level`, `provisioned_iops`, `bursting_enabled`
 * `resource_group_id`: can be specified during creation and modified afterward
 * `vswitch_ids`: can be modified during creation and modified afterward
@@ -1005,6 +1013,8 @@ The auto_mode supports the following:
 **All Other Parameters:**
 
 All other parameters (including but not limited to `management`, `scaling_config.enable`, `scaling_config.type`, `install_cloud_monitor`, `cpu_policy`, `node_name_mode`, `runtime_name`, `runtime_version`, `unschedulable`, `user_data`, `pre_user_data`, `auto_renew`, `auto_renew_period`, `cis_enabled`, `compensate_with_on_demand`, `deployment_set_id`, `image_id`, `image_type`, `instance_charge_type`, `instance_metadata_options`, `internet_charge_type`, `internet_max_bandwidth_out`, `key_name`, `login_as_non_root`, `password`, `multi_az_policy`, `on_demand_base_capacity`, `on_demand_percentage_above_base_capacity`, `period`, `period_unit`, `platform`, `private_pool_options`, `ram_role_name`, `rds_instances`, `scaling_policy`, `security_group_id`, `security_group_ids`, `security_hardening_os`, `soc_enabled`, `spot_instance_pools`, `spot_instance_remedy`, `spot_price_limit`, `spot_strategy`, all `system_disk_*` parameters, `tee_config`, `kubelet_configuration`, etc.) will be automatically set to default values during node pool creation (user-specified values will be ignored), and cannot be modified after creation.
+
+---
 
 ### `data_disks`
 
@@ -1033,12 +1043,16 @@ The data_disks supports the following:
 * `size` - (Optional, Int) The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
 * `snapshot_id` - (Optional) The ID of the snapshot that you want to use to create data disk N. Valid values of N: 1 to 16. If you specify this parameter, DataDisk.N.Size is ignored. The size of the disk is the same as the size of the specified snapshot. If you specify a snapshot that is created on or before July 15, 2013, the operation fails and InvalidSnapshot.TooOld is returned.
 
+---
+
 ### `eflo_node_group`
 
 The eflo_node_group supports the following:
 
 * `cluster_id` - (Optional, Available since v1.252.0) The ID of the associated Lingjun cluster is required when creating a Lingjun node pool.
 * `group_id` - (Optional) When creating a Lingjun node pool, you need the Lingjun group ID of the associated Lingjun cluster.
+
+---
 
 ### `instance_metadata_options`
 
@@ -1052,6 +1066,8 @@ The instance_metadata_options supports the following:
 Default value: 'optional '.
 
  This parameter is only supported for ACK-managed clusters of 1.28 or later versions.
+
+---
 
 ### `instance_patterns`
 
@@ -1084,6 +1100,8 @@ The instance_patterns supports the following:
 * `memory` - (Optional, Float, Available since v1.266.0) The memory size of the instance type, in GiB. Example value: 8.
 * `min_cpu_cores` - (Optional, Int, Available since v1.266.0) The minimum number of vCPU cores of the instance type. Example value: 4. MaxCpuCores cannot exceed 4 times of MinCpuCores.
 * `min_memory_size` - (Optional, Float, Available since v1.266.0) The minimum memory of the instance type. Unit: GiB, example value: 4,MaxMemoryCores does not support more than 4 times MinMemoryCores.
+
+---
 
 ### `kubelet_configuration`
 
@@ -1122,6 +1140,8 @@ The kubelet_configuration supports the following:
 * `topology_manager_policy` - (Optional, Available since v1.242.0) Name of the Topology Manager policy used.
 * `tracing` - (Optional, Set) OpenTelemetry tracks the configuration information for client settings versioning. See [`tracing`](#kubelet_configuration-tracing) below.
 
+---
+
 ### `kubelet_configuration-reserved_memory`
 
 The kubelet_configuration-reserved_memory supports the following:
@@ -1129,12 +1149,16 @@ The kubelet_configuration-reserved_memory supports the following:
 * `limits` - (Optional, Map, Available since v1.242.0) Memory resource limit.
 * `numa_node` - (Optional, Int) The NUMA node.
 
+---
+
 ### `kubelet_configuration-tracing`
 
 The kubelet_configuration-tracing supports the following:
 
 * `endpoint` - (Optional, Available since v1.242.0) The endpoint of the collector.
 * `sampling_rate_per_million` - (Optional) Number of samples to be collected per million span.
+
+---
 
 ### `containerd_config`
 
@@ -1152,12 +1176,16 @@ The containerd_config supports the following:
 * `registry_mirrors` - (Optional, List of String) Configure mirror sites for container image registries to accelerate image pulls. Each string follows the format `registry=mirror1[&override_path],mirror2[&override_path],...`. The part before `=` is the container image registry, which must be a domain name or IP address without protocol prefix (optionally including a port number), e.g., `docker.io`, `192.168.1.1:5000`. The part after `=` is one or more mirror sites separated by commas; each mirror must start with `http://` or `https://` followed by an IP address or domain name (optionally including a port number), e.g., `https://registry.cn-hangzhou.aliyuncs.com`. Append `&override_path` to a mirror to enable path override for that mirror.
 * `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
 
+---
+
 ### `labels`
 
 The labels supports the following:
 
 * `key` - (Required) The label key.
 * `value` - (Optional) The label value.
+
+---
 
 ### `management`
 
@@ -1174,6 +1202,8 @@ The management supports the following:
 * `surge` - (Optional, Int, Deprecated since v1.219.0) Number of additional nodes. You have to specify one of surge, surge_percentage.
 * `surge_percentage` - (Optional, Int, Deprecated since v1.219.0) Proportion of additional nodes. You have to specify one of surge, surge_percentage.
 
+---
+
 ### `management-auto_repair_policy`
 
 The management-auto_repair_policy supports the following:
@@ -1185,11 +1215,15 @@ The management-auto_repair_policy supports the following:
 
   -> **NOTE:** An auto repair policy can only be bound to a managed node pool of an ACK Pro cluster, and Auto mode node pools do not support auto repair policies. Binding a policy requires the `node-lifecycle-controller` add-on at version `v2.3.13-b581b592` or later; automatic fault diagnosis additionally requires `ack-node-problem-detector` at version `1.2.41` or later. The service validates the installed versions on every request and rejects requests whose add-on version is below the minimum, so install or upgrade the add-ons with [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) before enabling these features.
 
+---
+
 ### `management-auto_upgrade_policy`
 
 The management-auto_upgrade_policy supports the following:
 
 * `auto_upgrade_kubelet` - (Optional, Computed) Specifies whether  to automatically update the kubelet. Valid values: `true`: yes; `false`: no.
+
+---
 
 ### `management-auto_vul_fix_policy`
 
@@ -1198,12 +1232,16 @@ The management-auto_vul_fix_policy supports the following:
 * `restart_node` - (Optional, Computed) Specifies whether to automatically restart nodes after patching CVE vulnerabilities. Valid values: `true`, `false`.
 * `vul_level` - (Optional, Computed) The severity levels of vulnerabilities that is allowed to automatically patch. Multiple severity levels are separated by commas (,).
 
+---
+
 ### `private_pool_options`
 
 The private_pool_options supports the following:
 
 * `private_pool_options_id` - (Optional) The ID of the private node pool.
 * `private_pool_options_match_criteria` - (Optional) The type of private node pool. This parameter specifies the type of the private pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values: `Open`: specifies an open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used. `Target`: specifies a private node pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be started. `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
+
+---
 
 ### `resource_pool_options`
 
@@ -1219,6 +1257,8 @@ The resource_pool_options supports the following:
   * `None`: Do not use the resource pool strategy.
 * `private_pool_ids` - (Optional, List) The list of private pool IDs, that is, the IDs of elasticity assurance services or capacity reservation services. Only Target mode private pool IDs can be passed in. The value of N ranges from 1 to 20. For example, `eap-bp67acfmxazb4****`.
 
+---
+
 ### `rolling_policy`
 
 The rolling_policy supports the following:
@@ -1230,6 +1270,8 @@ The rolling_policy supports the following:
   - `FirstBatch`: Pause after the first batch is completed.
   - `EveryBatch`: Pause after each batch is completed.
   - `NotPause`: Do not pause during the upgrade process.
+
+---
 
 ### `scaling_config`
 
@@ -1245,12 +1287,16 @@ The scaling_config supports the following:
 * `min_size` - (Optional, Int) Min number of instances in a auto scaling group, its valid value range [0~1000].
 * `type` - (Optional) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
 
+---
+
 ### `spot_price_limit`
 
 The spot_price_limit supports the following:
 
 * `instance_type` - (Optional) The type of the preemptible instance.
 * `price_limit` - (Optional) The maximum price of a single instance.
+
+---
 
 ### `taints`
 
@@ -1260,11 +1306,15 @@ The taints supports the following:
 * `key` - (Required) The key of a taint.
 * `value` - (Optional) The value of a taint.
 
+---
+
 ### `tee_config`
 
 The tee_config supports the following:
 
 * `tee_enable` - (Optional, ForceNew) Specifies whether to enable confidential computing for the cluster.
+
+---
 
 ### `upgrade_policy`
 
@@ -1288,7 +1338,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when create the Nodepool.
 * `delete` - (Defaults to 60 mins) Used when delete the Nodepool.

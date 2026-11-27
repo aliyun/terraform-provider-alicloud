@@ -109,26 +109,40 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Desktop names.
-* `desktops` - A list of Ecd Desktops. Each element contains the following attributes:
-  * `id` - The ID of the Desktop.
-  * `desktop_id` - The cloud desktop ID.
-  * `desktop_type` - The specifications of the cloud desktop.
-  * `desktop_name` - The cloud desktop name.
-  * `policy_group_id` - The cloud desktop policy ID.
-  * `directory_id` - The directory ID.
-  * `network_interface_id` - The ID of the secondary elastic network interface (ENI) created by the cloud desktop service for a RAM or AD user.
-  * `cpu` - The number of CPUs.
-  * `image_id` - The image ID.
-  * `memory` - The memory size.
-  * `system_disk_size` - The system disk size of the Desktop.
-  * `payment_type` - The billing method of the cloud desktop.
-  * `status` - The cloud desktop status.
-  * `create_time` - The creation time of the cloud desktop.
-  * `expired_time` - The expiration time of the subscription cloud desktop.
-  * `end_user_ids` - The IDs of the authorized users of the cloud desktop.
-  * `disks` - (Available since v2.3.0) The disk information.
-    * `disk_id` - The disk ID.
-    * `disk_type` - The disk type.
-    * `disk_category` - The disk category.
-    * `disk_size` - The disk size.
-    * `performance_level` - The performance level of the enhanced standard SSD cloud disk.
+* `desktops` - A list of Ecd Desktops.
+
+---
+
+### `desktops`
+
+The desktops supports the following attributes:
+
+* `id` - The ID of the Desktop.
+* `desktop_id` - The cloud desktop ID.
+* `desktop_type` - The specifications of the cloud desktop.
+* `desktop_name` - The cloud desktop name.
+* `policy_group_id` - The cloud desktop policy ID.
+* `directory_id` - The directory ID.
+* `network_interface_id` - The ID of the secondary elastic network interface (ENI) created by the cloud desktop service for a RAM or AD user.
+* `cpu` - The number of CPUs.
+* `image_id` - The image ID.
+* `memory` - The memory size.
+* `system_disk_size` - The system disk size of the Desktop.
+* `payment_type` - The billing method of the cloud desktop.
+* `status` - The cloud desktop status.
+* `create_time` - The creation time of the cloud desktop.
+* `expired_time` - The expiration time of the subscription cloud desktop.
+* `end_user_ids` - The IDs of the authorized users of the cloud desktop.
+* `disks` - (Available since v2.3.0) The disk information.
+
+---
+
+### `desktops.disks`
+
+The disks supports the following attributes:
+
+* `disk_id` - The disk ID.
+* `disk_type` - The disk type.
+* `disk_category` - The disk category.
+* `disk_size` - The disk size.
+* `performance_level` - The performance level of the enhanced standard SSD cloud disk.

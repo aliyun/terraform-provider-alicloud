@@ -49,14 +49,14 @@ output "vod_domain" {
 
 The following arguments are supported:
 
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Domain name.
-* `ids` - (Optional, ForceNew, Computed)  A list of Domain IDs. Its element value is same as Domain Name.
-* `domain_search_type` - (Optional, ForceNew) The search method. Valid values:
+* `name_regex` - (Optional) A regex string to filter results by Domain name.
+* `ids` - (Optional, Computed)  A list of Domain IDs. Its element value is same as Domain Name.
+* `domain_search_type` - (Optional) The search method. Valid values:
   * `fuzzy_match`: fuzzy match. This is the default value.
   * `pre_match`: prefix match.
   * `suf_match`: suffix match.
   * `full_match`: exact match
-* `status` - (Optional, ForceNew) The status of the domain name. The value of this parameter is used as a condition to filter domain names.
+* `status` - (Optional) The status of the domain name. The value of this parameter is used as a condition to filter domain names.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   * `Key`: It can be up to 64 characters in length. It cannot be a null string.
   * `Value`: It can be up to 128 characters in length. It can be a null string.
@@ -73,18 +73,32 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Domain names.
-* `domains` - A list of Vod Domains. Each element contains the following attributes:
-  * `gmt_created` - The time when the domain name for CDN was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-  * `gmt_modified` - The last time when the domain name for CDN was modified. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-  * `cname` - The CNAME that is assigned to the domain name for CDN. You must add a CNAME record in the system of your Domain Name System (DNS) service provider to map the domain name for CDN to the CNAME.
-  * `description` - The description of the domain name for CDN.
-  * `ssl_protocol` - Indicates whether the Secure Sockets Layer (SSL) certificate is enabled. Valid values: `on`,`off`.
-  * `domain_name` - The domain name for CDN.
-  * `status` - The status of the resource.
-  * `id` - The ID of the Domain. Its value is same as Queue Name.
-  * `sand_box` - Indicates whether the domain name for CDN is in a sandbox environment.
-  * `sources` - The information about the address of the origin server. Each element contains the following attributes:
-    * `source_type` - The origin server type. Valid values: `ipaddr`, `domain`, `oss`.
-    * `source_content` - The address of the origin server. You can specify an IP address or a domain name.
-    * `source_port` - The port number. You can specify port 443 or 80. If you specify port 443, Alibaba Cloud CDN communicates with the origin server over HTTPS. You can also customize a port.
-    * `source_priority` - The priority of the origin server if multiple origin servers are specified. Valid values: `20`, `30`. Default value: `20`. A value of 20 indicates that the origin server is the primary origin server. A value of 30 indicates that the origin server is a secondary origin server.
+* `domains` - A list of Vod Domains.
+
+---
+
+### `domains`
+
+The domains supports the following attributes:
+
+* `gmt_created` - The time when the domain name for CDN was added. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `gmt_modified` - The last time when the domain name for CDN was modified. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `cname` - The CNAME that is assigned to the domain name for CDN. You must add a CNAME record in the system of your Domain Name System (DNS) service provider to map the domain name for CDN to the CNAME.
+* `description` - The description of the domain name for CDN.
+* `ssl_protocol` - Indicates whether the Secure Sockets Layer (SSL) certificate is enabled. Valid values: `on`,`off`.
+* `domain_name` - The domain name for CDN.
+* `status` - The status of the resource.
+* `id` - The ID of the Domain. Its value is same as Queue Name.
+* `sand_box` - Indicates whether the domain name for CDN is in a sandbox environment.
+* `sources` - The information about the address of the origin server.
+
+---
+
+### `domains.sources`
+
+The sources supports the following attributes:
+
+* `source_type` - The origin server type. Valid values: `ipaddr`, `domain`, `oss`.
+* `source_content` - The address of the origin server. You can specify an IP address or a domain name.
+* `source_port` - The port number. You can specify port 443 or 80. If you specify port 443, Alibaba Cloud CDN communicates with the origin server over HTTPS. You can also customize a port.
+* `source_priority` - The priority of the origin server if multiple origin servers are specified. Valid values: `20`, `30`. Default value: `20`. A value of 20 indicates that the origin server is the primary origin server. A value of 30 indicates that the origin server is a secondary origin server.

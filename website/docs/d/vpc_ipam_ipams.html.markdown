@@ -48,13 +48,13 @@ output "alicloud_vpc_ipam_ipam_example_id" {
 
 The following arguments are supported:
 
-* `ipam_id` - (ForceNew, Optional) The first ID of the resource.
-* `ipam_name` - (ForceNew, Optional) The name of the resource.
-* `resource_group_id` - (ForceNew, Optional) The ID of the resource group.
-* `tags` - (ForceNew, Optional) The tag of the resource.
-* `ids` - (Optional, ForceNew, Computed) A list of Ipam IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `ipam_id` - (Optional) The first ID of the resource.
+* `ipam_name` - (Optional) The name of the resource.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `tags` - (Optional) The tag of the resource.
+* `ids` - (Optional, Computed) A list of Ipam IDs.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
@@ -62,18 +62,25 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Ipam IDs.
 * `names` - A list of name of Ipams.
-* `ipams` - A list of Ipam Entries. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `default_resource_discovery_association_id` - After an IPAM is created, the association between the resource discovery created by the system by default and the IPAM.
-  * `default_resource_discovery_id` - After IPAM is created, the system creates resource discovery by default.
-  * `ipam_description` - The description of IPAM.It must be 2 to 256 characters in length and must start with an uppercase letter or a Chinese character, but cannot start with 'http: // 'or 'https. If the description is not filled in, it is blank. The default value is blank.
-  * `ipam_id` - The first ID of the resource.
-  * `ipam_name` - The name of the resource.
-  * `private_default_scope_id` - After an IPAM is created, the scope of the private network IPAM created by the system by default.
-  * `public_default_scope_id` - After an IPAM is created, the public network IPAM is created by default.
-  * `region_id` - The region ID of the resource.
-  * `resource_discovery_association_count` - The number of resource discovery objects associated with IPAM.
-  * `resource_group_id` - The ID of the resource group.
-  * `status` - The status of the resource.
-  * `tags` - The tag of the resource.
-  * `id` - The ID of the resource supplied above.
+* `ipams` - A list of Ipam Entries.
+
+---
+
+### `ipams`
+
+The ipams supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `default_resource_discovery_association_id` - After an IPAM is created, the association between the resource discovery created by the system by default and the IPAM.
+* `default_resource_discovery_id` - After IPAM is created, the system creates resource discovery by default.
+* `ipam_description` - The description of IPAM.It must be 2 to 256 characters in length and must start with an uppercase letter or a Chinese character, but cannot start with 'http: // 'or 'https. If the description is not filled in, it is blank. The default value is blank.
+* `ipam_id` - The first ID of the resource.
+* `ipam_name` - The name of the resource.
+* `private_default_scope_id` - After an IPAM is created, the scope of the private network IPAM created by the system by default.
+* `public_default_scope_id` - After an IPAM is created, the public network IPAM is created by default.
+* `region_id` - The region ID of the resource.
+* `resource_discovery_association_count` - The number of resource discovery objects associated with IPAM.
+* `resource_group_id` - The ID of the resource group.
+* `status` - The status of the resource.
+* `tags` - The tag of the resource.
+* `id` - The ID of the resource supplied above.

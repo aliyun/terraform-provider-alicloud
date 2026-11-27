@@ -103,7 +103,7 @@ The following arguments are supported:
   - `false`: Disable.
 * `key_name` - (Optional, ForceNew, Deprecated since v1.121.0) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
 
--> **WARNING:**  If `force` set to `true`, it it will reboot instances which attached with the key pair to make key pair effective immediately.
+  -> **WARNING:** If `force` is set to `true`, it will reboot instances attached with the key pair to make the key pair effective immediately.
 
 ## Attributes Reference
 
@@ -115,7 +115,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.274.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Key Pair Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Key Pair Attachment.

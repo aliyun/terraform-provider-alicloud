@@ -33,13 +33,13 @@ output "first_ros_change_set_id" {
 
 The following arguments are supported:
 
-* `change_set_name` - (Optional, ForceNew) The name of the change set.  The name can be up to 255 characters in length and can contain digits, letters, hyphens (-), and underscores (_). It must start with a digit or letter.
+* `change_set_name` - (Optional) The name of the change set.  The name can be up to 255 characters in length and can contain digits, letters, hyphens (-), and underscores (_). It must start with a digit or letter.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Change Set IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Change Set name.
+* `ids` - (Optional, Computed)  A list of Change Set IDs.
+* `name_regex` - (Optional) A regex string to filter results by Change Set name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `stack_id` - (Required, ForceNew) The ID of the stack for which you want to create the change set. ROS generates the change set by comparing the stack information with the information that you submit, such as a modified template or different inputs.
-* `status` - (Optional, ForceNew) The status of the change set. Valid Value: `CREATE_COMPLETE`, `CREATE_FAILED`, `CREATE_IN_PROGRESS`, `CREATE_PENDING`, `DELETE_COMPLETE` and `DELETE_FAILED`.
+* `stack_id` - (Required) The ID of the stack for which you want to create the change set. ROS generates the change set by comparing the stack information with the information that you submit, such as a modified template or different inputs.
+* `status` - (Optional) The status of the change set. Valid Value: `CREATE_COMPLETE`, `CREATE_FAILED`, `CREATE_IN_PROGRESS`, `CREATE_PENDING`, `DELETE_COMPLETE` and `DELETE_FAILED`.
 
 ## Attributes Reference
 
@@ -47,6 +47,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Change Set names.
 * `sets` - A list of Ros Change Sets. Each element contains the following attributes. See [`sets`](#sets) below.
+
+---
 
 ### `sets`
 
@@ -63,6 +65,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `status` - The status of the change set.
 * `template_body` - The structure that contains the template body. The template body must be 1 to 524,288 bytes in length.  If the length of the template body is longer than required, we recommend that you add parameters to the HTTP POST request body to avoid request failures due to excessive length of URLs.  You can specify one of TemplateBody or TemplateURL parameters, but you cannot specify both of them.
 * `timeout_in_minutes` - Timeout In Minutes.
+
+---
 
 ### `sets-parameters`
 

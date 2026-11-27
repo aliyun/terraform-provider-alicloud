@@ -83,18 +83,25 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Gateway.
 * `status` - The status of the gateway.
 * `slb_list` - A list of gateway Slb.
-  * `associate_id` - The associate id.
-  * `slb_id` - The ID of the gateway slb.
-  * `slb_ip` - The ip of the gateway slb.
-  * `slb_port` - The port of the gateway slb.
-  * `type` - The type of the gateway slb.
-  * `gmt_create` - The creation time of the gateway slb.
-  * `gateway_slb_mode` - The Mode of the gateway slb.
-  * `gateway_slb_status` - The Status of the gateway slb.
+
+---
+
+### `slb_list`
+
+The slb_list supports the following attributes:
+
+* `associate_id` - The associate id.
+* `slb_id` - The ID of the gateway slb.
+* `slb_ip` - The ip of the gateway slb.
+* `slb_port` - The port of the gateway slb.
+* `type` - The type of the gateway slb.
+* `gmt_create` - The creation time of the gateway slb.
+* `gateway_slb_mode` - The Mode of the gateway slb.
+* `gateway_slb_status` - The Status of the gateway slb.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Gateway.
 * `delete` - (Defaults to 5 mins) Used when delete the Gateway.

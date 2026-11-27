@@ -30,19 +30,26 @@ output "first_rds_slots_name" {
 
 The following arguments are supported:
 
-* `db_instance_id` - (Required, ForceNew) The db instance id.
-* `resource_group_id` - (Optional, ForceNew) The resource group id.
+* `db_instance_id` - (Required) The db instance id.
+* `resource_group_id` - (Optional) The resource group id.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `slots` - A list of Rds Replication Slots. Each element contains the following attributes:
-  * `slot_name` - The Replication Slot name.
-  * `plugin` - The plugin used by Replication Slot.
-  * `slot_type` - The Replication Slot type.
-  * `database` - The name of the database where Replication Slot is located.
-  * `temporary` - Is the Replication Slot temporary.
-  * `slot_status` - The Replication Slot status.
-  * `wal_delay` - The amount of logs accumulated by Replication Slot.
+* `slots` - A list of Rds Replication Slots.
+
+---
+
+### `slots`
+
+The slots supports the following attributes:
+
+* `slot_name` - The Replication Slot name.
+* `plugin` - The plugin used by Replication Slot.
+* `slot_type` - The Replication Slot type.
+* `database` - The name of the database where Replication Slot is located.
+* `temporary` - Is the Replication Slot temporary.
+* `slot_status` - The Replication Slot status.
+* `wal_delay` - The amount of logs accumulated by Replication Slot.

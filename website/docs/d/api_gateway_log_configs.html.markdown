@@ -39,17 +39,24 @@ output "api_gateway_log_config_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Log Config IDs.
-* `log_type` - (Optional, ForceNew) The type the of log. Valid values: `PROVIDER`.
+* `ids` - (Optional, Computed)  A list of Log Config IDs.
+* `log_type` - (Optional) The type the of log. Valid values: `PROVIDER`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configs` - A list of Api Gateway Log Configs. Each element contains the following attributes:
-  * `id` - The ID of the Log Config.
-  * `log_type` - The type the of log.
-  * `sls_project` - The name of the Project.
-  * `sls_log_store` - The name of the Log Store.
-  * `region_id` - The region ID of the Log Config.
+* `configs` - A list of Api Gateway Log Configs.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `id` - The ID of the Log Config.
+* `log_type` - The type the of log.
+* `sls_project` - The name of the Project.
+* `sls_log_store` - The name of the Log Store.
+* `region_id` - The region ID of the Log Config.

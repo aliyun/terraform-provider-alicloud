@@ -84,6 +84,8 @@ The following arguments are supported:
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `ttl` - (Optional) The global time to live. Valid values: `60`, `120`, `300`, `600`. Unit: second.
 
+---
+
 ### `alert_config`
 
 The alert_config supports the following:

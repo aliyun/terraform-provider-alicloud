@@ -52,7 +52,25 @@ pipeline ID.
 
 ## P0/P1 gate update
 
-The Provider bridge evaluates raw findings for both new and reused completed
+Formal reports carrying ACube's `gatePolicy=formal-introduced-v1` gate on introduced P0/P1
+and unresolved regressions carried from this MR. A carried finding can omit `prRelation`.
+For other P0/P1 findings the bridge requires an explicit attribution. The values `changed`,
+`expanded` and `unknown` are valid and appear under other attributions. An absent or invalid
+attribution fails the check with `MALFORMED_REPORT`, including for reused reports.
+For preexisting P0/P1, ACube collects Agent results after CI exits. ACube emits `queued` for
+these background observations. For in-scope formal findings, both `queued` and `verifying`
+keep the check polling until the Agent returns a decision. An adopted in-scope finding
+fails the check immediately, even while another finding is waiting. Reproduced and inconclusive
+findings retain distinct verification labels on the MR. Unreproduced findings retain the rejection.
+ACube creates or reuses a resource work item for an ordinary MR with a known source.
+Missing or ambiguous Code associations are retried in the background. On a repair MR, the team
+can fix findings in scope. After merge ACube uses the accepted source revision to verify any
+remainder and appends a short follow-up with the discussion link to the original repair item.
+The MR, base/head and evidence identify the evaluation sample.
+Install the ACube stock tables and deploy its worker before switching template 5246 to the new
+bridge. While the old bridge is pinned it continues to enforce its old policy.
+
+For reports without that policy, the Provider bridge evaluates raw findings for both new and reused completed
 reports. Any P0 or P1 blocks CI even if the ACube service returns success under
 its earlier P0-only policy. Service failures remain failures; malformed reports
 fail closed. Annotations do not waive findings. The summary shows the effective
@@ -65,7 +83,7 @@ see [AI review on demand](#ai-review-on-demand).
 ## Dispositions: rejected or ignored findings pass
 
 ACube returns `dispositions` keyed by finding ID with the formal report. Each
-P0/P1 finding passes only when its disposition `state` is `rejected` or
+in-scope P0/P1 finding passes only when its disposition `state` is `rejected` or
 `ignored`; `verifying` keeps the check pending; anything else, including a
 missing or malformed disposition, blocks. Fields inside a finding never waive it.
 A pass also requires ACube's own `conclusion` to be `success`; a disagreement

@@ -113,6 +113,14 @@ if ! command -v terraform &> /dev/null; then
   exit 1
 fi
 
+# Check if python3 is available (required to prepare the provider
+# requirement for each example)
+if ! command -v python3 &> /dev/null; then
+  echo -e "${RED}ERROR: python3 is not installed.${NC}"
+  echo -e "${YELLOW}scripts/example-check/required_providers.py needs python3.${NC}"
+  exit 1
+fi
+
 echo -e "${GREEN}✓ Terraform is installed: $(terraform version | head -1)${NC}"
 echo
 
@@ -516,35 +524,54 @@ for file_info in $FILES_WITH_EXAMPLES; do
 
       mkdir -p "$example_dir"
 
-      # Create provider configuration
-      cat > "$example_dir/terraform.tf" <<EOF
-terraform {
-  required_providers {
-    alicloud = {
-      source = "registry.terraform.io/aliyun/alicloud"
-    }
-  }
-}
-
-EOF
-
       # Write example content to main.tf
       echo "$example_content" > "$example_dir/main.tf"
 
-      # Run terraform operations
+      # Decide how the alicloud provider requirement is satisfied.
+      #
+      # The example may already declare terraform.required_providers, in
+      # which case writing a second declaration into terraform.tf breaks
+      # configuration loading with "Duplicate required providers
+      # configuration". The helper parses the example HCL (plain strings,
+      # comments and heredocs are never blocks) and either injects
+      # terraform.tf, keeps the example's own declaration, or completes the
+      # existing required_providers block in place. Real duplicate or
+      # conflicting blocks are left untouched so terraform still reports
+      # them.
+      test_failed=false
+      prep_failed=false
+      error_log="$example_dir/error.log"
+      # Computed before the helper call: its output precedes the testing
+      # banner, so the preparation lines must carry the example name
+      # themselves to stay attributable in the log.
       example_name=$(basename "$example_dir")
+
+      if ! provider_requirement_status=$(python3 "$SCRIPT_DIR/example-check/required_providers.py" \
+          --example-dir "$example_dir" 2> "$error_log"); then
+        echo -e "${RED} - provider requirement preparation failed for ${example_name}.${NC}"
+        echo -e "${YELLOW}Error details:${NC}"
+        cat "$error_log" | tail -20
+        test_failed=true
+        prep_failed=true
+      else
+        echo -e "${BLUE} - provider requirement: ${provider_requirement_status} (${example_name})${NC}"
+      fi
+
+      # Run terraform operations
       echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
       echo -e "${BLUE}▶ Testing: ${example_name}${NC}"
       echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-      test_failed=false
-      error_log="$example_dir/error.log"
-
       # APPLY phase
       echo -e "${YELLOW}=== RUN   ${example_name} APPLY${NC}"
 
+      # APPLY phase (skipped when the provider requirement preparation
+      # failed: nothing was prepared to init/plan/apply, and the helper
+      # failure above is the real cause, not a terraform error).
+      if [ "$prep_failed" = true ]; then
+        echo -e "${YELLOW} - apply check: skipped (provider requirement preparation failed).${NC}"
       # Run terraform init
-      if ! (cd "$example_dir" && \
+      elif ! (cd "$example_dir" && \
           TF_VAR_access_key="$ALICLOUD_ACCESS_KEY" \
           TF_VAR_secret_key="$ALICLOUD_SECRET_KEY" \
           TF_VAR_region="$ALICLOUD_REGION" \
@@ -608,10 +635,13 @@ EOF
         fi
       fi
 
-      # DESTROY phase
+      # DESTROY phase (also skipped after a preparation failure: nothing
+      # was created, so there is nothing to destroy).
       echo -e "${YELLOW}=== RUN   ${example_name} DESTROY${NC}"
 
-      if (cd "$example_dir" && \
+      if [ "$prep_failed" = true ]; then
+        echo -e "${YELLOW} - destroy check: skipped (provider requirement preparation failed).${NC}"
+      elif (cd "$example_dir" && \
           TF_VAR_access_key="$ALICLOUD_ACCESS_KEY" \
           TF_VAR_secret_key="$ALICLOUD_SECRET_KEY" \
           TF_VAR_region="$ALICLOUD_REGION" \

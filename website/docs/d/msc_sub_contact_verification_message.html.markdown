@@ -33,8 +33,8 @@ data "alicloud_msc_sub_contact_verification_message" "default" {
 
 The following arguments are supported:
 
-* `contact_id` - (Required, ForceNew)  The ID of the Contact.
-* `type` - (Required, ForceNew) How a user receives verification messages. Valid values : `1`, `2`.
+* `contact_id` - (Required)  The ID of the Contact.
+* `type` - (Required) How a user receives verification messages. Valid values : `1`, `2`.
   * `1`: Send a verification message through the user's mobile.
   * `2`: Send a verification message through the user's mail.
 

@@ -65,8 +65,13 @@ Bypassing stock attributes) is recognized.
 
 A standalone CLI import with `ImportStateVerify: true` preserves the previous
 applied snapshot for reorder coverage when it uses isolated state and has no
-configuration override, callbacks, or other test actions. Persistent imports
-and import-block steps interrupt the comparison.
+configuration override, callbacks, or other test actions. A config-less
+non-persistent CLI import — with or without an explicit
+`ImportStateKind: resource.ImportCommandWithID` — is tolerated the same way:
+without `ImportStatePersist` the imported state is discarded after
+verification, so the last applied configuration still describes the remote
+world. Persistent imports and any other `ImportStateKind` — import blocks and
+unknown kinds — interrupt the comparison.
 
 Use at least two distinct, valid members and two steps over the same resource
 in an actual `TestAcc...(*testing.T)` function in

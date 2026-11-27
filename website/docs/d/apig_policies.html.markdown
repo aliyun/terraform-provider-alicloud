@@ -48,15 +48,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Policy names.
-* `policies` - A list of Policy Entries. Each element contains the following attributes:
-  * `id` - The ID of the Policy.
-  * `policy_id` - The first ID of the resource.
-  * `policy_name` - Policy name.
-  * `policy_class_id` - Policy class id.
-  * `policy_class_name` - Policy class name.
-  * `policy_config` - Policy configuration.
-  * `attach_resource_ids` - The Mount point id list.
-  * `attach_resource_type` - The mount point type of the policy.
-  * `environment_id` - Environment id.
-  * `gateway_id` - Gateway id.
-  * `policy_attachment_id` - Policy attachment id.
+* `policies` - A list of Policy Entries.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The ID of the Policy.
+* `policy_id` - The first ID of the resource.
+* `policy_name` - Policy name.
+* `policy_class_id` - Policy class id.
+* `policy_class_name` - Policy class name.
+* `policy_config` - Policy configuration.
+* `attach_resource_ids` - The Mount point id list.
+* `attach_resource_type` - The mount point type of the policy.
+* `environment_id` - Environment id.
+* `gateway_id` - Gateway id.
+* `policy_attachment_id` - Policy attachment id.

@@ -182,6 +182,8 @@ You can log on to the [Resource Management console](https://resourcemanager.cons
   - `ConsoleProtection`: Enables the configuration read-only mode. You can set the `modification_protection_reason`.
 * `modification_protection_reason` - (Optional, Available since v1.206.0) The reason why the configuration read-only mode is enabled. The `modification_protection_reason` takes effect only when `modification_protection_status` is set to `ConsoleProtection`.
 
+---
+
 ### `deletion_protection_config`
 
 The deletion_protection_config supports the following:
@@ -192,6 +194,8 @@ The deletion_protection_config supports the following:
 * `reason` - (Optional, Computed) The reason why deletion protection is enabled. The reason must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (\_), and hyphens (-). The reason must start with a letter.
 
   -> **NOTE:**  This parameter takes effect only when `DeletionProtectionEnabled` is set to `true`.
+
+---
 
 ### `modification_protection_config`
 
@@ -206,6 +210,8 @@ The modification_protection_config supports the following:
   - `ConsoleProtection`: enables the configuration read-only mode. In this case, you can specify `ModificationProtectionReason`.
 
   -> **NOTE:**  If you set this parameter to `ConsoleProtection`, you cannot use the NLB console to modify instance configurations. However, you can call API operations to modify instance configurations.
+
+---
 
 ### `zone_mappings`
 
@@ -227,21 +233,42 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Resource creation time, using Greenwich Mean Time, formating' yyyy-MM-ddTHH:mm:ssZ '.
 * `deletion_protection_config` - Specifies whether to enable deletion protection. Default value: `false`.
-  * `enabled_time` - Opening time of enable deletion protection.
 * `dns_name` - The domain name of the NLB instance.
 * `load_balancer_business_status` - The business status of the NLB instance.
 * `modification_protection_config` - Specifies whether to enable the configuration read-only mode. Default value: `NonProtection`.
-  * `enabled_time` - Opening time of the configuration read-only mode.
 * `region_id` - The ID of the region where the NLB instance is deployed.
 * `status` - The status of the NLB instance.
 * `zone_mappings` - Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones.
-  * `eni_id` - The ID of the elastic network interface (ENI).
-  * `public_ipv4_address` - The public IPv4 address of the NLB instance.
-  * `status` - Zone Status
+
+---
+
+### `deletion_protection_config`
+
+The deletion_protection_config supports the following attributes:
+
+* `enabled_time` - Opening time of enable deletion protection.
+
+---
+
+### `modification_protection_config`
+
+The modification_protection_config supports the following attributes:
+
+* `enabled_time` - Opening time of the configuration read-only mode.
+
+---
+
+### `zone_mappings`
+
+The zone_mappings supports the following attributes:
+
+* `eni_id` - The ID of the elastic network interface (ENI).
+* `public_ipv4_address` - The public IPv4 address of the NLB instance.
+* `status` - Zone Status
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 11 mins) Used when delete the Load Balancer.

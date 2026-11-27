@@ -31,8 +31,8 @@ output "alicloud_dts_instance_example_id" {
 The following arguments are supported:
 
 * `resource_group_id` - (Optional) Resource Group ID
-* `ids` - (Optional, ForceNew, Computed) A list of Instance IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by trail name.
+* `ids` - (Optional, Computed) A list of Instance IDs.
+* `name_regex` - (Optional) A regex string to filter results by trail name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -41,18 +41,25 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Instance IDs.
 * `names` - A list of Instance names.
-* `instances` - A list of Instance Entries. Each element contains the following attributes:
-  * `id` - The ID of the instance.
-  * `create_time` - Instance creation time
-  * `destination_endpoint_engine_name` - The target database engine type.
-  * `dts_instance_id` - The ID of the subscription instance.
-  * `instance_class` - The type of the migration or synchronization instance.- The specifications of the migration instance: **xxlarge**, **xlarge**, **large**, **medium**, **small**.- The types of synchronization instances: **large**, **medium**, **small**, **micro**.
-  * `instance_name` - The name of the instance.
-  * `payment_type` - The payment type of the resource.
-  * `destination_region` - The target instance region.
-  * `resource_group_id` - Resource Group ID.
-  * `source_endpoint_engine_name` - Source instance database engine type.
-  * `source_region` - The source instance region.
-  * `status` - Instance status.
-  * `tags` - (Optional) The tag value corresponding to the tag key.
-  * `type` - The instance type. Valid values: -**MIGRATION**: MIGRATION.-**SYNC**: synchronization.-**SUBSCRIBE**: SUBSCRIBE.
+* `instances` - A list of Instance Entries.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The ID of the instance.
+* `create_time` - Instance creation time
+* `destination_endpoint_engine_name` - The target database engine type.
+* `dts_instance_id` - The ID of the subscription instance.
+* `instance_class` - The type of the migration or synchronization instance.- The specifications of the migration instance: **xxlarge**, **xlarge**, **large**, **medium**, **small**.- The types of synchronization instances: **large**, **medium**, **small**, **micro**.
+* `instance_name` - The name of the instance.
+* `payment_type` - The payment type of the resource.
+* `destination_region` - The target instance region.
+* `resource_group_id` - Resource Group ID.
+* `source_endpoint_engine_name` - Source instance database engine type.
+* `source_region` - The source instance region.
+* `status` - Instance status.
+* `tags` - (Optional) The tag value corresponding to the tag key.
+* `type` - The instance type. Valid values: -**MIGRATION**: MIGRATION.-**SYNC**: synchronization.-**SUBSCRIBE**: SUBSCRIBE.

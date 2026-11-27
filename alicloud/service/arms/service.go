@@ -205,6 +205,36 @@ func (s *Service) DescribeArmsPrometheusAlertRule(id string) (object map[string]
 	})
 	logs.AddDebug(action, response, request)
 	if err != nil {
+		// ListPrometheusAlertRules reports a deleted parent prometheus
+		// cluster as a generic ParameterIllegal (probe requestId
+		// 01A1F806-FD94-5277-9591-6B349414E38A), and the same code also
+		// surfaces on transient list failures while the cluster is still
+		// alive. The code never proves anything about the rule itself:
+		// live reproduction (https://jarivs.alibaba.net/Jarvis/tasks/11159f8c-9f21-4a86-a5d6-74297743fab8/)
+		// confirmed that alert rules do NOT disappear with their cluster —
+		// after the parent prometheus instance is deleted the rule stays
+		// alive and addressable by AlertId alone (an explicit
+		// DeletePrometheusAlertRule on the orphaned rule returned 200).
+		// A third reproduction round
+		// (https://jarivs.alibaba.net/Jarvis/tasks/dc99c0f7-00d7-438f-88fb-45c45fddcc4b/)
+		// showed the rule-level lookup cannot classify the rule either:
+		// DescribePrometheusAlertRule also returns ParameterIllegal for a
+		// live orphaned rule (while DeletePrometheusAlertRule on the same
+		// id still returns 200), so its ParameterIllegal is NOT a
+		// not-found signal — the same code is returned for an unknown
+		// alert id (probe requestId 01A20CDC-0BB3-5B45-AE1F-179F8394C138)
+		// and for a live rule whose parent cluster is gone. Only a
+		// SUCCESSFUL rule-level lookup proves the rule is alive and
+		// completes the refresh; every other outcome keeps the original
+		// list error, blocks the refresh and preserves the state. The id
+		// is cleared only when the list itself succeeds and the rule is
+		// missing from it below.
+		if errs.IsExpectedErrors(err, []string{"ParameterIllegal"}) {
+			rule, ruleErr := s.DescribeArmsPrometheusAlertRuleById(parts[1])
+			if ruleErr == nil {
+				return rule, nil
+			}
+		}
 		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.PrometheusAlertRules", response)
@@ -224,6 +254,46 @@ func (s *Service) DescribeArmsPrometheusAlertRule(id string) (object map[string]
 		return object, errs.WrapErrorf(errs.NotFoundErr("ARMS", id), errs.NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+// DescribeArmsPrometheusAlertRuleById queries a single prometheus alert rule
+// by its alert id (DescribePrometheusAlertRule). Alert rules are addressed
+// globally by AlertId — ClusterId is optional on the API — so a successful
+// lookup is the rule-level confirmation that the rule is alive even when
+// ListPrometheusAlertRules fails (deleted parent cluster or a transient list
+// failure). Any lookup failure is inconclusive, never an absence signal: the
+// ParameterIllegal it returns covers both unknown alert ids and live rules
+// whose parent cluster is gone (see the reproduction record in
+// DescribeArmsPrometheusAlertRule), so the caller keeps its original error
+// and only a success completes the refresh.
+func (s *Service) DescribeArmsPrometheusAlertRuleById(alertId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "DescribePrometheusAlertRule"
+	request := map[string]interface{}{
+		"AlertId": alertId,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, alertId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.PrometheusAlertRule", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, alertId, "$.PrometheusAlertRule", response)
+	}
+	return v.(map[string]interface{}), nil
 }
 
 func (s *Service) ListArmsNotificationPolicies(id string) (object map[string]interface{}, err error) {

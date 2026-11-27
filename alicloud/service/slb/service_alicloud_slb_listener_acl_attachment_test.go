@@ -619,6 +619,7 @@ func TestUnitListenerAclAttachmentUnreadableResponseClassification(t *testing.T)
 	}
 	unreadable4xx := fmt.Errorf("%w: status 400: unexpected EOF", connectivity.ErrRpcRejectedResponse)
 	unreadable3xx := fmt.Errorf("%w: status 302: a signed rpc request is not followed across a redirect", connectivity.ErrRpcRejectedResponse)
+	unreadable2xx := &connectivity.UnreadableResponseError{StatusCode: 200, Cause: fmt.Errorf("%w: status 200: unexpected JSON payload of type []interface {} instead of a JSON object", connectivity.ErrUnreadableResponse)}
 
 	cases := []struct {
 		name      string
@@ -627,6 +628,7 @@ func TestUnitListenerAclAttachmentUnreadableResponseClassification(t *testing.T)
 	}{
 		{"undecodable 503", unreadable5xx(503), true},
 		{"undecodable 500", unreadable5xx(500), true},
+		{"undecodable 200 is not a transient read error", unreadable2xx, false},
 		{"undecodable 400", unreadable4xx, false},
 		{"undecodable 302", unreadable3xx, false},
 	}
@@ -652,6 +654,12 @@ func TestUnitListenerAclAttachmentUnreadableResponseClassification(t *testing.T)
 	}
 	if !isTransientListenerReadError(wrapped) {
 		t.Fatal("a wrapped undecodable 5xx must stay retryable")
+	}
+	if !isUnconfirmedListenerAclWrite(context.Background(), unreadable2xx) {
+		t.Fatal("a write with an undecodable 2xx must stay an unknown outcome")
+	}
+	if isDefinitiveListenerAclWriteOutcome(unreadable2xx) {
+		t.Fatal("an undecodable 2xx must not be treated as a definitive rejection")
 	}
 	if !isUnconfirmedListenerAclWrite(context.Background(), unreadable5xx(503)) {
 		t.Fatal("a write with an undecodable 5xx must stay an unknown outcome")

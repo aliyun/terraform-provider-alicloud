@@ -42,6 +42,8 @@ The following arguments are supported.
 * `uid` - The ID of the RAM user. If you want to query the permissions of a RAM role, specify the ID of the RAM role.
 * `permissions` - A list of user permission. See [`permissions`](#permissions) below.
 
+---
+
 ### `permissions`
 
 The permissions mapping supports the following:

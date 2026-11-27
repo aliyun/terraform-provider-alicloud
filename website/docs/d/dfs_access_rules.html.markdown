@@ -32,20 +32,27 @@ output "dfs_access_rule_id_1" {
 
 The following arguments are supported:
 
-* `access_group_id` - (Required, ForceNew) The resource ID of the Access Group.
-* `ids` - (Optional, ForceNew, Computed)  A list of Access Rule IDs.
+* `access_group_id` - (Required) The resource ID of the Access Group.
+* `ids` - (Optional, Computed)  A list of Access Rule IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `rules` - A list of Dfs Access Rules. Each element contains the following attributes:
-  * `access_group_id` - The resource ID of the Access Group.
-  * `access_rule_id` - The ID of the Access Rule.
-  * `create_time` - The created time of the Access Rule.
-  * `description` - The description of the Access Rule.
-  * `id` - The resource ID of Access Rule.
-  * `network_segment` - The NetworkSegment of the Access Rule.
-  * `priority` - The priority of the Access Rule.
-  * `rw_access_type` - RWAccessType of the Access Rule. Valid values: `RDONLY`, `RDWR`.
+* `rules` - A list of Dfs Access Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `access_group_id` - The resource ID of the Access Group.
+* `access_rule_id` - The ID of the Access Rule.
+* `create_time` - The created time of the Access Rule.
+* `description` - The description of the Access Rule.
+* `id` - The resource ID of Access Rule.
+* `network_segment` - The NetworkSegment of the Access Rule.
+* `priority` - The priority of the Access Rule.
+* `rw_access_type` - RWAccessType of the Access Rule. Valid values: `RDONLY`, `RDWR`.

@@ -56,6 +56,8 @@ The following arguments are supported:
 * `template_id_list` - (Optional, ForceNew, List) The IDs of the alert templates.
 * `match_express` - (Required, ForceNew, Set) The conditional expressions used to create an application group based on the tag. See [`match_express`](#match_express) below.
 
+---
+
 ### `match_express`
 
 The match_express supports the following:

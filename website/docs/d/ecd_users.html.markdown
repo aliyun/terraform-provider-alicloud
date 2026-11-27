@@ -35,17 +35,24 @@ output "ecd_user_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of User IDs.
+* `ids` - (Optional, Computed)  A list of User IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Unlocked`, `Locked`.
+* `status` - (Optional) The status of the resource. Valid values: `Unlocked`, `Locked`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `users` - A list of Ecd Users. Each element contains the following attributes:
-  * `email` - The email of the user email.
-  * `end_user_id` - The Username. The custom setting is composed of lowercase letters, numbers and underscores, and the length is 3~24 characters.
-  * `id` - The ID of the user id.
-  * `phone` - The phone of the mobile phone number.
-  * `status` - The status of the resource.
+* `users` - A list of Ecd Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `email` - The email of the user email.
+* `end_user_id` - The Username. The custom setting is composed of lowercase letters, numbers and underscores, and the length is 3~24 characters.
+* `id` - The ID of the user id.
+* `phone` - The phone of the mobile phone number.
+* `status` - The status of the resource.

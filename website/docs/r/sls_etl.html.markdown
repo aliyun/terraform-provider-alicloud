@@ -86,6 +86,8 @@ The following arguments are supported:
   - Must be 2 to 64 characters in length.
 * `project` - (Required, ForceNew) Project name.  
 
+---
+
 ### `configuration`
 
 The configuration supports the following:
@@ -98,6 +100,8 @@ The configuration supports the following:
 * `script` - (Required) Processing script.  
 * `sink` - (Required, List) List of output destinations for processing results.   See [`sink`](#configuration-sink) below.
 * `to_time` - (Required, ForceNew, Int) End timestamp of the processing time (accurate to the second). Enter 0 if processing continues until manually stopped.  
+
+---
 
 ### `configuration-sink`
 
@@ -120,7 +124,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Etl.
 * `delete` - (Defaults to 5 mins) Used when delete the Etl.

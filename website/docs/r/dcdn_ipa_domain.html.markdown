@@ -60,6 +60,8 @@ The following arguments are supported:
 * `sources` - (Required) Sources. See [`sources`](#sources) below.
 * `status` - (Optional) The status of DCDN Ipa Domain. Valid values: `online`, `offline`. Default to `online`.
 
+---
+
 ### `sources`
 
 The sources supports the following:
@@ -78,7 +80,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when Creating DCDN Ipa domain instance.
 * `update` - (Defaults to 5 mins) Used when Creating DCDN Ipa domain instance.

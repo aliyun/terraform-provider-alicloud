@@ -202,19 +202,23 @@ The following arguments are supported:
 
 * `az` - (Required, ForceNew) Az
 * `cluster_id` - (Required, ForceNew) Cluster ID
+* `file_system_mount_enabled` - (Optional, Bool, Available since v1.295.0) Whether to enable file system mounting.
 * `ignore_failed_node_tasks` - (Optional) Whether to allow skipping failed nodes. Default value: False
 * `image_id` - (Required) Image ID. You can modify the image ID since v1.252.0.
-* `ip_allocation_policy` - (Optional, List) IP address combination policy: only one policy type can be selected for each policy, and multiple policies can be combined. See [`ip_allocation_policy`](#ip_allocation_policy) below.
+* `ip_allocation_policy` - (Optional, List) IP address combination policy: only one policy type can be selected for each policy, and multiple policies can be combined. See [`ip_allocation_policy`](#ip_allocation_policy) below. **Note: The parameter is immutable after resource creation.** It is a create-time input that this resource does not read back or reconcile afterwards; a change to this argument is not applied to an existing node group.
 * `key_pair_name` - (Optional, ForceNew, Available since v1.252.0) key pair name
 * `login_password` - (Optional, Available since v1.252.0) Login Password
 * `machine_type` - (Required, ForceNew) Machine type
 * `node_group_description` - (Optional, ForceNew) NodeGroupDescription
 * `node_group_name` - (Required) The name of the resource
 * `nodes` - (Optional, Set) Node List See [`nodes`](#nodes) below.
+* `system_disk` - (Optional, List, Available since v1.295.0) System disk configuration. See [`system_disk`](#system_disk) below.
 * `user_data` - (Optional) Custom Data
 * `vswitch_zone_id` - (Optional) Zone ID of the switch
 * `vpd_subnets` - (Optional, List) Cluster subnet list
 * `zone_id` - (Optional) Zone ID
+
+---
 
 ### `ip_allocation_policy`
 
@@ -224,12 +228,16 @@ The ip_allocation_policy supports the following:
 * `machine_type_policy` - (Optional, List) Model Assignment Policy See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
 * `node_policy` - (Optional, List) Node allocation policy See [`node_policy`](#ip_allocation_policy-node_policy) below.
 
+---
+
 ### `ip_allocation_policy-bond_policy`
 
 The ip_allocation_policy-bond_policy supports the following:
 
 * `bond_default_subnet` - (Optional) Default bond cluster subnet
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
+
+---
 
 ### `ip_allocation_policy-machine_type_policy`
 
@@ -238,12 +246,16 @@ The ip_allocation_policy-machine_type_policy supports the following:
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
 * `machine_type` - (Optional) Model
 
+---
+
 ### `ip_allocation_policy-node_policy`
 
 The ip_allocation_policy-node_policy supports the following:
 
 * `bonds` - (Optional, List) Bond information See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
 * `node_id` - (Optional) Node ID
+
+---
 
 ### `ip_allocation_policy-node_policy-bonds`
 
@@ -252,6 +264,8 @@ The ip_allocation_policy-node_policy-bonds supports the following:
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
+---
+
 ### `ip_allocation_policy-machine_type_policy-bonds`
 
 The ip_allocation_policy-machine_type_policy-bonds supports the following:
@@ -259,12 +273,16 @@ The ip_allocation_policy-machine_type_policy-bonds supports the following:
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
 
+---
+
 ### `ip_allocation_policy-bond_policy-bonds`
 
 The ip_allocation_policy-bond_policy-bonds supports the following:
 
 * `name` - (Optional) The bond name
 * `subnet` - (Optional) IP source cluster subnet
+
+---
 
 ### `nodes`
 
@@ -276,6 +294,16 @@ The nodes supports the following:
 * `vswitch_id` - (Optional) Switch ID
 * `vpc_id` - (Optional) VPC ID
 
+---
+
+### `system_disk`
+
+The system_disk supports the following:
+
+* `category` - (Optional, ForceNew) The category of the system disk. Valid values: `cloud_essd`.
+* `performance_level` - (Optional) The performance level of the system disk. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `size` - (Optional, Int) The size of the system disk, in GB.
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -286,7 +314,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Node Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Node Group.

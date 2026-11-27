@@ -7,13 +7,15 @@ description: |-
     Provides a list of ots instance attachments to the user.
 ---
 
-# alicloud\_ots\_instance\_attachments
+# alicloud_ots_instance_attachments
 
 This data source provides the ots instance attachments of the current Alibaba Cloud user.
 
+-> **NOTE:** Available since v1.39.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ots_instance_attachments" "attachments_ds" {
   instance_name = "sample-instance"
   name_regex    = "testvpc"
@@ -39,12 +41,18 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of vpc names.
 * `vpc_ids` - A list of vpc ids.
-* `attachments` - A list of instance attachments. Each element contains the following attributes:
-  * `id` - The resource ID, the value is same as "instance_name".
-  * `domain` - The domain of the instance attachment.
-  * `endpoint` - The access endpoint of the instance attachment.
-  * `region` - The region of the instance attachment.
-  * `instance_name` - The instance name.
-  * `vpc_name` - The name of attaching VPC to instance.
-  * `vpc_id` - The ID of attaching VPC to instance.
-	
+* `attachments` - A list of instance attachments.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `id` - The resource ID, the value is same as "instance_name".
+* `domain` - The domain of the instance attachment.
+* `endpoint` - The access endpoint of the instance attachment.
+* `region` - The region of the instance attachment.
+* `instance_name` - The instance name.
+* `vpc_name` - The name of attaching VPC to instance.
+* `vpc_id` - The ID of attaching VPC to instance.

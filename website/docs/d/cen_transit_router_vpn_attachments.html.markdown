@@ -40,7 +40,6 @@ resource "alicloud_cen_transit_router_cidr" "default" {
 resource "alicloud_vpn_customer_gateway" "default" {
   ip_address            = "1.1.1.8"
   customer_gateway_name = var.name
-  depends_on            = [alicloud_cen_transit_router_cidr.default]
 }
 
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
@@ -130,35 +129,48 @@ output "cen_transit_router_vpn_attachment_id_0" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cen_id` - (Optional, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
-* `status` - (Optional, ForceNew) The Status of Transit Router Vpn Attachment. Valid values: `Attached`, `Attaching`, `Detaching`.
+* `cen_id` - (Optional) The ID of the Cloud Enterprise Network (CEN) instance.
+* `status` - (Optional) The Status of Transit Router Vpn Attachment. Valid values: `Attached`, `Attaching`, `Detaching`.
 * `tags` - (Optional, ForceNew, Available since v1.245.0) The tag of the resource.
-* `transit_router_attachment_id` - (Optional, ForceNew, Available since v1.245.0) The ID of the VPN attachment.
-* `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `ids` - (Optional, ForceNew, List) A list of Transit Router Vpn Attachment IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Transit Router Vpn Attachment name.
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
-
+* `transit_router_attachment_id` - (Optional, Available since v1.245.0) The ID of the VPN attachment.
+* `transit_router_id` - (Optional) The ID of the transit router.
+* `ids` - (Optional, List) A list of Transit Router Vpn Attachment IDs.
+* `name_regex` - (Optional) A regex string to filter results by Transit Router Vpn Attachment name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of name of Transit Router Vpn Attachments.
-* `attachments` - A list of Transit Router Vpn Attachment Entries. Each element contains the following attributes:
-  * `auto_publish_route_enabled` - Specifies whether to allow the transit router to automatically advertise routes to the IPsec-VPN attachment.
-  * `cen_id` - (Available since v1.245.0) The ID of the Cloud Enterprise Network (CEN) instance.
-  * `charge_type` - (Available since v1.245.0) The billing method of the VPN attachment.
-  * `create_time` - The time when the VPN connection was created.
-  * `resource_type` - The type of resource attached to the transit router.
-  * `status` - The status of the VPN connection.
-  * `tags` - (Available since v1.245.0) The tag of the resource.
-  * `transit_router_attachment_description` - The description of the IPsec-VPN connection.
-  * `transit_router_attachment_id` - (Available since v1.245.0) The ID of the VPN attachment.
-  * `transit_router_attachment_name` - The name of the VPN attachment.
-  * `transit_router_id` - The ID of the transit router.
-  * `vpn_id` - The ID of the IPsec-VPN attachment.
-  * `vpn_owner_id` - The ID of the Alibaba Cloud account to which the IPsec-VPN connection belongs.
-  * `zone` - The Zone ID in the current region.System will create resources under the Zone that you specify.Left blank if associated IPSec connection is in dual-tunnel mode.
-    * `zone_id` - The zone ID of the read-only instance.
-  * `id` - The ID of the resource supplied above.
+* `attachments` - A list of Transit Router Vpn Attachment Entries.
+
+---
+
+### `attachments`
+
+The attachments supports the following attributes:
+
+* `auto_publish_route_enabled` - Specifies whether to allow the transit router to automatically advertise routes to the IPsec-VPN attachment.
+* `cen_id` - (Available since v1.245.0) The ID of the Cloud Enterprise Network (CEN) instance.
+* `charge_type` - (Available since v1.245.0) The billing method of the VPN attachment.
+* `create_time` - The time when the VPN connection was created.
+* `resource_type` - The type of resource attached to the transit router.
+* `status` - The status of the VPN connection.
+* `tags` - (Available since v1.245.0) The tag of the resource.
+* `transit_router_attachment_description` - The description of the IPsec-VPN connection.
+* `transit_router_attachment_id` - (Available since v1.245.0) The ID of the VPN attachment.
+* `transit_router_attachment_name` - The name of the VPN attachment.
+* `transit_router_id` - The ID of the transit router.
+* `vpn_id` - The ID of the IPsec-VPN attachment.
+* `vpn_owner_id` - The ID of the Alibaba Cloud account to which the IPsec-VPN connection belongs.
+* `zone` - The Zone ID in the current region.System will create resources under the Zone that you specify.Left blank if associated IPSec connection is in dual-tunnel mode.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `attachments.zone`
+
+The zone supports the following attributes:
+
+* `zone_id` - The zone ID of the read-only instance.

@@ -38,7 +38,7 @@ resource "alicloud_tag_policy" "example" {
   policy_desc    = var.name
   user_type      = "USER"
   policy_content = <<EOF
-		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
+  {"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
     EOF
 }
 ```
@@ -64,7 +64,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.243.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.

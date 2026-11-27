@@ -75,7 +75,9 @@ resource "alicloud_vpc_bgp_peer" "example" {
 
 The following arguments are supported:
 
-* `bfd_multi_hop` - (Optional) The BFD hop count. Valid values: `1` to `255`. **NOTE:** The attribute is valid when the attribute `enable_bfd` is `true`. The parameter specifies the maximum number of network devices that a packet can traverse from the source to the destination. You can set a proper value based on the factors that affect the physical connection.
+* `bfd_multi_hop` - (Optional) The BFD hop count. Valid values: `1` to `255`.
+
+  -> **NOTE:** The attribute is valid when the attribute `enable_bfd` is `true`. The parameter specifies the maximum number of network devices that a packet can traverse from the source to the destination. You can set a proper value based on the factors that affect the physical connection.
 * `bgp_group_id` - (Required, ForceNew) The ID of the BGP group.
 * `enable_bfd` - (Optional) Specifies whether to enable the Bidirectional Forwarding Detection (BFD) feature.
 * `ip_version` - (Optional, ForceNew) The IP version.
@@ -91,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bgp Peer.
 * `delete` - (Defaults to 5 mins) Used when delete the Bgp Peer.

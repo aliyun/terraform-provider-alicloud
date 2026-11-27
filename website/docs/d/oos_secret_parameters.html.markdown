@@ -56,15 +56,17 @@ output "oos_secret_parameter_id_0" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Secret Parameter IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Secret Parameter name.
-* `secret_parameter_name` - (Optional, ForceNew) The name of the Secret Parameter.
-* `resource_group_id` - (Optional, ForceNew) The ID of the Resource Group.
+* `ids` - (Optional, List) A list of Secret Parameter IDs.
+* `name_regex` - (Optional) A regex string to filter results by Secret Parameter name.
+* `secret_parameter_name` - (Optional) The name of the Secret Parameter.
+* `resource_group_id` - (Optional) The ID of the Resource Group.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
-* `sort_field` - (Optional, ForceNew) The field used to sort the query results. Valid values: `Name`, `CreatedDate`.
-* `sort_order` - (Optional, ForceNew) The order in which the entries are sorted. Default value: `Descending`. Valid values: `Ascending`, `Descending`.
+* `sort_field` - (Optional) The field used to sort the query results. Valid values: `Name`, `CreatedDate`.
+* `sort_order` - (Optional) The order in which the entries are sorted. Default value: `Descending`. Valid values: `Ascending`, `Descending`.
 * `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
-* `with_decryption` - (Optional, ForceNew, Bool, Available since v1.231.0) Specifies whether to decrypt the parameter value. Default value: `false`. **Note:** `with_decryption` takes effect only if `enable_details` is set to `true`.
+* `with_decryption` - (Optional, Bool, Available since v1.231.0) Specifies whether to decrypt the parameter value. Default value: `false`.
+
+  -> **NOTE:** `with_decryption` takes effect only if `enable_details` is set to `true`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -72,20 +74,31 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Secret Parameter names.
-* `parameters` - A list of Oos Secret Parameters. Each element contains the following attributes:
-  * `id` - The ID of the Secret Parameter.
-  * `secret_parameter_id` - The ID of the encryption parameter.
-  * `type` - The type of the parameter.
-  * `parameter_version` - The version number of the encryption parameter.
-  * `share_type` - The share type of the encryption parameter.
-  * `key_id` - The ID of the key of Key Management Service (KMS) that is used for encryption.
-  * `resource_group_id` - The ID of the Resource Group.
-  * `secret_parameter_name` - The name of the encryption parameter.
-  * `description` - The description of the encryption parameter.
-  * `tags` - The tags of the parameter.
-  * `constraints` - The constraints of the encryption parameter. **Note:** `constraints` takes effect only if `enable_details` is set to `true`.
-  * `value` - (Available since v1.231.0) The value of the encryption parameter. **Note:** `value` takes effect only if `with_decryption` is set to `true`.
-  * `created_by` - The user who created the encryption parameter.
-  * `create_time` - The time when the encryption parameter was created.
-  * `updated_by` - The user who updated the encryption parameter.
-  * `updated_date` - The time when the encryption parameter was updated.
+* `parameters` - A list of Oos Secret Parameters.
+
+---
+
+### `parameters`
+
+The parameters supports the following attributes:
+
+* `id` - The ID of the Secret Parameter.
+* `secret_parameter_id` - The ID of the encryption parameter.
+* `type` - The type of the parameter.
+* `parameter_version` - The version number of the encryption parameter.
+* `share_type` - The share type of the encryption parameter.
+* `key_id` - The ID of the key of Key Management Service (KMS) that is used for encryption.
+* `resource_group_id` - The ID of the Resource Group.
+* `secret_parameter_name` - The name of the encryption parameter.
+* `description` - The description of the encryption parameter.
+* `tags` - The tags of the parameter.
+* `constraints` - The constraints of the encryption parameter.
+
+  -> **NOTE:** `constraints` takes effect only if `enable_details` is set to `true`.
+* `value` - (Available since v1.231.0) The value of the encryption parameter.
+
+  -> **NOTE:** `value` takes effect only if `with_decryption` is set to `true`.
+* `created_by` - The user who created the encryption parameter.
+* `create_time` - The time when the encryption parameter was created.
+* `updated_by` - The user who updated the encryption parameter.
+* `updated_date` - The time when the encryption parameter was updated.

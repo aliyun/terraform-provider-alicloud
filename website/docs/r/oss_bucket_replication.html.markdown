@@ -42,21 +42,21 @@ resource "alicloud_oss_bucket" "bucket_dest" {
 resource "alicloud_ram_role" "role" {
   role_name                   = "example-role-${random_integer.default.result}"
   assume_role_policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": "sts:AssumeRole",
-			  "Effect": "Allow",
-			  "Principal": {
-				"Service": [
-				  "oss.aliyuncs.com"
-				]
-			  }
-			}
-		  ],
-		  "Version": "1"
-		}
-	  	EOF
+  {
+    "Statement": [
+   {
+     "Action": "sts:AssumeRole",
+     "Effect": "Allow",
+     "Principal": {
+    "Service": [
+      "oss.aliyuncs.com"
+    ]
+     }
+   }
+    ],
+    "Version": "1"
+  }
+    EOF
   description                 = "this is a test"
   force                       = true
 }
@@ -64,21 +64,21 @@ resource "alicloud_ram_role" "role" {
 resource "alicloud_ram_policy" "policy" {
   policy_name     = "example-policy-${random_integer.default.result}"
   policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"*"
-			  ],
-			  "Effect": "Allow",
-			  "Resource": [
-				"*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-		EOF
+  {
+    "Statement": [
+   {
+     "Action": [
+    "*"
+     ],
+     "Effect": "Allow",
+     "Resource": [
+    "*"
+     ]
+   }
+    ],
+   "Version": "1"
+  }
+  EOF
   description     = "this is a policy test"
   force           = true
 }
@@ -135,6 +135,8 @@ The following arguments are supported:
 * `progress` - (Optional) Specifies the progress for querying the progress of a data replication task of a bucket.
 * `rtc` - (Computed, Optional, Available since v1.262.0) Configures the Replication Time Control (RTC) feature for a data replication task of a bucket. See [`rtc`](#rtc) below.
 
+---
+
 ### `prefix_set`
 
 The prefix_set configuration block supports the following:
@@ -142,6 +144,8 @@ The prefix_set configuration block supports the following:
 * `prefixes` - (Required, ForceNew) The list of object key name prefix identifying one or more objects to which the rule applies.
 
 `NOTE`: The prefix must be less than or equal to 1024 characters in length.
+
+---
 
 ### `destination`
 
@@ -153,17 +157,23 @@ The destination configuration block supports the following:
 
 `NOTE`: You can set transfer_type to oss_acc only when you create cross-region replication (CRR) rules.
 
+---
+
 ### `source_selection_criteria`
 
 The source_selection_criteria configuration block supports the following:
 
 * `sse_kms_encrypted_objects` - (Optional, ForceNew) Filter source objects encrypted by using SSE-KMS. See [`sse_kms_encrypted_objects`](#source_selection_criteria-sse_kms_encrypted_objects) below.
 
+---
+
 ### `source_selection_criteria-sse_kms_encrypted_objects`
 
 The sse_kms_encrypted_objects configuration block supports the following:
 
 * `status` - (Optional, ForceNew) Specifies whether to replicate objects encrypted by using SSE-KMS. Can be `Enabled` or `Disabled`.
+
+---
 
 ### `encryption_configuration`
 
@@ -173,14 +183,16 @@ The encryption_configuration configuration block supports the following:
 
 `NOTE`: If the status of sse_kms_encrypted_objects is set to Enabled, you must specify the replica_kms_key_id.
 
+---
+
 ### `rtc`
 
 The rtc configuration block supports the following:
 
 * `enabled` - (Required) Specifies whether to enable the RTC feature. Set to `true` to enable or `false` to disable. This argument is required when the rtc block is defined.
 * `status` - (Computed) The current status of the RTC feature. This attribute is read-only and is only populated when `enabled` is set to `true`. Possible values are:
-    * `enabling` - The feature is being activated but the historical data migration is still in progress.
-    * `enabled` - The feature is fully active and the historical data migration has completed (or if historical migration was not selected for the task).
+  * `enabling` - The feature is being activated but the historical data migration is still in progress.
+  * `enabled` - The feature is fully active and the historical data migration has completed (or if historical migration was not selected for the task).
 
 ## Attributes Reference
 
@@ -190,12 +202,19 @@ The following attributes are exported:
 * `rule_id` - The ID of the data replication rule.
 * `status` - The status of the data replication task. Can be starting, doing and closing.
 * `progress` - Retrieves the progress of the data replication task. This status is returned only when the data replication task is in the doing state.
-    * `historical_object` - The percentage of the replicated historical data. This element is valid only when historical_object_replication is set to enabled.
-    * `new_object` - The time used to distinguish new data from historical data. Data that is written to the source bucket before the time is replicated to the destination bucket as new data. The value of this element is in GMT.
+
+---
+
+### `progress`
+
+The progress supports the following attributes:
+
+* `historical_object` - The percentage of the replicated historical data. This element is valid only when historical_object_replication is set to enabled.
+* `new_object` - The time used to distinguish new data from historical data. Data that is written to the source bucket before the time is replicated to the destination bucket as new data. The value of this element is in GMT.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `delete` - (Defaults to 30 mins) Used when delete a data replication rule (until the data replication task is cleared).
 

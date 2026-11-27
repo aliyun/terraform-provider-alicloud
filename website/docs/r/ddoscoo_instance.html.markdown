@@ -61,11 +61,21 @@ The following arguments are supported:
 * `name` - (Required) Name of the instance. This name can have a string of `1` to `64` characters.
 * `port_count` - (Required) Port retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `domain_count` - (Required) Domain retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
-* `base_bandwidth` - (Optional) Base defend bandwidth of the instance. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `base_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
-* `bandwidth` - (Optional) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
-* `service_bandwidth` - (Optional) Business bandwidth of the instance. At leaset 100. Increased 100 per step, such as 100, 200, 300. The unit is Mbps. Only support upgrade. **NOTE:** `service_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
-* `normal_bandwidth` - (Optional, Available since v1.214.0) The clean bandwidth provided by the instance. **NOTE:** `normal_bandwidth` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_bandwidth` can be modified.
-* `normal_qps` - (Optional, Available since v1.214.0) The clean QPS provided by the instance. **NOTE:** `normal_qps` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_qps` can be modified.
+* `base_bandwidth` - (Optional) Base defend bandwidth of the instance. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade.
+
+  -> **NOTE:** `base_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `bandwidth` - (Optional) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade.
+
+  -> **NOTE:** `bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `service_bandwidth` - (Optional) Business bandwidth of the instance. At leaset 100. Increased 100 per step, such as 100, 200, 300. The unit is Mbps. Only support upgrade.
+
+  -> **NOTE:** `service_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `normal_bandwidth` - (Optional, Available since v1.214.0) The clean bandwidth provided by the instance.
+
+  -> **NOTE:** `normal_bandwidth` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_bandwidth` can be modified.
+* `normal_qps` - (Optional, Available since v1.214.0) The clean QPS provided by the instance.
+
+  -> **NOTE:** `normal_qps` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `normal_qps` can be modified.
 * `edition_sale` - (Optional, ForceNew, Available since v1.212.0) The mitigation plan of the instance. Default value: `coop`. Valid values:
   - `coop`: Anti-DDoS Pro instance of the Profession mitigation plan.
 * `product_plan` - (Optional, Available since v1.214.0) The mitigation plan of the instance. Valid values:
@@ -73,22 +83,28 @@ The following arguments are supported:
   - `1`: The Unlimited mitigation plan.
   - `2`: The Chinese Mainland Acceleration (CMA) mitigation plan.
   - `3`: The Secure Chinese Mainland Acceleration (Sec-CMA) mitigation plan.
-**NOTE:** `product_plan` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `product_plan` can be modified.
-* `address_type` - (Optional, ForceNew, Available since v1.212.0) The IP version of the IP address. Default value: `Ipv4`. Valid values: `Ipv4`, `Ipv6`. **NOTE:** `address_type` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+
+  -> **NOTE:** `product_plan` is valid only when `product_type` is set to `ddosDip`. From version 1.248.0, `product_plan` can be modified.
+* `address_type` - (Optional, ForceNew, Available since v1.212.0) The IP version of the IP address. Default value: `Ipv4`. Valid values: `Ipv4`, `Ipv6`.
+
+  -> **NOTE:** `address_type` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `bandwidth_mode` - (Optional, Available since v1.212.0) The mitigation plan of the instance. Valid values:
   - `0`: Disables the burstable clean bandwidth feature.
   - `1`: Enables the burstable clean bandwidth feature and uses the daily 95th percentile metering method.
   - `2`: Enables the burstable clean bandwidth feature and uses the monthly 95th percentile metering method.
-**NOTE:** `bandwidth_mode` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+
+  -> **NOTE:** `bandwidth_mode` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `function_version` - (Optional, Available since v1.214.0) The function plan of the instance. Valid values:
   - `0`: The Standard function plan.
   - `1`: The Enhanced function plan.
-**NOTE:** From version 1.248.0, `function_version` can be modified.
+
+  -> **NOTE:** From version 1.248.0, `function_version` can be modified.
 * `product_type` - (Optional, Available since v1.125.0) The product type for purchasing DDOSCOO instances used to differ different account type. Default value: `ddoscoo`. Valid values:
   - `ddoscoo`: Anti-DDoS Pro. Only supports domestic account.
   - `ddoscoo_intl`: Anti-DDoS Pro. Only supports to international account.
   - `ddosDip`: Anti-DDoS Premium.
-**NOTE:** From version 1.214.0, `product_type` can be set to `ddosDip`.
+
+  -> **NOTE:** From version 1.214.0, `product_type` can be set to `ddosDip`.
 * `period` - (Optional, Int) The duration that you will buy DdosCoo instance (in month). Valid values: [1~9], `12`, `24`, `36`. Default value: `1`. At present, the provider does not support modify `period`.
 * `tags` - (Optional, Map, Available since v1.248.0) A mapping of tags to assign to the resource.
 * `modify_type` - (Optional, Available since v1.248.0) The type of modification. Valid values: `UPGRADE`, `DOWNGRADE`.
@@ -106,7 +122,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.212.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 18 mins) Used when create the Instance.
 * `update` - (Defaults to 6 mins) Used when update the Instance.

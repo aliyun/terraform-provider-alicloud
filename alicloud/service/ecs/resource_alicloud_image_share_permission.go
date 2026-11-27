@@ -41,9 +41,7 @@ func resourceAliCloudImageSharePermissionCreate(d *schema.ResourceData, meta int
 	request.ImageId = imageId
 	accountSli := []string{accountId}
 	request.AddAccount = &accountSli
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ModifyImageSharePermission(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateModifyImageSharePermissionResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_share_permission", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -78,9 +76,7 @@ func resourceAliCloudImageSharePermissionDelete(d *schema.ResourceData, meta int
 	request.ImageId = parts[0]
 	accountSli := []string{parts[1]}
 	request.RemoveAccount = &accountSli
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ModifyImageSharePermission(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateModifyImageSharePermissionResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_share_permission", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

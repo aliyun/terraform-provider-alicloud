@@ -83,9 +83,9 @@ output "alicloud_apig_plugin_example_id" {
 
 The following arguments are supported:
 
-* `gateway_id` - (ForceNew, Optional) The filter parameter for the gateway instance ID.
-* `plugin_class_id` - (ForceNew, Optional) The plugin class ID.
-* `plugin_class_name` - (ForceNew, Optional) The filter parameter for the plugin class name.
+* `gateway_id` - (Optional) The filter parameter for the gateway instance ID.
+* `plugin_class_id` - (Optional) The plugin class ID.
+* `plugin_class_name` - (Optional) The filter parameter for the plugin class name.
 * `ids` - (Optional, Computed) A list of Plugin IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -94,10 +94,17 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Plugin IDs.
-* `plugins` - A list of Plugin Entries. Each element contains the following attributes:
-  * `gateway_id` - The filter parameter for the gateway instance ID.
-  * `gateway_name` - The gateway name.
-  * `plugin_class_id` - The plugin class ID.
-  * `plugin_class_name` - The filter parameter for the plugin class name.
-  * `plugin_id` - The plugin ID.
-  * `id` - The ID of the resource supplied above.
+* `plugins` - A list of Plugin Entries.
+
+---
+
+### `plugins`
+
+The plugins supports the following attributes:
+
+* `gateway_id` - The filter parameter for the gateway instance ID.
+* `gateway_name` - The gateway name.
+* `plugin_class_id` - The plugin class ID.
+* `plugin_class_name` - The filter parameter for the plugin class name.
+* `plugin_id` - The plugin ID.
+* `id` - The ID of the resource supplied above.

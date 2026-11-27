@@ -33,17 +33,24 @@ data "alicloud_polardb_gateway_budget_policies" "example" {
 
 ## Attributes Reference
 
-* `policies` - A list of budget policies. Each element contains the following attributes:
-  * `id` - The budget policy ID.
-  * `budget_type` - The budget type.
-  * `budget_dimension_type` - The policy dimension.
-  * `budget_dimension_ref_id` - The dimension object ID.
-  * `reset_day_of_month` - The monthly reset day.
-  * `budget_points` - The budget amount in points.
-  * `alert_threshold_pct` - The alert threshold percentage.
-  * `status` - The policy status.
-  * `used_points` - The used points.
-  * `alert_triggered` - Whether the alert was triggered.
-  * `exceeded` - Whether the budget was exceeded.
-  * `create_time` - The creation time.
-  * `modify_time` - The last modification time.
+* `policies` - A list of budget policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `id` - The budget policy ID.
+* `budget_type` - The budget type.
+* `budget_dimension_type` - The policy dimension.
+* `budget_dimension_ref_id` - The dimension object ID.
+* `reset_day_of_month` - The monthly reset day.
+* `budget_points` - The budget amount in points.
+* `alert_threshold_pct` - The alert threshold percentage.
+* `status` - The policy status.
+* `used_points` - The used points.
+* `alert_triggered` - Whether the alert was triggered.
+* `exceeded` - Whether the budget was exceeded.
+* `create_time` - The creation time.
+* `modify_time` - The last modification time.

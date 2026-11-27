@@ -4,21 +4,6 @@ strategy:
 triggers:
   merge_request:
     types: [accepted]
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/release/**'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'website/docs/**'
-      - 'ci/assets/document-examples/**'
-      - 'ci/assets/open-service/**'
-      - 'examples/**'
-      - '**/*.tf'
-      - '**/*.hcl'
-      - 'alicloud/*.go'
-      - 'alicloud/**'
   push:
     branches: [master]
     paths:
@@ -55,13 +40,55 @@ envs:
   CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
 
 jobs:
-  ReleaseReturn:
-    when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
+  CheckScope:
+    outputs:
+      applicable: ${{ steps.scope.outputs.applicable }}
     steps:
       - name: Record release return exemption
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'yes' }}
         run: echo "Verified release return MR $CODE_MR_ID at $CODE_HEAD. Skipped IntegrationTest, DocsExampleTest by policy."
+      - uses: checkout
+        when: ${{ envs.VERIFIED_RELEASE_RETURN == 'no' }}
+        inputs:
+          fetch-depth: '32'
+      - id: scope
+        name: Determine whether integration tests apply
+        run: |
+          set -euo pipefail
+          if [[ "$VERIFIED_RELEASE_RETURN" == yes ]]; then
+            applicable=no
+          elif [[ -z "$CODE_MR_ID" ]]; then
+            applicable=yes
+          else
+            range=$(python3 scripts/ci/aone-range.py)
+            eval "$range"
+            result=0
+            git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+              ':(glob)scripts/ci/**' \
+              ':(glob)scripts/release/**' \
+              ':(glob)scripts/internal/**' \
+              ':(glob).aoneci/**' \
+              ':(glob)go.mod' \
+              ':(glob)go.sum' \
+              ':(glob)website/docs/**' \
+              ':(glob)ci/assets/document-examples/**' \
+              ':(glob)ci/assets/open-service/**' \
+              ':(glob)examples/**' \
+              ':(glob)**/*.tf' \
+              ':(glob)**/*.hcl' \
+              ':(glob)alicloud/*.go' \
+              ':(glob)alicloud/**' || result=$?
+            case "$result" in
+              0) applicable=no
+                 echo "No integration-related files changed. AccTest and DocsExampleTest are unnecessary for this MR." ;;
+              1) applicable=yes ;;
+              *) exit "$result" ;;
+            esac
+          fi
+          printf '%s' "$applicable" > "$AONE_CI_OUTPUTS/applicable"
   IntegrationTest:
-    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}
+    needs: CheckScope
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' && jobs.CheckScope.outputs.applicable == 'yes' }}
     timeout: 9h
     steps:
       - name: Setup Go
@@ -86,7 +113,8 @@ jobs:
           path: .acube-ci/diagnostics/*
           if-no-files-found: error
   DocsExampleTest:
-    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' }}
+    needs: CheckScope
+    when: ${{ envs.VERIFIED_RELEASE_RETURN != 'yes' && jobs.CheckScope.outputs.applicable == 'yes' }}
     timeout: 9h
     steps:
       - name: Setup Go

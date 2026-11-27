@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Reserved Instance resource.
 ---
 
-# alicloud\_reserved\_instance
+# alicloud_reserved_instance
 
 Provides an Reserved Instance resource.
 
@@ -54,10 +54,14 @@ The following arguments are supported:
 * `scope` - (Optional, Computed, ForceNew) Scope of the RI. Optional values: `Region`: region-level, `Zone`: zone-level. Default is `Region`.
 * `instance_type` - (Required, ForceNew) Instance type of the RI. For more information, see [Instance type families](https://www.alibabacloud.com/help/doc-detail/25378.html).
 * `instance_amount` - (Optional, ForceNew) Number of instances allocated to an RI (An RI is a coupon that includes one or more allocated instances.).
-* `period` - (Optional, ForceNew) The validity period of the reserved instance. Default value: `1`. **NOTE:** From version 1.183.0, `period` can be set to `5`, when `period_unit` is `Year`.
+* `period` - (Optional, ForceNew) The validity period of the reserved instance. Default value: `1`.
+
+  -> **NOTE:** From version 1.183.0, `period` can be set to `5`, when `period_unit` is `Year`.
   - When `period_unit` is `Year`, Valid values: `1`, `3`, `5`.
   - When `period_unit` is `Month`, Valid values: `1`.
-* `period_unit` - (Optional, ForceNew) The unit of the validity period of the reserved instance. Valid value: `Month`, `Year`. Default value: `Year`. **NOTE:** From version 1.183.0, `period_unit` can be set to `Month`.
+* `period_unit` - (Optional, ForceNew) The unit of the validity period of the reserved instance. Valid value: `Month`, `Year`. Default value: `Year`.
+
+  -> **NOTE:** From version 1.183.0, `period_unit` can be set to `Month`.
 * `resource_group_id` - (Optional, ForceNew) Resource group ID.
 * `description` - (Optional) Description of the RI. 2 to 256 English or Chinese characters. It cannot start with `http://` or `https://`.
 * `name` - (Optional, Computed, Deprecated from v1.194.0+) Field `name` has been deprecated from provider version 1.194.0. New field `reserved_instance_name` instead.
@@ -66,11 +70,6 @@ The following arguments are supported:
 * `renewal_status` - (Optional, Computed, Available since v1.194.0) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`.
 * `auto_renew_period` - (Optional, Computed, Available since v1.194.0) The auto-renewal term of the reserved instance. This parameter takes effect only when AutoRenew is set to true. Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1 Default value when `period_unit` is set to Year: 12
 * `tags` - (Optional, Available since v1.194.0) A mapping of tags to assign to the resource.
-
-### Removing alicloud_reserved_instance from your configuration
- 
-The alicloud_reserved_instance resource allows you to manage your ReservedInstance, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the ReservedInstance.
- 
 
 ## Attributes Reference
 
@@ -81,9 +80,16 @@ The following attributes are exported:
 * `create_time` -  The time when the reserved instance was created.
 * `expired_time` -  The time when the reserved instance expires.
 * `operation_locks` -  Details about the lock status of the reserved instance.
-  * `lock_reason` - The reason why the reserved instance was locked.
 * `start_time` -  The time when the reserved instance took effect.
 * `status` -  The status of the reserved instance.
+
+---
+
+### `operation_locks`
+
+The operation_locks supports the following attributes:
+
+* `lock_reason` - The reason why the reserved instance was locked.
 
 ## Timeouts
 
@@ -102,3 +108,6 @@ reservedInstance can be imported using id, e.g.
 $ terraform import alicloud_reserved_instance.default ecsri-uf6df4xm0h3licit****
 ```
 
+## Removing alicloud_reserved_instance from your configuration
+
+The alicloud_reserved_instance resource allows you to manage your ReservedInstance, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the ReservedInstance.

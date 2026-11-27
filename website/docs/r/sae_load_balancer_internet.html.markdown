@@ -111,6 +111,8 @@ The following arguments are supported:
 * `internet_slb_id` - (Optional) The internet SLB ID.
 * `internet` - (Required) The bound private network SLB. See [`internet`](#internet) below.
 
+---
+
 ### `internet`
 
 The internet supports the following:

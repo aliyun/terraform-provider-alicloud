@@ -43,6 +43,8 @@ The following arguments are supported:
 * `sort_order` - (Optional) Ranking of cloud service ECS specification quota support. Valid Values: `Ascending` and `Descending`.
 * `dimensions` - (Optional) The dimensions. See [`dimensions`](#dimensions) below.
 
+---
+
 ### `dimensions`
 
 The dimensions supports the following:
@@ -57,6 +59,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Quota IDs.
 * `names` - A list of Quota names.
 * `quotas` - A list of Quotas Quotas. Each element contains the following attributes:
+
+---
 
 ### `quotas`
 

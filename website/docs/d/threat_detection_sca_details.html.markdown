@@ -46,33 +46,40 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `details` - A list of the asset fingerprint details. Each element contains the following attributes:
-  * `type` - The type of the middleware, database or web service.
-  * `biz_type_dispaly` - The display name of the type. The attribute name keeps the original spelling of the API.
-  * `process_started` - The timestamp when the process started, in seconds.
-  * `internet_ip` - The public IP address of the server.
-  * `config_path` - The path of the configuration file.
-  * `pid` - The ID of the process.
-  * `port` - The listening port of the process.
-  * `cmdline` - The command line of the process.
-  * `biz_type` - The type of the asset fingerprint.
-  * `listen_ip` - The IP address that the process listens on.
-  * `version` - The version of the middleware, database or web service.
-  * `instance_name` - The name of the instance.
-  * `listen_status` - The listening status of the process.
-  * `name` - The name of the middleware, database or web service.
-  * `ip` - The IP address of the server.
-  * `process_user` - The user that runs the process.
-  * `instance_id` - The ID of the instance.
-  * `web_path` - The path of the web service.
-  * `ppid` - The ID of the parent process.
-  * `intranet_ip` - The private IP address of the server.
-  * `uuid` - The UUID of the server.
-  * `listen_protocol` - The protocol that the process listens on.
-  * `image_name` - The name of the image.
-  * `path` - The path of the process.
-  * `container_name` - The name of the container.
-  * `proof` - The evidence of the asset fingerprint.
-  * `create_timestamp` - The timestamp when the asset fingerprint was last scanned, in milliseconds.
-  * `runtime_env_version` - The version of the runtime environment.
-  * `pod_name` - The name of the pod.
+* `details` - A list of the asset fingerprint details.
+
+---
+
+### `details`
+
+The details supports the following attributes:
+
+* `type` - The type of the middleware, database or web service.
+* `biz_type_dispaly` - The display name of the type. The attribute name keeps the original spelling of the API.
+* `process_started` - The timestamp when the process started, in seconds.
+* `internet_ip` - The public IP address of the server.
+* `config_path` - The path of the configuration file.
+* `pid` - The ID of the process.
+* `port` - The listening port of the process.
+* `cmdline` - The command line of the process.
+* `biz_type` - The type of the asset fingerprint.
+* `listen_ip` - The IP address that the process listens on.
+* `version` - The version of the middleware, database or web service.
+* `instance_name` - The name of the instance.
+* `listen_status` - The listening status of the process.
+* `name` - The name of the middleware, database or web service.
+* `ip` - The IP address of the server.
+* `process_user` - The user that runs the process.
+* `instance_id` - The ID of the instance.
+* `web_path` - The path of the web service.
+* `ppid` - The ID of the parent process.
+* `intranet_ip` - The private IP address of the server.
+* `uuid` - The UUID of the server.
+* `listen_protocol` - The protocol that the process listens on.
+* `image_name` - The name of the image.
+* `path` - The path of the process.
+* `container_name` - The name of the container.
+* `proof` - The evidence of the asset fingerprint.
+* `create_timestamp` - The timestamp when the asset fingerprint was last scanned, in milliseconds.
+* `runtime_env_version` - The version of the runtime environment.
+* `pod_name` - The name of the pod.

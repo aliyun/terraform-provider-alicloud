@@ -42,8 +42,15 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The ID of the Internet Endpoint, which equals to the instance ID.
 * `status` - The status of the Internet endpoint.
-* `entries` - The ACL entries of the Internet endpoint. Each element contains:
-  * `entry` - The CIDR-formatted IP address range that is allowed to access.
-  * `comment` - The comment of the entry.
+* `entries` - The ACL entries of the Internet endpoint.
 
   -> **NOTE:** The system-managed loopback ACL policy (entry `127.0.0.1/32`, comment `default`) is filtered out of `entries` on Read; the data source only returns user-managed entries.
+
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `entry` - The CIDR-formatted IP address range that is allowed to access.
+* `comment` - The comment of the entry.

@@ -50,31 +50,38 @@ output "ecd_nas_file_system_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Nas File System IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Nas File System name.
-* `office_site_id` - (Optional, ForceNew) The ID of office site.
+* `ids` - (Optional, Computed)  A list of Nas File System IDs.
+* `name_regex` - (Optional) A regex string to filter results by Nas File System name.
+* `office_site_id` - (Optional) The ID of office site.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
+* `status` - (Optional) The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Nas File System names.
-* `systems` - A list of Ecd Nas File Systems. Each element contains the following attributes:
-  * `capacity` - The capacity of nas file system.
-  * `create_time` - The create time of nas file system.
-  * `description` - The description of nas file system.
-  * `file_system_id` - The filesystem id of nas file system.
-  * `file_system_type` - The type of nas file system.
-  * `id` - The ID of the Nas File System.
-  * `metered_size` - The size of metered.
-  * `mount_target_domain` - The domain of mount target.
-  * `mount_target_status` - The status of mount target. Valid values: `Pending`, `Active`, `Inactive`,`Deleting`,`Invalid`.
-  * `nas_file_system_name` - The name of nas file system.
-  * `office_site_id` - The ID of office site.
-  * `office_site_name` - The name of office site.
-  * `status` - The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
-  * `storage_type` - The storage type of nas file system.
-  * `support_acl` - Whether to support Acl.
-  * `zone_id` - The zone id of nas file system.
+* `systems` - A list of Ecd Nas File Systems.
+
+---
+
+### `systems`
+
+The systems supports the following attributes:
+
+* `capacity` - The capacity of nas file system.
+* `create_time` - The create time of nas file system.
+* `description` - The description of nas file system.
+* `file_system_id` - The filesystem id of nas file system.
+* `file_system_type` - The type of nas file system.
+* `id` - The ID of the Nas File System.
+* `metered_size` - The size of metered.
+* `mount_target_domain` - The domain of mount target.
+* `mount_target_status` - The status of mount target. Valid values: `Pending`, `Active`, `Inactive`,`Deleting`,`Invalid`.
+* `nas_file_system_name` - The name of nas file system.
+* `office_site_id` - The ID of office site.
+* `office_site_name` - The name of office site.
+* `status` - The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
+* `storage_type` - The storage type of nas file system.
+* `support_acl` - Whether to support Acl.
+* `zone_id` - The zone id of nas file system.

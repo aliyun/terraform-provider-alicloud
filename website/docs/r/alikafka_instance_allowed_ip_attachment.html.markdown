@@ -81,10 +81,16 @@ resource "alicloud_alikafka_instance_allowed_ip_attachment" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The ID of the instance.
-* `allowed_type` - (Required, ForceNew) The type of the whitelist. Valid Value: `vpc`, `internet`. **NOTE:** From version 1.179.0, `allowed_type` can be set to `internet`.
+* `allowed_type` - (Required, ForceNew) The type of the whitelist. Valid Value: `vpc`, `internet`.
+
+  -> **NOTE:** From version 1.179.0, `allowed_type` can be set to `internet`.
+
   - `vpc`: A whitelist for access from a VPC.
   - `internet`: A whitelist for access from the Internet.
-* `port_range` - (Required, ForceNew) The Port range. Valid Value: `9092/9092`, `9093/9093`, `9094/9094`, `9095/9095`. **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`. From version 1.219.0, `port_range` can be set to `9094/9094`, `9095/9095`.
+* `port_range` - (Required, ForceNew) The Port range. Valid Value: `9092/9092`, `9093/9093`, `9094/9094`, `9095/9095`.
+
+  -> **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`. From version 1.219.0, `port_range` can be set to `9094/9094`, `9095/9095`.
+
   - `9092/9092`: The port range for access from virtual private clouds (VPCs) by using the default endpoint.
   - `9093/9093`: The port range for access from the Internet.
   - `9094/9094`: The port range for access from VPCs by using the Simple Authentication and Security Layer (SASL) endpoint.
@@ -99,7 +105,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Instance Allowed Ip Attachment.
 * `delete` - (Defaults to 1 mins) Used when delete the Instance Allowed Ip Attachment.

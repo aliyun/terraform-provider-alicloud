@@ -13,7 +13,7 @@ Provides a ADB cluster resource. An ADB cluster is an isolated database
 environment in the cloud. An ADB cluster can contain multiple user-created
 databases.
 
--> **DEPRECATED:** This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster).
+-> **DEPRECATED:** This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/adb_db_cluster).
 
 ## Example Usage
 
@@ -80,7 +80,9 @@ The following arguments are supported:
 * `mode` - (Required) The mode of the cluster. Valid values: `reserver`, `flexible`.
 * `modify_type` - (Optional) The modify type.
 * `pay_type` - (Deprecated since v1.166.0) Field `pay_type` has been deprecated. New field `payment_type` instead.
-* `payment_type` - (Optional) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`. **Note:** The `payment_type` supports updating from v1.166.0+.
+* `payment_type` - (Optional) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`.
+
+  -> **NOTE:** The `payment_type` supports updating from v1.166.0+.
 * `period` - (Optional, Int) The duration that you will buy DB cluster (in month). It is valid when `payment_type` is `Subscription`. Valid values: [1~9], 12, 24, 36.
 
   -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not affect the resource.
@@ -119,7 +121,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status).
 * `update` - (Defaults to 72 mins) Used when updating the adb cluster (until it reaches the initial `Running` status).

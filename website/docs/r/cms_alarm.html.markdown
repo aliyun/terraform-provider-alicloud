@@ -107,7 +107,8 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the alert rule.
 * `project` - (Required, ForceNew) The namespace of the cloud service, such as `acs_ecs_dashboard` and `acs_rds_dashboard`. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
-**NOTE:** The `dimensions` and `metric_dimensions` must be empty when `project` is `acs_prometheus`, otherwise, one of them must be set.
+
+  -> **NOTE:** The `dimensions` and `metric_dimensions` must be empty when `project` is `acs_prometheus`, otherwise, one of them must be set.
 * `metric` - (Required, ForceNew) The name of the metric, such as `CPUUtilization` and `networkin_rate`. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `contact_groups` - (Required, List) List contact groups of the alarm rule, which must have been created on the console.
 * `metric_dimensions` - (Optional, Available since v1.173.0) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
@@ -119,7 +120,9 @@ The following arguments are supported:
 * `escalations_critical` - (Optional, Set, Available since v1.94.0) A configuration of critical alarm. See [`escalations_critical`](#escalations_critical) below.
 * `escalations_info` - (Optional, Set, Available since v1.94.0) A configuration of critical info. See [`escalations_info`](#escalations_info) below.
 * `escalations_warn` - (Optional, Set, Available since v1.94.0) A configuration of critical warn. See [`escalations_warn`](#escalations_warn) below.
-* `prometheus` - (Optional, Set, Available since v1.179.0) The Prometheus alert rule. See [`prometheus`](#prometheus) below. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
+* `prometheus` - (Optional, Set, Available since v1.179.0) The Prometheus alert rule. See [`prometheus`](#prometheus) below.
+
+  -> **NOTE:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
 * `targets` - (Optional, Set, Available since v1.216.0) Adds or modifies the push channels of an alert rule. See [`targets`](#targets) below.
 * `composite_expression` - (Optional, Set, Available since v1.228.0) The trigger conditions for multiple metrics. See [`composite_expression`](#composite_expression) below.
 * `tags` - (Optional, Available since v1.180.0) A mapping of tags to assign to the resource.
@@ -129,41 +132,59 @@ The following arguments are supported:
 
   -> **NOTE:** Each resource supports the creation of one of the following three levels.
 
+---
+
 ### `escalations_critical`
 
 The escalations_critical supports the following:
 
-* `comparison_operator` - (Optional) Critical level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
+* `comparison_operator` - (Optional) Critical level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+
+  -> **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Critical level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Critical level alarm retry times. Default value: `3`.
+
+---
 
 ### `escalations_info`
 
 The escalations_info supports the following:
 
-* `comparison_operator` - (Optional) Info level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
+* `comparison_operator` - (Optional) Info level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+
+  -> **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Info level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Info level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Info level alarm retry times. Default value: `3`.
+
+---
 
 ### `escalations_warn`
 
 The escalations_warn supports the following:
 
-* `comparison_operator` - (Optional) Warn level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
+* `comparison_operator` - (Optional) Warn level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+
+  -> **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Warn level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Warn level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Warn level alarm retry times. Default value: `3`.
+
+---
 
 ### `prometheus`
 
 The prometheus supports the following:
 
-* `prom_ql` - (Optional) The PromQL query statement. **Note:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
+* `prom_ql` - (Optional) The PromQL query statement.
+
+  -> **NOTE:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
 * `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
 * `times` - (Optional, Int) The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
 * `annotations` - (Optional, Map) The annotations of the Prometheus alert rule. When a Prometheus alert is triggered, the system renders the annotated keys and values to help you understand the metrics and alert rule.
+
+---
 
 ### `targets`
 
@@ -178,6 +199,8 @@ The targets supports the following:
   - Simple Log Service: `acs:log:{regionId}:{userId}:project/{Project name}/logstore/{Logstore name}`
   - Function Compute: `acs:fc:{regionId}:{userId}:services/{Service name}/functions/{Function name}`
 
+---
+
 ### `composite_expression`
 
 The composite_expression supports the following:
@@ -188,12 +211,16 @@ The composite_expression supports the following:
 * `expression_list_join` - (Optional) The relationship between the trigger conditions for multiple metrics. Valid values: `&&`, `||`.
 * `expression_list` - (Optional, Set) The trigger conditions that are created in standard mode. See [`expression_list`](#composite_expression-expression_list) below.
 
+---
+
 ### `composite_expression-expression_list`
 
 The expression_list supports the following:
 
 * `metric_name` - (Optional) The metric that is used to monitor the cloud service.
-* `comparison_operator` - (Optional) The operator that is used to compare the metric value with the threshold. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
+* `comparison_operator` - (Optional) The operator that is used to compare the metric value with the threshold. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+
+  -> **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) The statistical method of the metric.
 * `threshold` - (Optional) The alert threshold.
 * `period` - (Optional) The aggregation period of the metric. Unit: seconds.
@@ -209,7 +236,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.163.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Alarm.
 * `update` - (Defaults to 1 mins) Used when update the Alarm.

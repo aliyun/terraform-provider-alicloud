@@ -35,16 +35,23 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `subscriptions` - A list of Msc Sub Subscriptions. Each element contains the following attributes:
-  * `channel` - The channel the Subscription.
-  * `contact_ids` - The ids of subscribed contacts.
-  * `description` - The description of the Subscription.
-  * `email_status` - The status of email subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
-  * `id` - The ID of the Subscription.
-  * `item_id` - The ID of the Subscription.
-  * `item_name` - The name of the Subscription.
-  * `pmsg_status` - The status of pmsg subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
-  * `sms_status` - The status of sms subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
-  * `tts_status` - The status of tts subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
-  * `webhook_ids` - The ids of subscribed webhooks.
-  * `webhook_status` - The status of webhook subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
+* `subscriptions` - A list of Msc Sub Subscriptions.
+
+---
+
+### `subscriptions`
+
+The subscriptions supports the following attributes:
+
+* `channel` - The channel the Subscription.
+* `contact_ids` - The ids of subscribed contacts.
+* `description` - The description of the Subscription.
+* `email_status` - The status of email subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
+* `id` - The ID of the Subscription.
+* `item_id` - The ID of the Subscription.
+* `item_name` - The name of the Subscription.
+* `pmsg_status` - The status of pmsg subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
+* `sms_status` - The status of sms subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
+* `tts_status` - The status of tts subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.
+* `webhook_ids` - The ids of subscribed webhooks.
+* `webhook_status` - The status of webhook subscription. Valid values: `-1`, `-2`, `0`, `1`. `-1` means required, `-2` means banned; `1` means subscribed; `0` means not subscribed.

@@ -86,7 +86,9 @@ The following arguments are supported:
 * `host_class` - (Required) The instance type of the host. For more information about the supported instance types of hosts, see [Host specification details](https://www.alibabacloud.com/help/doc-detail/206343.htm).
 * `host_name` - (Optional) The name of the host. The name must be `1` to `64` characters in length and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter.
 * `image_category` - (Optional) Host Image Category. Valid values: `WindowsWithMssqlEntAlwaysonLicense`, `WindowsWithMssqlStdLicense`, `WindowsWithMssqlEntLicense`, `WindowsWithMssqlWebLicense`, `AliLinux`.
-* `os_password` - (Optional) Host password. **NOTE:** The creation of a host password is supported only when the database type is `Tair-PMem`.
+* `os_password` - (Optional) Host password.
+
+  -> **NOTE:** The creation of a host password is supported only when the database type is `Tair-PMem`.
 * `payment_type` - (Required) The payment type of the resource. Valid values: `Subscription`.
 * `period` - (Optional) The unit of the subscription duration. Valid values: `Year`, `Month`, `Week`.
 * `used_time` - (Optional) The subscription duration of the host. Valid values:
@@ -107,7 +109,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 20 mins) Used when create the Dedicated Host.
 * `update` - (Defaults to 20 mins) Used when update the Dedicated Host.

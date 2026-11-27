@@ -79,6 +79,8 @@ The following arguments are supported:
 * `desired_status` - (Optional) The desired status for the resource. Valid values: `ACTIVATION`,`STOPPED`,`STARTING`,`RESTART`.
 * `desired_params` - (Optional) The modified parameter in DBCluster. See [`desired_params`](#desired_params) below.
 
+---
+
 ### `desired_params`
 
 The desired_params supports the following:
@@ -102,17 +104,24 @@ The following attributes are exported:
 * `zone_id` - The ID of zone for the cluster.
 * `vpc_id` - The ID of the VPC for the cluster.
 * `param_change_logs` - The details about parameter changelogs in DBCluster returned.
-  * `name` - Changed parameter name.
-  * `old_value` - The old value of parameter.
-  * `new_value` - The new value of parameter.
-  * `gmt_created` - When the parameter change is created.
-  * `gmt_modified` - When the parameter change is modified.
-  * `config_id` - The id of parameter change.
-  * `is_applied` - Whether the parameter changing is applied.
+
+---
+
+### `param_change_logs`
+
+The param_change_logs supports the following attributes:
+
+* `name` - Changed parameter name.
+* `old_value` - The old value of parameter.
+* `new_value` - The new value of parameter.
+* `gmt_created` - When the parameter change is created.
+* `gmt_modified` - When the parameter change is modified.
+* `config_id` - The id of parameter change.
+* `is_applied` - Whether the parameter changing is applied.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the SelectDB DBCluster (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 30 mins) Used when update the SelectDB DBCluster.

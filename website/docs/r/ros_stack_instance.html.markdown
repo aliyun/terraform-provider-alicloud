@@ -80,8 +80,12 @@ The following arguments are supported:
 * `stack_instance_account_id` - (Required, ForceNew) The account to which the stack instance belongs.
 * `stack_instance_region_id` - (Required, ForceNew) The region of the stack instance.
 * `stack_group_name` - (Required, ForceNew) The name of the stack group.
-* `retain_stacks` - (Optional) Specifies whether to retain the stack corresponding to the stack instance.Default value `false`. **NOTE:** When `retain_stacks` is `true`, the stack is retained. If the stack is retained, the corresponding stack is not deleted when the stack instance is deleted from the stack group.
+* `retain_stacks` - (Optional) Specifies whether to retain the stack corresponding to the stack instance.Default value `false`.
+
+  -> **NOTE:** When `retain_stacks` is `true`, the stack is retained. If the stack is retained, the corresponding stack is not deleted when the stack instance is deleted from the stack group.
 * `timeout_in_minutes` - (Optional) The timeout period that is specified for the stack creation request. Default value: `60`. Unit: `minutes`.
+
+---
 
 ### `parameter_overrides`
 
@@ -99,7 +103,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Stack Instance.
 

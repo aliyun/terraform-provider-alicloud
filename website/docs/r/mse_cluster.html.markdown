@@ -69,9 +69,14 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 
 The following arguments are supported:
 
-* `acl_entry_list` - (Optional) The whitelist. **NOTE:** This attribute is invalid when the value of `pub_network_flow` is `0` and the value of `net_type` is `privatenet`.
+* `acl_entry_list` - (Optional) The whitelist.
+
+  -> **NOTE:** This attribute is invalid when the value of `pub_network_flow` is `0` and the value of `net_type` is `privatenet`.
 * `cluster_alias_name` - (Optional, Computed) The alias of MSE Cluster.
-* `cluster_specification` - (Required) The engine specification of MSE Cluster. **NOTE:** From version 1.188.0, `cluster_specification` can be modified. If you were an international user, please use the specification version ending with `_200_c`.Valid values:
+* `cluster_specification` - (Required) The engine specification of MSE Cluster.
+
+  -> **NOTE:** From version 1.188.0, `cluster_specification` can be modified. If you were an international user, please use the specification version ending with `_200_c`.Valid values:
+
   - Professional Edition
     - `MSE_SC_1_2_60_c`: 1C2G
     - `MSE_SC_2_4_60_c`: 2C4G
@@ -94,7 +99,9 @@ The following arguments are supported:
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-createcluster)
 * `version_code` - (Optional) The version code of MSE Cluster. You can keep the instance version up to date by setting the value to `LATEST` (Available since v1.257.0).
 * `disk_type` - (Optional) The type of Disk.
-* `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
+* `instance_count` - (Required) The count of instance.
+
+  -> **NOTE:** From version 1.188.0, `instance_count` can be modified.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: `privatenet` and `pubnet` and `both`(Available since v1.232.0).
 * `payment_type` - (Optional, ForceNew, Computed, Available since v1.220.0) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
 * `tags` - (Optional, Map, Computed, Available since v1.220.0) The tag of the resource.
@@ -121,7 +128,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.188.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the MSE Cluster.
 * `update` - (Defaults to 15 mins) Used when update the MSE Cluster.

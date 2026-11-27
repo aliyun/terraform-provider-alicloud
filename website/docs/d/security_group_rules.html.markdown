@@ -7,17 +7,19 @@ description: |-
     Provides a collection of Security Group Rules available to the user.
 ---
 
-# alicloud\_security\_group\_rules
+# alicloud_security_group_rules
 
 The `alicloud_security_group_rules` data source provides a collection of security permissions of a specific security group.
 Each collection item represents a single `ingress` or `egress` permission rule.
 The ID of the security group can be provided via a variable or the result from the other data source `alicloud_security_groups`.
 
+-> **NOTE:** Available since v1.9.1+.
+
 ## Example Usage
 
 The following example shows how to obtain details about a security group rule and how to pass its data to an instance at launch time.
 
-```
+```terraform
 # Get the security group id from a variable
 variable "security_group_id" {}
 
@@ -59,17 +61,24 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `group_name` - The name of the security group that owns the rules.
 * `group_desc` - The description of the security group that owns the rules.
-* `rules` - A list of security group rules. Each element contains the following attributes:
-  * `ip_protocol` - The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
-  * `port_range` - The range of port numbers.
-  * `source_cidr_ip` - Source IP address segment for ingress authorization.
-  * `source_group_id` - Source security group ID for ingress authorization.
-  * `source_group_owner_account` - Alibaba Cloud account of the source security group.
-  * `dest_cidr_ip` - Target IP address segment for egress authorization.
-  * `dest_group_id` - Target security group id for ingress authorization.
-  * `dest_group_owner_account` - Alibaba Cloud account of the target security group.
-  * `policy` - Authorization policy. Can be either `accept` or `drop`.
-  * `nic_type` - Network type, `internet` or `intranet`.
-  * `priority` - Rule priority.
-  * `direction` - Authorization direction, `ingress` or `egress`.
-  * `description` - The description of the rule.
+* `rules` - A list of security group rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `ip_protocol` - The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
+* `port_range` - The range of port numbers.
+* `source_cidr_ip` - Source IP address segment for ingress authorization.
+* `source_group_id` - Source security group ID for ingress authorization.
+* `source_group_owner_account` - Alibaba Cloud account of the source security group.
+* `dest_cidr_ip` - Target IP address segment for egress authorization.
+* `dest_group_id` - Target security group id for ingress authorization.
+* `dest_group_owner_account` - Alibaba Cloud account of the target security group.
+* `policy` - Authorization policy. Can be either `accept` or `drop`.
+* `nic_type` - Network type, `internet` or `intranet`.
+* `priority` - Rule priority.
+* `direction` - Authorization direction, `ingress` or `egress`.
+* `description` - The description of the rule.

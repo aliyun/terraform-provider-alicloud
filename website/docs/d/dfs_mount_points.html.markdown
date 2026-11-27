@@ -32,24 +32,31 @@ output "dfs_mount_point_id_1" {
 
 The following arguments are supported:
 
-* `file_system_id` - (Required, ForceNew) The ID of the File System.
-* `ids` - (Optional, ForceNew, Computed)  A list of Mount Point IDs.
+* `file_system_id` - (Required) The ID of the File System.
+* `ids` - (Optional, Computed)  A list of Mount Point IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the Mount Point. Valid values: `Active`, `Inactive`.
+* `status` - (Optional) The status of the Mount Point. Valid values: `Active`, `Inactive`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `points` - A list of Dfs Mount Points. Each element contains the following attributes:
-  * `access_group_id` - The ID of the Access Group.
-  * `create_time` - The created time of the Mount Point.
-  * `description` - The description of the Mount Point.
-  * `file_system_id` - The ID of the File System.
-  * `id` - The ID of the Mount Point.
-  * `mount_point_domain` - The domain name of the Mount Point.
-  * `mount_point_id` - The ID of the Mount Point.
-  * `network_type` - The network type of the Mount Point. Valid values: `VPC`.
-  * `status` - The status of the Mount Point. Valid values: `Active`, `Inactive`.
-  * `vpc_id` - The ID of the VPC network.
-  * `vswitch_id` - The vswitch id.
+* `points` - A list of Dfs Mount Points.
+
+---
+
+### `points`
+
+The points supports the following attributes:
+
+* `access_group_id` - The ID of the Access Group.
+* `create_time` - The created time of the Mount Point.
+* `description` - The description of the Mount Point.
+* `file_system_id` - The ID of the File System.
+* `id` - The ID of the Mount Point.
+* `mount_point_domain` - The domain name of the Mount Point.
+* `mount_point_id` - The ID of the Mount Point.
+* `network_type` - The network type of the Mount Point. Valid values: `VPC`.
+* `status` - The status of the Mount Point. Valid values: `Active`, `Inactive`.
+* `vpc_id` - The ID of the VPC network.
+* `vswitch_id` - The vswitch id.

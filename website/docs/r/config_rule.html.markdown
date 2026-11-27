@@ -56,14 +56,14 @@ resource "alicloud_config_rule" "default" {
 
 The following arguments are supported:
 
-* `config_rule_trigger_types` - (Optional, Required) The trigger type of the rule. Valid values:  `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
+* `config_rule_trigger_types` - (Optional, Computed) The trigger type of the rule. Valid values:  `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
 * `input_parameters` - (Optional, Map) The settings of the input parameters for the rule.
 * `maximum_execution_frequency` - (Optional) The frequency of the compliance evaluations, it is required if the ConfigRuleTriggerTypes value is ScheduledNotification. Valid values:  `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`.
 * `region_ids_scope` - (Optional) The rule monitors region IDs, separated by commas, only applies to rules created based on managed rules.
 * `resource_group_ids_scope` - (Optional) The rule monitors resource group IDs, separated by commas, only applies to rules created based on managed rules.
-* `resource_types_scope` - (Optional, Required) The types of the resources to be evaluated against the rule.
+* `resource_types_scope` - (Optional, Computed) The types of the resources to be evaluated against the rule.
 * `risk_level` - (Required) The risk level of the resources that are not compliant with the rule. Valid values:  `1`: critical `2`: warning `3`: info
 * `rule_name` - (Required, ForceNew) The name of the rule.
 * `source_identifier` - (Required, ForceNew) The identifier of the rule.  For a managed rule, the value is the name of the managed rule. For a custom rule, the value is the ARN of the custom rule.
@@ -85,8 +85,6 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `account_id` - The ID of Alicloud account.
 * `compliance` - compliance information.
-  * `compliance_type` - The type of compliance. Valid values: `COMPLIANT`, `NON_COMPLIANT`, `NOT_APPLICABLE`, `INSUFFICIENT_DATA`.
-  * `count` - The count of compliance.
 * `compliance_pack_id` - Compliance Package ID.
 * `config_rule_arn` - config rule arn.
 * `config_rule_id` - The ID of the rule.
@@ -94,9 +92,18 @@ The following attributes are exported:
 * `event_source` - The event source of the rule.
 * `modified_timestamp` - The timestamp when the rule was last modified.
 
+---
+
+### `compliance`
+
+The compliance supports the following attributes:
+
+* `compliance_type` - The type of compliance. Valid values: `COMPLIANT`, `NON_COMPLIANT`, `NOT_APPLICABLE`, `INSUFFICIENT_DATA`.
+* `count` - The count of compliance.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Rule.

@@ -2,16 +2,20 @@ package slb
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var masterSlaveBackendServerDescriptionRegexp = regexp.MustCompile(`^[\p{Han}a-zA-Z0-9/._-]+$`)
 
 func ResourceMasterSlaveServerGroup() *schema.Resource {
 	return &schema.Resource{
@@ -67,6 +71,15 @@ func ResourceMasterSlaveServerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validation.StringInSlice([]string{"Master", "Slave"}, false),
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							ValidateFunc: validation.All(
+								validators.StringLenBetweenRune(1, 80),
+								validators.StringMatch(masterSlaveBackendServerDescriptionRegexp, "must contain only Chinese characters, letters, digits, and - / . _"),
+							),
 						},
 					},
 				},
@@ -131,6 +144,7 @@ func resourceMasterSlaveServerGroupRead(d *schema.ResourceData, meta interface{}
 			"weight":      server.Weight,
 			"type":        server.Type,
 			"server_type": server.ServerType,
+			"description": server.Description,
 		}
 		servers = append(servers, s)
 	}

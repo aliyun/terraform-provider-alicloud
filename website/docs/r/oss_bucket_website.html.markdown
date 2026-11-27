@@ -95,12 +95,16 @@ The following arguments are supported:
 * `index_document` - (Optional, List) Static Website Default Home Page Configuration See [`index_document`](#index_document) below.
 * `routing_rules` - (Optional, List) The container that holds the jump rule or the mirroring back-to-origin rule. See [`routing_rules`](#routing_rules) below.
 
+---
+
 ### `error_document`
 
 The error_document supports the following:
 
 * `http_status` - (Optional, Int) The HTTP status code when the error page is returned. The default 404.
 * `key` - (Optional) The error page file. If the Object accessed does not exist, this error page is returned.
+
+---
 
 ### `index_document`
 
@@ -110,11 +114,15 @@ The index_document supports the following:
 * `support_sub_dir` - (Optional) Whether to jump to the default home page of a subdirectory when accessing a subdirectory.
 * `type` - (Optional) After the default homepage is set, the behavior when an Object that ends with a non-forward slash (/) is accessed and the Object does not exist.
 
+---
+
 ### `routing_rules`
 
 The routing_rules supports the following:
 
 * `routing_rule` - (Optional, List) Specify a jump rule or a mirroring back-to-origin rule, with a maximum of 20 routing rules. See [`routing_rule`](#routing_rules-routing_rule) below.
+
+---
 
 ### `routing_rules-routing_rule`
 
@@ -125,6 +133,8 @@ The routing_rules-routing_rule supports the following:
 * `redirect` - (Optional, List) Specifies the action to perform after this rule is matched. See [`redirect`](#routing_rules-routing_rule-redirect) below.
 * `rule_number` - (Optional, Int) The sequence number of the matching and executing jump rules. OSS matches rules according to this sequence number. If the match is successful, the rule is executed and subsequent rules are not executed.
 
+---
+
 ### `routing_rules-routing_rule-condition`
 
 The routing_rules-routing_rule-condition supports the following:
@@ -134,11 +144,15 @@ The routing_rules-routing_rule-condition supports the following:
 * `key_prefix_equals` - (Optional) Only objects that match this prefix can match this rule.
 * `key_suffix_equals` - (Optional) Only objects that match this suffix can match this rule.
 
+---
+
 ### `routing_rules-routing_rule-lua_config`
 
 The routing_rules-routing_rule-lua_config supports the following:
 
 * `script` - (Optional) The Lua script name.
+
+---
 
 ### `routing_rules-routing_rule-redirect`
 
@@ -159,16 +173,22 @@ The routing_rules-routing_rule-redirect supports the following:
 * `mirror_follow_redirect` - (Optional) If the result of the image back-to-source acquisition is 3xx, whether to continue to jump to the specified Location to obtain data. It takes effect only when the RedirectType is set to Mirror.
 * `mirror_headers` - (Optional, List) Specifies the Header carried when the image returns to the source. It takes effect only when the RedirectType is set to Mirror. See [`mirror_headers`](#routing_rules-routing_rule-redirect-mirror_headers) below.
 * `mirror_is_express_tunnel` - (Optional) Whether it is a mirror back-to-source high-speed Channel
-* `mirror_multi_alternates` - (Optional, Computed, List) Mirror back-to-source multi-source station configuration container. **NOTE:**: If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_multi_alternates`](#routing_rules-routing_rule-redirect-mirror_multi_alternates) below.
+* `mirror_multi_alternates` - (Optional, Computed, List) Mirror back-to-source multi-source station configuration container.
+
+  -> **NOTE:** : If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_multi_alternates`](#routing_rules-routing_rule-redirect-mirror_multi_alternates) below.
 * `mirror_pass_original_slashes` - (Optional) Transparent transmission/to source Station
 * `mirror_pass_query_string` - (Optional) Same as PassQueryString and takes precedence over PassQueryString. It takes effect only when the RedirectType is set to Mirror.
 * `mirror_proxy_pass` - (Optional) Whether mirroring back to source does not save data
-* `mirror_return_headers` - (Optional, Computed, List) The container that saves the image back to the source and returns the response header rule. **NOTE:**: If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_return_headers`](#routing_rules-routing_rule-redirect-mirror_return_headers) below.
+* `mirror_return_headers` - (Optional, Computed, List) The container that saves the image back to the source and returns the response header rule.
+
+  -> **NOTE:** : If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_return_headers`](#routing_rules-routing_rule-redirect-mirror_return_headers) below.
 * `mirror_role` - (Optional) Roles used when mirroring back-to-source
 * `mirror_save_oss_meta` - (Optional) Mirror back-to-source back-to-source OSS automatically saves user metadata
 * `mirror_sni` - (Optional) Transparent transmission of SNI
 * `mirror_switch_all_errors` - (Optional) It is used to judge the status of active-standby switching. The judgment logic of active-standby switching is that the source station returns an error. If MirrorSwitchAllErrors is true, it is considered a failure except the following status code: 200,206,301,302,303,307,404; If false, only the source Station Returns 5xx or times out is considered a failure.
-* `mirror_taggings` - (Optional, Computed, List) Save the label according to the parameters when saving the file from the mirror back to the source. **NOTE:**: If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_taggings`](#routing_rules-routing_rule-redirect-mirror_taggings) below.
+* `mirror_taggings` - (Optional, Computed, List) Save the label according to the parameters when saving the file from the mirror back to the source.
+
+  -> **NOTE:** : If you want to clean one configuration, you must set the configuration to empty value, removing from code cannot make effect. See [`mirror_taggings`](#routing_rules-routing_rule-redirect-mirror_taggings) below.
 * `mirror_tunnel_id` - (Optional) Mirror back-to-source leased line back-to-source tunnel ID
 * `mirror_url` - (Optional) The address of the origin of the image. It takes effect only when the RedirectType is set to Mirror. The origin address must start with http:// or https:// and end with a forward slash (/). OSS takes the Object name after the Origin address to form the origin URL.
 * `mirror_url_probe` - (Optional) Mirror back-to-source Master-backup back-to-source switching decision URL
@@ -182,6 +202,8 @@ The routing_rules-routing_rule-redirect supports the following:
 * `replace_key_with` - (Optional) During redirection, the Object name is replaced with the value specified by ReplaceKeyWith. You can set variables in ReplaceKeyWith. Currently, the supported variable is ${key}, which indicates the name of the Object in the request.
 * `transparent_mirror_response_codes` - (Optional) Mirror back-to-source transparent source station response code list
 
+---
+
 ### `routing_rules-routing_rule-redirect-mirror_auth`
 
 The routing_rules-routing_rule-redirect-mirror_auth supports the following:
@@ -190,6 +212,8 @@ The routing_rules-routing_rule-redirect-mirror_auth supports the following:
 * `access_key_secret` - (Optional) Mirroring back to the source station back to the source SK will be automatically desensitized when obtaining the configuration.
 * `auth_type` - (Optional) Authentication type of mirror return Source
 * `region` - (Optional) Signature Region
+
+---
 
 ### `routing_rules-routing_rule-redirect-mirror_headers`
 
@@ -200,11 +224,15 @@ The routing_rules-routing_rule-redirect-mirror_headers supports the following:
 * `remove` - (Optional, List) Do not pass the specified Header to the source site. It takes effect only when the RedirectType is set to Mirror. Each Header is up to 1024 bytes in length and has A character set of 0 to 9, a to Z, A to z, and dashes (-).
 * `set` - (Optional, List) Set a Header to send to the source site. Regardless of whether the request contains the specified Header, these headers will be set when returning to the source site. It takes effect only when the RedirectType is set to Mirror. See [`set`](#routing_rules-routing_rule-redirect-mirror_headers-set) below.
 
+---
+
 ### `routing_rules-routing_rule-redirect-mirror_multi_alternates`
 
 The routing_rules-routing_rule-redirect-mirror_multi_alternates supports the following:
 
 * `mirror_multi_alternate` - (Optional, List) Mirror back-to-source multi-source station configuration list See [`mirror_multi_alternate`](#routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alternate) below.
+
+---
 
 ### `routing_rules-routing_rule-redirect-mirror_return_headers`
 
@@ -212,11 +240,15 @@ The routing_rules-routing_rule-redirect-mirror_return_headers supports the follo
 
 * `return_header` - (Optional, List) The list of response header rules for mirroring back-to-source return. See [`return_header`](#routing_rules-routing_rule-redirect-mirror_return_headers-return_header) below.
 
+---
+
 ### `routing_rules-routing_rule-redirect-mirror_taggings`
 
 The routing_rules-routing_rule-redirect-mirror_taggings supports the following:
 
 * `taggings` - (Optional, List) Image back-to-source save label rule list See [`taggings`](#routing_rules-routing_rule-redirect-mirror_taggings-taggings) below.
+
+---
 
 ### `routing_rules-routing_rule-redirect-mirror_taggings-taggings`
 
@@ -225,12 +257,16 @@ The routing_rules-routing_rule-redirect-mirror_taggings-taggings supports the fo
 * `key` - (Optional) The tag key corresponding to the current rule
 * `value` - (Optional) Rules for Saving Label Values
 
+---
+
 ### `routing_rules-routing_rule-redirect-mirror_return_headers-return_header`
 
 The routing_rules-routing_rule-redirect-mirror_return_headers-return_header supports the following:
 
 * `key` - (Optional) Response header corresponding to the current rule
 * `value` - (Optional) Rules that return response header values
+
+---
 
 ### `routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alternate`
 
@@ -241,12 +277,16 @@ The routing_rules-routing_rule-redirect-mirror_multi_alternates-mirror_multi_alt
 * `mirror_multi_alternate_url` - (Optional) Mirroring back-to-source multi-source site URL
 * `mirror_multi_alternate_vpc_id` - (Optional) Mirroring back-to-source multi-source VpcId
 
+---
+
 ### `routing_rules-routing_rule-redirect-mirror_headers-set`
 
 The routing_rules-routing_rule-redirect-mirror_headers-set supports the following:
 
 * `key` - (Optional) Set the key of the Header, up to 1024 bytes, and the character set is the same as that of Pass. It takes effect only when the RedirectType is set to Mirror.
 * `value` - (Optional) Set the value of the Header to 1024 bytes at most. \r\n. It takes effect only when the RedirectType is set to Mirror.
+
+---
 
 ### `routing_rules-routing_rule-condition-include_headers`
 
@@ -265,7 +305,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bucket Website.
 * `delete` - (Defaults to 5 mins) Used when delete the Bucket Website.

@@ -47,6 +47,8 @@ The following arguments are supported:
 * `ip_segment_list` - (Required) The IP segment list. See [`ip_segment_list`](#ip_segment_list) below for details.
 * `lang` - (Optional) The lang.
 
+---
+
 ### `ip_segment_list`
 
 The ip_segment_list supports the following:

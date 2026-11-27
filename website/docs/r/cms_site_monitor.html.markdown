@@ -86,7 +86,9 @@ The following arguments are supported:
 * `address` - (Required) The URL or IP address monitored by the site monitoring task.
 * `agent_group` - (Optional, ForceNew, Available since v1.262.0) The type of the detection point. Default value: `PC`. Valid values: `PC`, `MOBILE`.
 * `custom_schedule` - (Optional, Set, Available since v1.262.0) Custom probing period. Only a certain period of time from Monday to Sunday can be selected for detection. See [`custom_schedule`](#custom_schedule) below.
-* `interval` - (Optional) The monitoring interval of the site monitoring task. Unit: minutes. Valid values: `1`, `5`, `15`, `30` and `60`. Default value: `1`. **NOTE:** From version 1.207.0, `interval` can be set to `30`, `60`.
+* `interval` - (Optional) The monitoring interval of the site monitoring task. Unit: minutes. Valid values: `1`, `5`, `15`, `30` and `60`. Default value: `1`.
+
+  -> **NOTE:** From version 1.207.0, `interval` can be set to `30`, `60`.
 * `isp_cities` - (Optional, Set) The detection points in a JSON array. For example, `[{"city":"546","isp":"465"},{"city":"572","isp":"465"},{"city":"738","isp":"465"}]` indicates the detection points in Beijing, Hangzhou, and Qingdao respectively. You can call the [DescribeSiteMonitorISPCityList](https://www.alibabacloud.com/help/en/doc-detail/115045.htm) operation to query detection point information. If this parameter is not specified, three detection points will be chosen randomly for monitoring. See [`isp_cities`](#isp_cities) below.
 * `status` - (Optional, Available since v1.262.0) The status of the site monitoring task. Valid values:
   - `1`: The task is enabled.
@@ -97,6 +99,8 @@ The following arguments are supported:
 * `options_json` - (Optional, Deprecated since v1.262.0) Field `options_json` has been deprecated from provider version 1.262.0. New field `option_json` instead.
 * `alert_ids` - (Optional, List, Deprecated since v1.262.0) Field `alert_ids` has been deprecated from provider version 1.262.0.
 
+---
+
 ### `custom_schedule`
 
 The custom_schedule supports the following:
@@ -106,6 +110,8 @@ The custom_schedule supports the following:
 * `start_hour` - (Optional, Int, Available since v1.262.0) The start time of the detection. Unit: hours.
 * `time_zone` - (Optional, Available since v1.262.0) The time zone of the detection.
 
+---
+
 ### `isp_cities`
 
 The isp_cities supports the following:
@@ -113,6 +119,8 @@ The isp_cities supports the following:
 * `city` - (Optional) The ID of the city.
 * `isp` - (Optional) The ID of the carrier.
 * `type` - (Optional, Available since v1.262.0) The network type of the detection point. Valid values: `IDC`, `LASTMILE`, and `MOBILE`.
+
+---
 
 ### `option_json`
 
@@ -182,6 +190,8 @@ The option_json supports the following:
 * `timeout` - (Optional, Int, Available since v1.262.0) Timeout time. Unit: milliseconds.
 * `user_name` - (Optional, Available since v1.262.0) The username of FTP, SMTP, or pop3.
 
+---
+
 ### `option_json-assertions`
 
 The option_json-assertions supports the following:
@@ -217,7 +227,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since 1.207.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Site Monitor.
 * `delete` - (Defaults to 5 mins) Used when delete the Site Monitor.

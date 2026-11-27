@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -360,7 +361,10 @@ func (c *Config) setAuthCredentialByEcsRoleName() (err error) {
 // setAuthCredentialByOidc aims to access meta to get sts credential
 // Actually, the job should be done by sdk, but currently not sdk support it, like alibaba-cloud-sdk-go.
 // TODO：the provider can consider implementing all of credential type as an alternative to the SDK.
-func (c *Config) setAuthCredentialByOidc() (err error) {
+func (c *Config) setAuthCredentialByOidc(ctx context.Context) (err error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if c.AccessKey != "" || c.AssumeRoleWithOidc == nil {
 		return
 	}
@@ -426,10 +430,22 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 		var response *sts20150401.AssumeRoleWithOIDCResponse
 		maxRetries := 5
 		for i := 0; i <= maxRetries; i++ {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			response, err = stsClient.AssumeRoleWithOIDCWithOptions(request, runtime)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if err != nil {
 				if needRetry(err) && i < maxRetries {
-					time.Sleep(time.Duration(i))
+					timer := time.NewTimer(time.Duration(i))
+					select {
+					case <-ctx.Done():
+						timer.Stop()
+						return ctx.Err()
+					case <-timer.C:
+					}
 					continue
 				}
 				return errs.WrapErrorf(err, "refreshing credential failed by AssumeRoleWithOIDC")
@@ -483,13 +499,27 @@ func NeedRetry(err error) bool {
 }
 
 func (c *Config) RefreshAuthCredential() error {
-	if err := c.setAuthCredentialByEcsRoleName(); err != nil {
-		return err
+	return c.RefreshAuthCredentialContext(context.Background())
+}
+
+func (c *Config) RefreshAuthCredentialContext(ctx context.Context) error {
+	for _, refresh := range []func() error{
+		c.setAuthCredentialByEcsRoleName,
+		func() error { return c.setAuthCredentialByOidc(ctx) },
+		c.setAuthByAssumeRole,
+	} {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := refresh()
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if err != nil {
+			return err
+		}
 	}
-	if err := c.setAuthCredentialByOidc(); err != nil {
-		return err
-	}
-	return c.setAuthByAssumeRole()
+	return nil
 }
 
 func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err error) {

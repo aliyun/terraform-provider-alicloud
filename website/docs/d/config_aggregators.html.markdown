@@ -33,25 +33,39 @@ output "first_config_aggregator_id" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of aggregator ids.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by aggregator name.
+* `ids` - (Optional, Computed)  A list of aggregator ids.
+* `name_regex` - (Optional) A regex string to filter results by aggregator name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Values:  `0`: creating `1`: normal `2`: deleting.
+* `status` - (Optional) The status of the resource. Valid Values:  `0`: creating `1`: normal `2`: deleting.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Aggregator names.
-* `aggregators` - A list of config aggregators. Each element contains the following attributes:
-  * `account_id` - The Aliyun Uid.
-  * `aggregator_accounts` - Account information in aggregator.
-    * `account_id` - Aggregator account uid.
-    * `account_name` - Aggregator account name.
-    * `account_type` - Aggregator account source type.
-  * `aggregator_id` - The id of aggregator.
-  * `aggregator_name` - The name of aggregator.
-  * `aggregator_type` - The type of aggregator.
-  * `description` - The description of aggregator.
-  * `id` - The id of the aggregator.
-  * `status` - The status of the resource.
+* `aggregators` - A list of config aggregators.
+
+---
+
+### `aggregators`
+
+The aggregators supports the following attributes:
+
+* `account_id` - The Aliyun Uid.
+* `aggregator_accounts` - Account information in aggregator.
+* `aggregator_id` - The id of aggregator.
+* `aggregator_name` - The name of aggregator.
+* `aggregator_type` - The type of aggregator.
+* `description` - The description of aggregator.
+* `id` - The id of the aggregator.
+* `status` - The status of the resource.
+
+---
+
+### `aggregators.aggregator_accounts`
+
+The aggregator_accounts supports the following attributes:
+
+* `account_id` - Aggregator account uid.
+* `account_name` - Aggregator account name.
+* `account_type` - Aggregator account source type.

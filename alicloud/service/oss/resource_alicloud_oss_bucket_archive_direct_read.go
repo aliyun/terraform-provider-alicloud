@@ -68,7 +68,7 @@ func resourceAliCloudOssBucketArchiveDirectReadCreate(d *schema.ResourceData, me
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketArchiveDirectRead", action), query, body, nil, hostMap, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if needOssBucketConfigRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -143,7 +143,7 @@ func resourceAliCloudOssBucketArchiveDirectReadUpdate(d *schema.ResourceData, me
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.Do("Oss", helper.XmlParam("PUT", "2019-05-17", "PutBucketArchiveDirectRead", action), query, body, nil, hostMap, false)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if needOssBucketConfigRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}

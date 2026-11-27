@@ -40,9 +40,9 @@ output "amqp_virtual_host_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Virtual Host IDs. Its element value is same as Virtual Host Name.
-* `instance_id` - (Required, ForceNew) InstanceId.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Virtual Host name.
+* `ids` - (Optional, Computed)  A list of Virtual Host IDs. Its element value is same as Virtual Host Name.
+* `instance_id` - (Required) InstanceId.
+* `name_regex` - (Optional) A regex string to filter results by Virtual Host name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -50,7 +50,14 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Virtual Host names.
-* `hosts` - A list of Amqp Virtual Hosts. Each element contains the following attributes:
-  * `id` - The ID of the Virtual Host.
-  * `instance_id` - InstanceId.
-  * `virtual_host_name` - VirtualHostName.
+* `hosts` - A list of Amqp Virtual Hosts.
+
+---
+
+### `hosts`
+
+The hosts supports the following attributes:
+
+* `id` - The ID of the Virtual Host.
+* `instance_id` - InstanceId.
+* `virtual_host_name` - VirtualHostName.

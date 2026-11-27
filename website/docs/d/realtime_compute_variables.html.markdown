@@ -93,8 +93,8 @@ The following arguments are supported:
 
 * `ids` - (Optional, List) A list of Variable IDs. It formats as `<workspace>:<namespace>:<name>`.
 * `name_regex` - (Optional) A regex string to filter results by Variable name.
-* `namespace` - (Required, ForceNew) The name of the namespace.
-* `workspace` - (Required, ForceNew) The ID of the workspace.
+* `namespace` - (Required) The name of the namespace.
+* `workspace` - (Required) The ID of the workspace.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -102,11 +102,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Variable names.
-* `variables` - A list of Variables. Each element contains the following attributes:
-  * `id` - The ID of the Variable.
-  * `workspace` - The workspace ID.
-  * `namespace` - The name of the namespace.
-  * `name` - The name of the variable.
-  * `kind` - The kind of the variable, currently supports Plain.
-  * `value` - The value of the variable.
-  * `description` - The description of the variable.
+* `variables` - A list of Variables.
+
+---
+
+### `variables`
+
+The variables supports the following attributes:
+
+* `id` - The ID of the Variable.
+* `workspace` - The workspace ID.
+* `namespace` - The name of the namespace.
+* `name` - The name of the variable.
+* `kind` - The kind of the variable, currently supports Plain.
+* `value` - The value of the variable.
+* `description` - The description of the variable.

@@ -64,7 +64,6 @@ The following arguments are supported:
 * `associate_type` - (Required, ForceNew) The binding type of the created routing table. Value: `Gateway`.
 * `route_table_name` - (Optional) The name of the routing table. The length is 1 to 128 characters, but it cannot start with `http://` or `https://`.
 * `description` - (Optional) The description of the routing table. The length is 1 to 256 characters, but it cannot start with `http://` or `https://`.
-* `is_default_gateway_route_table` - (Computed) Whether it is the default gateway route table.
 
 ## Attributes Reference
 
@@ -75,10 +74,11 @@ The following attributes are exported:
 * `route_table_type` - The type of the routing table. Value: `Custom`, `System`.
 * `status` - The status of the routing table.
 * `create_time` - The creation time of the routing table.
+* `is_default_gateway_route_table` - (Computed) Whether it is the default gateway route table.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Network Route Table.
 * `delete` - (Defaults to 5 mins) Used when delete the Network Route Table.

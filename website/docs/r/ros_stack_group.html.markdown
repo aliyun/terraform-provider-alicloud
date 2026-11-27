@@ -31,7 +31,7 @@ resource "alicloud_ros_stack_group" "example" {
   stack_group_name = "example_value"
   template_body    = <<EOF
     {
-    	"ROSTemplateFormatVersion": "2015-09-01"
+     "ROSTemplateFormatVersion": "2015-09-01"
     }
     EOF
 }
@@ -63,6 +63,8 @@ This parameter is required only if the PermissionModel is SERVICE_MANAGED. See [
 
 * `template_version` - (Optional) The version of the template.
 
+---
+
 ### `auto_deployment`
 
 The auto_deployment supports the following:
@@ -75,6 +77,8 @@ The auto_deployment supports the following:
   - `false`: delete the resource stack.
 
   -> **NOTE:** When Enabled is true, `retain_stacks_on_account_removal` is required.
+
+---
 
 ### `parameters`
 
@@ -93,7 +97,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Stack Group.
 * `delete` - (Defaults to 5 mins) Used when delete the Stack Group.

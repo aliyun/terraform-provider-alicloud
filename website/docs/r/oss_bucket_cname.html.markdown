@@ -42,7 +42,7 @@ resource "alicloud_oss_bucket" "CreateBucket" {
 
 resource "alicloud_oss_bucket_cname_token" "defaultZaWJfG" {
   bucket = alicloud_oss_bucket.CreateBucket.bucket
-  domain = "tftestacc.com"
+  domain = "tf-example-acc.com"
 }
 
 resource "alicloud_alidns_record" "defaultnHqm5p" {
@@ -50,7 +50,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
   line        = "default"
   rr          = "_dnsauth"
   type        = "TXT"
-  domain_name = "tftestacc.com"
+  domain_name = "tf-example-acc.com"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"
@@ -79,6 +79,8 @@ The following arguments are supported:
 * `force` - (Optional) Whether to force overwrite certificate.
 * `previous_cert_id` - (Optional) The current certificate ID. If the Force value is not true, the OSS Server checks whether the value matches the current certificate ID. If the value does not match, an error is reported.
 
+---
+
 ### `certificate`
 
 The certificate supports the following:
@@ -91,13 +93,20 @@ The certificate supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<bucket>:<domain>`.
 * `certificate` - The container for the certificate configuration.
-  * `creation_date` - Certificate creation time
-  * `fingerprint` - Certificate Fingerprint
-  * `status` - Certificate Status
-  * `type` - Certificate Type
-  * `valid_end_date` - Certificate validity period end time
-  * `valid_start_date` - Certificate validity period start time
 * `status` - Cname status
+
+---
+
+### `certificate`
+
+The certificate supports the following attributes:
+
+* `creation_date` - Certificate creation time
+* `fingerprint` - Certificate Fingerprint
+* `status` - Certificate Status
+* `type` - Certificate Type
+* `valid_end_date` - Certificate validity period end time
+* `valid_start_date` - Certificate validity period start time
 
 ## Timeouts
 

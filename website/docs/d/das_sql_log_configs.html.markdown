@@ -42,13 +42,20 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configs` - A list of Sql Log Config Entries. Each element contains the following attributes:
-  * `instance_id` - The ID of the database instance.
-  * `enable` - Specifies whether SQL Explorer is enabled.
-  * `request_enable` - The requested state of SQL Explorer.
-  * `retention` - The retention period of SQL audit logs. Unit: days.
-  * `hot_retention` - The retention period of hot SQL audit logs. Unit: days.
-  * `cold_retention` - The retention period of cold SQL audit logs. Calculated as `retention - hot_retention`.
-  * `version` - The current version of SQL audit logs.
-  * `log_filter` - The configuration of log filters.
-  * `sql_log_visible_time` - The visible start time of SQL audit logs.
+* `configs` - A list of Sql Log Config Entries.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `instance_id` - The ID of the database instance.
+* `enable` - Specifies whether SQL Explorer is enabled.
+* `request_enable` - The requested state of SQL Explorer.
+* `retention` - The retention period of SQL audit logs. Unit: days.
+* `hot_retention` - The retention period of hot SQL audit logs. Unit: days.
+* `cold_retention` - The retention period of cold SQL audit logs. Calculated as `retention - hot_retention`.
+* `version` - The current version of SQL audit logs.
+* `log_filter` - The configuration of log filters.
+* `sql_log_visible_time` - The visible start time of SQL audit logs.

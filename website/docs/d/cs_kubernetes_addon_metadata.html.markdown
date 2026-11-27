@@ -7,11 +7,11 @@ description: |-
   Provide metadata of kubernetes cluster addons.
 ---
 
-# alicloud\_cs\_kubernetes\_addon\_metadata
+# alicloud_cs_kubernetes_addon_metadata
 
 This data source provides metadata of kubernetes cluster addons.
 
--> **NOTE:** Available in 1.166.0+.
+-> **NOTE:** Available since v1.166.0.
 
 ## Example Usage
 

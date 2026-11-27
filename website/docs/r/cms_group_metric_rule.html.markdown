@@ -86,12 +86,14 @@ The following arguments are supported:
 * `email_subject` - (Optional) The subject of the alert notification email.
 * `effective_interval` - (Optional) The time period during which the alert rule is effective.
 * `no_effective_interval` - (Optional) The time period during which the alert rule is ineffective.
-* `interval` - (Optional, ForceNew) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.
+* `interval` - (Optional) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.
 * `period` - (Optional, Int) The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.
 * `silence_time` - (Optional, Int) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
 * `webhook` - (Optional) The callback URL.
 * `targets` - (Optional, Set, Available since v1.189.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
 * `escalations` - (Required, Set) Alarm level. See [`escalations`](#escalations) below.
+
+---
 
 ### `targets`
 
@@ -104,6 +106,8 @@ The targets supports the following:
 
   -> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
 
+---
+
 ### `escalations`
 
 The escalations supports the following:
@@ -111,6 +115,8 @@ The escalations supports the following:
 * `critical` - (Optional) The critical level. See [`critical`](#escalations-critical) below.
 * `info` - (Optional) The info level. See [`info`](#escalations-info) below.
 * `warn` - (Optional) The warn level. See [`warn`](#escalations-warn) below.
+
+---
 
 ### `escalations-critical`
 
@@ -121,6 +127,8 @@ The critical supports the following:
 * `threshold` - (Optional) The threshold for critical-level alerts.
 * `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
 
+---
+
 ### `escalations-info`
 
 The info supports the following:
@@ -129,6 +137,8 @@ The info supports the following:
 * `statistics` - (Optional) The statistical aggregation method for info-level alerts.
 * `threshold` - (Optional) The threshold for info-level alerts.
 * `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
+
+---
 
 ### `escalations-warn`
 
@@ -150,7 +160,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.191.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Group Metric Rule.
 * `update` - (Defaults to 3 mins) Used when update the Group Metric Rule.

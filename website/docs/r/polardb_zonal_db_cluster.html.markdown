@@ -81,8 +81,8 @@ resource "alicloud_polardb_zonal_db_cluster" "default" {
 
 The following arguments are supported:
 
-* `db_type` - (Optional, Required, ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
-* `db_version` - (Optional, Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBVersion`.
+* `db_type` - (Optional, ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
+* `db_version` - (Optional, ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBVersion`.
 * `db_minor_version` - (Optional, ForceNew) Database minor version. Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `DBMinorVersion`. This parameter takes effect only when `db_type` is MySQL and `db_version` is 8.0.
 * `db_node_class` - (Required) The db_node_class of cluster node.Only effective when the cluster is created for the first time. After the cluster is started, the cluster specification is maintained through the node class.
 * `ens_region_id` - (Required, ForceNew) The Zone to launch the DB cluster.
@@ -101,7 +101,6 @@ The following arguments are supported:
 * `storage_space` - (Optional) Storage space charged by space (monthly package). Unit: GB.
 
   -> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
-* `storage_pay_type` - The billing method of the storage. Valid values `Prepaid`.
 * `upgrade_type` - Version upgrade type. Valid values are PROXY, DB, ALL. PROXY means upgrading the proxy version, DB means upgrading the db version, ALL means upgrading both db and proxy versions simultaneously.
 * `planned_start_time` - The earliest time to start executing a scheduled (i.e. within the target time period) kernel version upgrade task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
 
@@ -109,9 +108,8 @@ The following arguments are supported:
 
   -> **NOTE:** The latest time must be 30 minutes or more later than the start time. If PlannedStartTime is set but this parameter is not specified, the latest time to execute the target task defaults to the start time+30 minutes. For example, when the PlannedStartTime is set to 2021-01-14T09:00:00Z and this parameter is left blank, the target task will start executing at the latest on 2021-01-14T09:30:00Z.
 * `target_minor_version` - (Optional) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersionZonal](https://www.alibabacloud.com/help/en/polardb/api-polardb-2017-08-01-describedbclusterversionzonal) interface.
-* `db_cluster_nodes_configs` - (Optional, Required) Map of node needs to be created after DB cluster was launched.
+* `db_cluster_nodes_configs` - (Required) Map of node needs to be created after DB cluster was launched.
 * `cluster_version` - (Optional, ForceNew, Computed) current DB Cluster revision Version.
-* `storage_pay_type` - (Computed) The billing method of the storage. Valid values `Prepaid`.
 
 ## Attributes Reference
 
@@ -123,10 +121,11 @@ The following attributes are exported:
 * `db_cluster_nodes_attributes` - Cache of the relationship between node key and node ID for PolarDB zonal Cluster
 * `db_cluster_nodes_ids` - Cache of node ID for PolarDB zonal Cluster
 * `region_id`  - PolarDB zonal cluster region
+* `storage_pay_type` - The billing method of the storage. Valid values `Prepaid`.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the PolarDB zonal cluster (until it reaches the initial `Running` status).
 * `update` - (Defaults to 38 mins) Used when updating the PolarDB zonal cluster (until it reaches the initial `Running` status).

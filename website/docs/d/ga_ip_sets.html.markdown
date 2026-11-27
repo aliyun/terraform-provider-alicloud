@@ -32,20 +32,27 @@ output "first_ga_ip_set_id" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator (GA) instance.
-* `ids` - (Optional, ForceNew, Computed)  A list of Ip Set IDs.
+* `accelerator_id` - (Required) The ID of the Global Accelerator (GA) instance.
+* `ids` - (Optional, Computed)  A list of Ip Set IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew)  The status of the acceleration region. Valid values: `active`, `deleting`, `init`, `updating`.
+* `status` - (Optional)  The status of the acceleration region. Valid values: `active`, `deleting`, `init`, `updating`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `sets` - A list of Ga Ip Sets. Each element contains the following attributes:
-  * `accelerate_region_id` -  The ID of an acceleration region.
-  * `bandwidth` - The bandwidth allocated to the acceleration region.
-  * `id` - The ID of the Ip Set.
-  * `ip_address_list` - The list of accelerated IP addresses in the acceleration region.
-  * `ip_set_id` -  Accelerated area ID.
-  * `ip_version` - The IP protocol used by the GA instance.
-  * `status` -  The status of the acceleration region.
+* `sets` - A list of Ga Ip Sets.
+
+---
+
+### `sets`
+
+The sets supports the following attributes:
+
+* `accelerate_region_id` -  The ID of an acceleration region.
+* `bandwidth` - The bandwidth allocated to the acceleration region.
+* `id` - The ID of the Ip Set.
+* `ip_address_list` - The list of accelerated IP addresses in the acceleration region.
+* `ip_set_id` -  Accelerated area ID.
+* `ip_version` - The IP protocol used by the GA instance.
+* `status` -  The status of the acceleration region.

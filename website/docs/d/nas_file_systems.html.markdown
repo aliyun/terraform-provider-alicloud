@@ -32,13 +32,13 @@ output "alicloud_nas_file_systems_id" {
 The following arguments are supported:
 
 * `ids` - (Optional) A list of FileSystemId.
-* `storage_type` - (Optional, ForceNew) The storage type of the file system.
+* `storage_type` - (Optional) The storage type of the file system.
   * Valid values:
     * `Performance` (Available when the `file_system_type` is `standard`)
     * `Capacity` (Available when the `file_system_type` is `standard`)
     * `standard` (Available in v1.140.0+ and when the `file_system_type` is `extreme`)
     * `advance` (Available in v1.140.0+ and when the `file_system_type` is `extreme`)
-* `protocol_type` - (Optional, ForceNew) The protocol type of the file system.
+* `protocol_type` - (Optional) The protocol type of the file system.
                                      Valid values:
                                            `NFS`,
                                            `SMB` (Available when the `file_system_type` is `standard`).
@@ -57,29 +57,43 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of FileSystem Id.
 * `descriptions` - A list of FileSystem descriptions.
-* `systems` - A list of VPCs. Each element contains the following attributes:
-  * `id` - ID of the FileSystem.
-  * `auto_upgrade_config` - (List, Available since v2.1.0) The automatic capacity expansion configuration. Each element contains the following attributes:
-    * `capacity_used_ratio` - (Int, Available since v2.1.0) The capacity usage threshold. Unit: percent.
-    * `enabled` - (Bool, Available since v2.1.0) Whether automatic capacity expansion is enabled.
-    * `step` - (Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
-    * `time` - (Int, Available since v2.1.0) The duration threshold. Unit: minutes.
-  * `region_id` - ID of the region where the FileSystem is located.
-  * `description` - Description of the FileSystem.
+* `systems` - A list of VPCs.
 
-    -> **NOTE:** For `standard` file system types, the NAS server writes `description` asynchronously after the file system is created. The resource Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
+---
 
-  * `protocol_type` - ProtocolType block of the FileSystem
-  * `storage_type` - StorageType block of the FileSystem.
-  * `metered_size` - MeteredSize of the FileSystem.
-  * `create_time` - Time of creation.
-  * `capacity` - (Optional, Available in v1.140.0+) The capacity of the file system.
-  * `file_system_type` - (Optional, Available in v1.140.0+) The type of the file system.
-                            Valid values:
-                            `standard`,
-                            `extreme`,
-                            `cpfs`,
-                            `cpfsse`.
-  * `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
-  * `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
-  * `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
+### `systems`
+
+The systems supports the following attributes:
+
+* `id` - ID of the FileSystem.
+* `auto_upgrade_config` - (List, Available since v2.1.0) The automatic capacity expansion configuration.
+* `region_id` - ID of the region where the FileSystem is located.
+* `description` - Description of the FileSystem.
+
+  -> **NOTE:** For `standard` file system types, the NAS server writes `description` asynchronously after the file system is created. The resource Provider waits for this field to be persisted before the first read so that the value is correctly populated in state.
+
+* `protocol_type` - ProtocolType block of the FileSystem
+* `storage_type` - StorageType block of the FileSystem.
+* `metered_size` - MeteredSize of the FileSystem.
+* `create_time` - Time of creation.
+* `capacity` - (Optional, Available in v1.140.0+) The capacity of the file system.
+* `file_system_type` - (Optional, Available in v1.140.0+) The type of the file system.
+                          Valid values:
+                          `standard`,
+                          `extreme`,
+                          `cpfs`,
+                          `cpfsse`.
+* `encrypt_type` - (Optional, Available in v1.121.2+) Whether the file system is encrypted. Valid values: `0` (The file system is not encrypted), `1` (The file system is encrypted with a managed secret key), `2` (User management key).
+* `kms_key_id` - (Optional, Available in v1.140.0+) The id of the KMS key.
+* `zone_id` - (Optional, Available in v1.140.0+) The id of the zone. Each region consists of multiple isolated locations known as zones. Each zone has an independent power supply and network.
+
+---
+
+### `systems.auto_upgrade_config`
+
+The auto_upgrade_config supports the following attributes:
+
+* `capacity_used_ratio` - (Int, Available since v2.1.0) The capacity usage threshold. Unit: percent.
+* `enabled` - (Bool, Available since v2.1.0) Whether automatic capacity expansion is enabled.
+* `step` - (Int, Available since v2.1.0) The capacity expansion step. Unit: GiB.
+* `time` - (Int, Available since v2.1.0) The duration threshold. Unit: minutes.

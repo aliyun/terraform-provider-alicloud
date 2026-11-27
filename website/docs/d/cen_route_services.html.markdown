@@ -31,12 +31,12 @@ output "first_cen_route_service_id" {
 
 The following arguments are supported:
 
-* `access_region_id` - (Optional, ForceNew) The region of the network instances that access the cloud services.
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `host` - (Optional, ForceNew) The domain name or IP address of the cloud service.
-* `host_region_id` - (Optional, ForceNew) The region of the cloud service.
-* `host_vpc_id` - (Optional, ForceNew) The VPC associated with the cloud service.
-* `status` - (Optional, ForceNew) The status of the cloud service. Valid values: `Active`, `Creating` and `Deleting`.
+* `access_region_id` - (Optional) The region of the network instances that access the cloud services.
+* `cen_id` - (Required) The ID of the CEN instance.
+* `host` - (Optional) The domain name or IP address of the cloud service.
+* `host_region_id` - (Optional) The region of the cloud service.
+* `host_vpc_id` - (Optional) The VPC associated with the cloud service.
+* `status` - (Optional) The status of the cloud service. Valid values: `Active`, `Creating` and `Deleting`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -44,14 +44,21 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Route Service IDs.
-* `services` - A list of CEN Route Services. Each element contains the following attributes:
-  * `id` - The ID of the route service.
-  * `access_region_id` - The region of the network instances that access the cloud services.
-  * `cen_id` - The ID of the CEN instance.
-  * `cidrs` - The IP address of the cloud service.
-  * `description` - The description of the cloud service.
-  * `host` - The domain name or IP address of the cloud service.
-  * `host_region_id` - The region of the cloud service.
-  * `host_vpc_id` - The VPC associated with the cloud service.
-  * `status` - The status of the cloud service.
-  * `update_interval` - The update interval. Default value: 5. The value cannot be modified.
+* `services` - A list of CEN Route Services.
+
+---
+
+### `services`
+
+The services supports the following attributes:
+
+* `id` - The ID of the route service.
+* `access_region_id` - The region of the network instances that access the cloud services.
+* `cen_id` - The ID of the CEN instance.
+* `cidrs` - The IP address of the cloud service.
+* `description` - The description of the cloud service.
+* `host` - The domain name or IP address of the cloud service.
+* `host_region_id` - The region of the cloud service.
+* `host_vpc_id` - The VPC associated with the cloud service.
+* `status` - The status of the cloud service.
+* `update_interval` - The update interval. Default value: 5. The value cannot be modified.

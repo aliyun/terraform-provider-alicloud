@@ -108,6 +108,8 @@ The following arguments are supported:
 * `sub_region_pools` - (Optional) Address pools corresponding to secondary regions. When multiple secondary regions share a set of address pools, the keys can be concatenated with commas.
 * `ttl` - (Optional, Int) TTL value, the time-to-live for DNS records. The default value is 30. The value range is 10-600.
 
+---
+
 ### `adaptive_routing`
 
 The adaptive_routing supports the following:
@@ -115,6 +117,8 @@ The adaptive_routing supports the following:
 * `failover_across_pools` - (Optional) Whether to failover across pools.
   - `true`: Yes.
   - `false`: No.
+
+---
 
 ### `monitor`
 
@@ -138,12 +142,16 @@ The monitor supports the following:
 * `timeout` - (Optional, Int) The timeout for the health check, in seconds. The value range is 1-10.
 * `type` - (Optional) The type of monitor protocol, such as HTTP, used for health checks. When the value is off, it indicates that no check is performed.
 
+---
+
 ### `random_steering`
 
 The random_steering supports the following:
 
 * `default_weight` - (Optional, Int) The default round-robin weight, used for all pools that do not have individually specified weights. The value range is 0-100.
 * `pool_weights` - (Optional, Map) Weight configuration for each backend server pool, where the key is the pool ID and the value is the weight coefficient. The weight coefficient represents the proportion of relative traffic distribution.
+
+---
 
 ### `rules`
 
@@ -162,6 +170,8 @@ The rules supports the following:
 * `terminates` - (Optional) Whether to terminate the execution of subsequent rules.
   - `true`: Yes.
   - `false`: No.
+
+---
 
 ### `rules-fixed_response`
 
@@ -182,7 +192,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.

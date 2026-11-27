@@ -39,16 +39,23 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - The list of Cassandra cluster ids.
 * `names` - The name list of Cassandra clusters.
-* `clusters` - A list of Cassandra clusters. Its every element contains the following attributes:
-  * `id` - The ID of the Cassandra cluster.
-  * `cluster_id` - The ID of the Cassandra cluster.
-  * `cluster_name` - The name of the Cassandra cluster.
-  * `major_version` - The major version of the cluster.
-  * `minor_version` - The minor version of the cluster.
-  * `lock_mode` - The lock mode of the cluster.
-  * `data_center_count` - The count of data centers
-  * `pay_type` - Billing method. Value options are `Subscription` for Pay-As-You-Go and `PayAsYouGo` for yearly or monthly subscription.
-  * `status` - Status of the cluster.
-  * `created_time` - The created time of the cluster.
-  * `expire_time` - The expire time of the cluster.
-  * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `clusters` - A list of Cassandra clusters.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `id` - The ID of the Cassandra cluster.
+* `cluster_id` - The ID of the Cassandra cluster.
+* `cluster_name` - The name of the Cassandra cluster.
+* `major_version` - The major version of the cluster.
+* `minor_version` - The minor version of the cluster.
+* `lock_mode` - The lock mode of the cluster.
+* `data_center_count` - The count of data centers
+* `pay_type` - Billing method. Value options are `Subscription` for Pay-As-You-Go and `PayAsYouGo` for yearly or monthly subscription.
+* `status` - Status of the cluster.
+* `created_time` - The created time of the cluster.
+* `expire_time` - The expire time of the cluster.
+* `tags` - (Optional) A mapping of tags to assign to the resource.

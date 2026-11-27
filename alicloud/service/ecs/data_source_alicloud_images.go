@@ -332,9 +332,7 @@ func dataSourceImagesRead(d *schema.ResourceData, meta interface{}) error {
 	for {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.DescribeImages(request)
-			})
+			raw, err := client.EcsSdkRpc(request, ecs.CreateDescribeImagesResponse())
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

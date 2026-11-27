@@ -81,12 +81,26 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - Account name of the cluster.
-* `accounts` - A list of PolarDB cluster accounts. Each element contains the following attributes:
-  * `account_description` - Account description.
-  * `account_lock_state` - Account lock state, Valid values are `Lock`, `UnLock`.
-  * `account_name` - Account name.
-  * `account_status` - Cluster address type.`Cluster`: the default address of the Cluster.`Primary`: Primary address.`Custom`: Custom cluster addresses.
-  * `account_type` - Account type, Valid values are `Normal`, `Super`.
-  * `database_privileges` - A list of database privilege. Each element contains the following attributes.
-      * `account_privilege` - Account privilege of database
-      * `db_name` - The account owned database name
+* `accounts` - A list of PolarDB cluster accounts.
+
+---
+
+### `accounts`
+
+The accounts supports the following attributes:
+
+* `account_description` - Account description.
+* `account_lock_state` - Account lock state, Valid values are `Lock`, `UnLock`.
+* `account_name` - Account name.
+* `account_status` - Cluster address type.`Cluster`: the default address of the Cluster.`Primary`: Primary address.`Custom`: Custom cluster addresses.
+* `account_type` - Account type, Valid values are `Normal`, `Super`.
+* `database_privileges` - A list of database privilege. Each element contains the following attributes.
+
+---
+
+### `accounts.database_privileges`
+
+The database_privileges supports the following attributes:
+
+* `account_privilege` - Account privilege of database
+* `db_name` - The account owned database name

@@ -58,46 +58,95 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - (Computed, String) The ID of the data source, derived from the matched auto provisioning group IDs.
 * `total_count` - (Computed, Int) The `TotalCount` reported by `DescribeAutoProvisioningGroups` for the configured filters. When the API reports `TotalCount`, it counts every matching group in the region, including rows before `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written. Only when a valid `AutoProvisioningGroups` container is present but `TotalCount` is omitted or null does the value fall back to the number of rows actually read from `page_number`; a response with neither the container nor a usable `TotalCount` is an error.
 * `names` - (Computed, List of String) A list of auto provisioning group names that match the configured filters.
-* `groups` - (Computed, List of Object) A list of auto provisioning groups. Each element contains the following attributes:
-  * `auto_provisioning_group_id` - (String) The ID of the auto provisioning group.
-  * `auto_provisioning_group_name` - (String) The name of the auto provisioning group.
-  * `auto_provisioning_group_type` - (String) The delivery type. Valid values: `request`, `maintain` and `candidate`.
-  * `status` - (String) The status of the auto provisioning group. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
-  * `state` - (String) The scheduling state of the auto provisioning group. Valid values: `fulfilled`, `pending-fulfillment`, `pending-termination` and `error`.
-  * `region_id` - (String) The ID of the region.
-  * `resource_group_id` - (String) The ID of the resource group.
-  * `launch_template_id` - (String) The ID of the launch template.
-  * `launch_template_version` - (String) The version of the launch template.
-  * `valid_from` - (String) The time when the auto provisioning group takes effect, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `valid_until` - (String) The time when the auto provisioning group expires, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `terminate_instances` - (Bool) Whether the instances in the auto provisioning group are released when the group is deleted. When `false`, the instances are retained.
-  * `terminate_instances_with_expiration` - (Bool) Whether the instances in the auto provisioning group are released when the group expires. When `false`, the instances are only removed from the group and are not released.
-  * `excess_capacity_termination_policy` - (String) The policy applied when the current capacity exceeds the target capacity and a scale-in is triggered. `termination` releases the scaled-in instances; `no-termination` only removes them from the auto provisioning group without releasing them. Valid values: `no-termination` and `termination`.
-  * `max_spot_price` - (String) The global maximum price for preemptible instances, as returned by the service.
-  * `creation_time` - (String) The time when the auto provisioning group was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `tags` - (Map of String) A mapping of tags.
-  * `launch_template_configs` - (List of Object) A list of extended configurations of the launch template. Each element contains:
-    * `instance_type` - (String) The instance type.
-    * `max_price` - (String) The maximum price.
-    * `vswitch_id` - (String) The ID of the vSwitch.
-    * `weighted_capacity` - (String) The weight of the instance type.
-    * `priority` - (String) The priority of the instance type.
-  * `target_capacity_specification` - (List of Object) A single-element list describing the target capacity. Each element contains:
-    * `default_target_capacity_type` - (String) The capacity type used for supplemental instances. Valid values: `PayAsYouGo` and `Spot`.
-    * `total_target_capacity` - (String) The total target capacity.
-    * `pay_as_you_go_target_capacity` - (String) The target capacity of pay-as-you-go instances.
-    * `spot_target_capacity` - (String) The target capacity of preemptible instances.
-  * `spot_options` - (List of Object) A single-element list with the preemptible instance options. Each element contains:
-    * `allocation_strategy` - (String) The scale-out policy. Valid values: `lowest-price` and `diversified`.
-    * `instance_interruption_behavior` - (String) The behavior after a preemptible instance is shut down. Valid values: `stop` and `terminate`.
-    * `instance_pools_to_use_count` - (Int) The number of instance pools to use when the strategy is `lowest-price`.
-  * `pay_as_you_go_options` - (List of Object) A single-element list with the pay-as-you-go options. Each element contains:
-    * `allocation_strategy` - (String) The scale-out policy. Valid values: `lowest-price` and `prioritized`.
-  * `candidate_options` - (List of Object) A single-element list with the candidate auto provisioning group options. Each element contains:
-    * `timeout_minutes` - (Int) The timeout, in minutes, that the group tries to reach the target capacity.
-  * `capacity_specification` - (List of Object) A single-element list with the current capacity distribution of the group. Each element contains:
-    * `pay_as_you_go_capacity` - (String) The current capacity of pay-as-you-go instances.
-    * `pre_paid_capacity` - (String) The current capacity of subscription instances.
-    * `spot_capacity` - (String) The current capacity of preemptible instances.
-    * `total_capacity` - (String) The current total capacity of the group.
-  * `suspended_processes` - (List of String) The processes that are suspended for the group. Valid values: `ScaleIn` and `ScaleOut`.
+* `groups` - (Computed, List of Object) A list of auto provisioning groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `auto_provisioning_group_id` - (String) The ID of the auto provisioning group.
+* `auto_provisioning_group_name` - (String) The name of the auto provisioning group.
+* `auto_provisioning_group_type` - (String) The delivery type. Valid values: `request`, `maintain` and `candidate`.
+* `status` - (String) The status of the auto provisioning group. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
+* `state` - (String) The scheduling state of the auto provisioning group. Valid values: `fulfilled`, `pending-fulfillment`, `pending-termination` and `error`.
+* `region_id` - (String) The ID of the region.
+* `resource_group_id` - (String) The ID of the resource group.
+* `launch_template_id` - (String) The ID of the launch template.
+* `launch_template_version` - (String) The version of the launch template.
+* `valid_from` - (String) The time when the auto provisioning group takes effect, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `valid_until` - (String) The time when the auto provisioning group expires, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `terminate_instances` - (Bool) Whether the instances in the auto provisioning group are released when the group is deleted. When `false`, the instances are retained.
+* `terminate_instances_with_expiration` - (Bool) Whether the instances in the auto provisioning group are released when the group expires. When `false`, the instances are only removed from the group and are not released.
+* `excess_capacity_termination_policy` - (String) The policy applied when the current capacity exceeds the target capacity and a scale-in is triggered. `termination` releases the scaled-in instances; `no-termination` only removes them from the auto provisioning group without releasing them. Valid values: `no-termination` and `termination`.
+* `max_spot_price` - (String) The global maximum price for preemptible instances, as returned by the service.
+* `creation_time` - (String) The time when the auto provisioning group was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `tags` - (Map of String) A mapping of tags.
+* `launch_template_configs` - (List of Object) A list of extended configurations of the launch template.
+* `target_capacity_specification` - (List of Object) A single-element list describing the target capacity.
+* `spot_options` - (List of Object) A single-element list with the preemptible instance options.
+* `pay_as_you_go_options` - (List of Object) A single-element list with the pay-as-you-go options.
+* `candidate_options` - (List of Object) A single-element list with the candidate auto provisioning group options.
+* `capacity_specification` - (List of Object) A single-element list with the current capacity distribution of the group.
+* `suspended_processes` - (List of String) The processes that are suspended for the group. Valid values: `ScaleIn` and `ScaleOut`.
+
+---
+
+### `groups.launch_template_configs`
+
+The launch_template_configs supports the following attributes:
+
+* `instance_type` - (String) The instance type.
+* `max_price` - (String) The maximum price.
+* `vswitch_id` - (String) The ID of the vSwitch.
+* `weighted_capacity` - (String) The weight of the instance type.
+* `priority` - (String) The priority of the instance type.
+
+---
+
+### `groups.target_capacity_specification`
+
+The target_capacity_specification supports the following attributes:
+
+* `default_target_capacity_type` - (String) The capacity type used for supplemental instances. Valid values: `PayAsYouGo` and `Spot`.
+* `total_target_capacity` - (String) The total target capacity.
+* `pay_as_you_go_target_capacity` - (String) The target capacity of pay-as-you-go instances.
+* `spot_target_capacity` - (String) The target capacity of preemptible instances.
+
+---
+
+### `groups.spot_options`
+
+The spot_options supports the following attributes:
+
+* `allocation_strategy` - (String) The scale-out policy. Valid values: `lowest-price` and `diversified`.
+* `instance_interruption_behavior` - (String) The behavior after a preemptible instance is shut down. Valid values: `stop` and `terminate`.
+* `instance_pools_to_use_count` - (Int) The number of instance pools to use when the strategy is `lowest-price`.
+
+---
+
+### `groups.pay_as_you_go_options`
+
+The pay_as_you_go_options supports the following attributes:
+
+* `allocation_strategy` - (String) The scale-out policy. Valid values: `lowest-price` and `prioritized`.
+
+---
+
+### `groups.candidate_options`
+
+The candidate_options supports the following attributes:
+
+* `timeout_minutes` - (Int) The timeout, in minutes, that the group tries to reach the target capacity.
+
+---
+
+### `groups.capacity_specification`
+
+The capacity_specification supports the following attributes:
+
+* `pay_as_you_go_capacity` - (String) The current capacity of pay-as-you-go instances.
+* `pre_paid_capacity` - (String) The current capacity of subscription instances.
+* `spot_capacity` - (String) The current capacity of preemptible instances.
+* `total_capacity` - (String) The current total capacity of the group.

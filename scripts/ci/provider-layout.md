@@ -68,7 +68,10 @@ original blocker and add a stable code and repair steps in `scope.json`.
 | ACC005 | Production helper/service/receiver impact is unresolved | Trace both old and new consumers. Retain coverage for every affected entity. Unknown is not unused. |
 | SCOPE001 | Other build, dependency, fixture or document blocker | Read the exact original blocker and README-scopes.md. Repair the stated ambiguity; do not treat parser failure as an empty scope. |
 
-The current checker has no blanket waiver flag. If valid code cannot be
+For bounded ACC002/ACC005 uncertainty, the integration plan records the
+affected packages in `scope.fullPackages` and requires a verified PASS for every
+case in those packages. See [ACC scope](README-scopes.md) for selection rules.
+If a blocker remains and valid code cannot be
 resolved, preserve the diagnostics and provide the maintainer with the exact
 base/head, symbol, receiver, caller chain and expected cases. Fix the analyzer
 with a regression before retrying; a prose approval alone does not unblock CI.

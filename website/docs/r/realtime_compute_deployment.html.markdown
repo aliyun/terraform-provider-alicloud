@@ -109,6 +109,8 @@ The following arguments are supported:
 * `resource_id` - (Optional, ForceNew, Computed) Workspace resource ID
 * `streaming_resource_setting` - (Optional, Computed, List) Resource settings for streaming mode See [`streaming_resource_setting`](#streaming_resource_setting) below.
 
+---
+
 ### `artifact`
 
 The artifact supports the following:
@@ -118,6 +120,8 @@ The artifact supports the following:
 * `python_artifact` - (Optional, List) PythonArtifact See [`python_artifact`](#artifact-python_artifact) below.
 * `sql_artifact` - (Optional, List) SqlArtifact See [`sql_artifact`](#artifact-sql_artifact) below.
 
+---
+
 ### `artifact-jar_artifact`
 
 The artifact-jar_artifact supports the following:
@@ -126,6 +130,8 @@ The artifact-jar_artifact supports the following:
 * `entry_class` - (Optional) Main class; you must specify the fully qualified class name
 * `jar_uri` - (Optional) Full URL path of the JAR job
 * `main_args` - (Optional) Arguments required by the main class
+
+---
 
 ### `artifact-python_artifact`
 
@@ -138,6 +144,8 @@ The artifact-python_artifact supports the following:
 * `main_args` - (Optional) Startup arguments
 * `python_artifact_uri` - (Optional) Full URL path of the Python job
 
+---
+
 ### `artifact-sql_artifact`
 
 The artifact-sql_artifact supports the following:
@@ -145,12 +153,16 @@ The artifact-sql_artifact supports the following:
 * `additional_dependencies` - (Optional, List) Full URL path of additional files. If you need to use dependencies such as UDFs, connectors, or formats that are not registered on the VVP platform, you must add them using this method. Dependencies already registered on the platform do not require this approach.
 * `sql_script` - (Optional) Text content of the SQL job
 
+---
+
 ### `batch_resource_setting`
 
 The batch_resource_setting supports the following:
 
 * `basic_resource_setting` - (Optional, List) Resource settings for basic mode See [`basic_resource_setting`](#batch_resource_setting-basic_resource_setting) below.
 * `max_slot` - (Optional, Int) Maximum number of slots
+
+---
 
 ### `batch_resource_setting-basic_resource_setting`
 
@@ -160,12 +172,16 @@ The batch_resource_setting-basic_resource_setting supports the following:
 * `parallelism` - (Optional, Int) Parallelism.
 * `taskmanager_resource_setting_spec` - (Optional, List) TaskManager resource settings See [`taskmanager_resource_setting_spec`](#batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec) below.
 
+---
+
 ### `batch_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec`
 
 The batch_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec supports the following:
 
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
+
+---
 
 ### `batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec`
 
@@ -174,6 +190,8 @@ The batch_resource_setting-basic_resource_setting-taskmanager_resource_setting_s
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
 
+---
+
 ### `deployment_target`
 
 The deployment_target supports the following:
@@ -181,12 +199,16 @@ The deployment_target supports the following:
 * `mode` - (Required) Deployment mode, valid values: PER_JOB or SESSION
 * `name` - (Required) Deployment target name
 
+---
+
 ### `local_variables`
 
 The local_variables supports the following:
 
 * `name` - (Optional) Job variable name
 * `value` - (Optional) Job variable value
+
+---
 
 ### `logging`
 
@@ -197,6 +219,8 @@ The logging supports the following:
 * `log_reserve_policy` - (Optional, Computed, List) Log retention policy   See [`log_reserve_policy`](#logging-log_reserve_policy) below.
 * `logging_profile` - (Optional, Computed) Default system log template  
 
+---
+
 ### `logging-log4j_loggers`
 
 The logging-log4j_loggers supports the following:
@@ -204,12 +228,16 @@ The logging-log4j_loggers supports the following:
 * `logger_level` - (Optional, Computed) Log output level  
 * `logger_name` - (Optional, Computed) Class name for log output  
 
+---
+
 ### `logging-log_reserve_policy`
 
 The logging-log_reserve_policy supports the following:
 
 * `expiration_days` - (Optional, Computed, Int) Number of days to retain logs after log retention is enabled
 * `open_history` - (Optional, Computed) Whether to enable log retention
+
+---
 
 ### `streaming_resource_setting`
 
@@ -219,6 +247,8 @@ The streaming_resource_setting supports the following:
 * `expert_resource_setting` - (Optional, Computed, List) Expert mode resource settings See [`expert_resource_setting`](#streaming_resource_setting-expert_resource_setting) below.
 * `resource_setting_mode` - (Optional, Computed) Resource mode used in streaming mode, valid values: BASIC or EXPERT
 
+---
+
 ### `streaming_resource_setting-basic_resource_setting`
 
 The streaming_resource_setting-basic_resource_setting supports the following:
@@ -227,12 +257,16 @@ The streaming_resource_setting-basic_resource_setting supports the following:
 * `parallelism` - (Optional, Computed, Int) Parallelism
 * `taskmanager_resource_setting_spec` - (Optional, Computed, List) TaskManager resource settings See [`taskmanager_resource_setting_spec`](#streaming_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec) below.
 
+---
+
 ### `streaming_resource_setting-expert_resource_setting`
 
 The streaming_resource_setting-expert_resource_setting supports the following:
 
 * `jobmanager_resource_setting_spec` - (Optional, List) Basic resource settings for JobManager See [`jobmanager_resource_setting_spec`](#streaming_resource_setting-expert_resource_setting-jobmanager_resource_setting_spec) below.
 * `resource_plan` - (Optional) Resource plan for expert mode
+
+---
 
 ### `streaming_resource_setting-expert_resource_setting-jobmanager_resource_setting_spec`
 
@@ -241,12 +275,16 @@ The streaming_resource_setting-expert_resource_setting-jobmanager_resource_setti
 * `cpu` - (Optional, Float) CPU
 * `memory` - (Optional) Memory
 
+---
+
 ### `streaming_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec`
 
 The streaming_resource_setting-basic_resource_setting-jobmanager_resource_setting_spec supports the following:
 
 * `cpu` - (Optional, Computed, Float) CPU
 * `memory` - (Optional, Computed) Memory
+
+---
 
 ### `streaming_resource_setting-basic_resource_setting-taskmanager_resource_setting_spec`
 
@@ -264,7 +302,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Deployment.
 * `delete` - (Defaults to 5 mins) Used when delete the Deployment.

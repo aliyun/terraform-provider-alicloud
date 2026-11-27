@@ -50,6 +50,8 @@ The following arguments are supported:
   
 * `scene` - (Optional, ForceNew) Application Template scenario. Valid values: ["business", "classroom"].
 
+---
+
 ### `config_list`
 
 The config_list supports the following:

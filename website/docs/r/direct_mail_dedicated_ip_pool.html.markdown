@@ -74,13 +74,20 @@ The following attributes are exported:
 * `create_time` - (Computed, String, Available since v2.2.0) The creation time.
 * `ip_count` - (Computed, Int, Available since v2.2.0) The number of source IP addresses.
 * `ips` - (Computed, List, Available since v2.2.0) The list of IP addresses in the pool.
-  * `id` - (Computed, String, Available since v2.2.0) The ID of the purchased instance.
-  * `ip` - (Computed, String, Available since v2.2.0) The IP address.
-  * `zone_id` - (Computed, String, Available since v2.2.0) The zone ID.
+
+---
+
+### `ips`
+
+The ips supports the following attributes:
+
+* `id` - (Computed, String, Available since v2.2.0) The ID of the purchased instance.
+* `ip` - (Computed, String, Available since v2.2.0) The IP address.
+* `zone_id` - (Computed, String, Available since v2.2.0) The zone ID.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Dedicated Ip Pool.
 * `update` - (Defaults to 5 mins) Used when update the Dedicated Ip Pool.

@@ -82,6 +82,8 @@ resource "alicloud_cen_vbr_health_check" "example" {
 
 The following arguments are supported:
 
+-> **NOTE:** The `alicloud_cen_vbr_health_check` resource depends on the related `alicloud_cen_instance_attachment` resource.
+
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance.
 * `health_check_interval` - (Optional, Default) Specifies the interval at which the health check sends continuous detection packets. Default value: 2. Value range: 2 to 3.
 * `health_check_source_ip` - (Optional) The source IP address of health checks.
@@ -90,8 +92,6 @@ The following arguments are supported:
 * `vbr_instance_id` - (Required, ForceNew) The ID of the VBR.
 * `vbr_instance_owner_id` - (Optional) The ID of the account to which the VBR belongs.
 * `vbr_instance_region_id` - (Required, ForceNew) The ID of the region to which the VBR belongs.
-
-->**NOTE:** The `alicloud_cen_vbr_health_check` resource depends on the related `alicloud_cen_instance_attachment` resource.
 
 ## Attributes Reference
 
@@ -103,7 +103,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.98.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when create the CEN VBR Health Check. (until it reaches the available status).
 * `update` - (Defaults to 6 mins) Used when update the CEN VBR Health Check.

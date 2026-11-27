@@ -47,9 +47,7 @@ func resourceAliCloudImageExportCreate(d *schema.ResourceData, meta interface{})
 	request.ImageId = d.Get("image_id").(string)
 	request.OSSBucket = d.Get("oss_bucket").(string)
 	request.OSSPrefix = d.Get("oss_prefix").(string)
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.ExportImage(request)
-	})
+	raw, err := client.EcsSdkRpc(request, ecs.CreateExportImageResponse())
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_image_export", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

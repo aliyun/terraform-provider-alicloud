@@ -72,6 +72,8 @@ The following arguments are supported:
 * `policy_name` - (Required) The name of the resource
 * `type` - (Required, ForceNew) Type
 
+---
+
 ### `content`
 
 The content supports the following:
@@ -91,6 +93,8 @@ The content supports the following:
 * `source_limit` - (Optional) Do not fill in when the source speed limit is deleted. See [`source_limit`](#content-source_limit) below.
 * `whiten_gfbr_nets` - (Optional) Add white high protection back to source network segment switch.
 
+---
+
 ### `content-finger_print_rule_list`
 
 The content-finger_print_rule_list supports the following:
@@ -109,6 +113,8 @@ The content-finger_print_rule_list supports the following:
 * `src_port_end` - (Required) Source Port end 0-65535.
 * `src_port_start` - (Required) Source port start 0-65535.
 
+---
+
 ### `content-layer4_rule_list`
 
 The content-layer4_rule_list supports the following:
@@ -120,6 +126,8 @@ The content-layer4_rule_list supports the following:
 * `method` - (Required) Char indicates a string match hex match.
 * `name` - (Required) Rule Name.
 * `priority` - (Required) 1-100, priority, the lower the number, the higher the priority.
+
+---
 
 ### `content-port_rule_list`
 
@@ -134,6 +142,8 @@ The content-port_rule_list supports the following:
 * `src_port_end` - (Required) Source Port end 0-65535.
 * `src_port_start` - (Required) Source port start 0-65535.
 
+---
+
 ### `content-source_block_list`
 
 The content-source_block_list supports the following:
@@ -143,6 +153,8 @@ The content-source_block_list supports the following:
 * `exceed_limit_times` - (Required) The number of times the speed limit is exceeded in a statistical period ranges from 1 to 1200.
 * `type` - (Required) The type of black is optional source PPS speed limit Black: 3 source BPS speed limit Black: 4 SYNPPS speed limit Black: 5 SYNBPS speed limit Black: 6.
 
+---
+
 ### `content-source_limit`
 
 The content-source_limit supports the following:
@@ -151,6 +163,8 @@ The content-source_limit supports the following:
 * `pps` - (Optional) Pps range 32~500000.
 * `syn_bps` - (Optional) SynBps range 1024~268435456.
 * `syn_pps` - (Optional) SynPps range 1~100000.
+
+---
 
 ### `content-layer4_rule_list-condition_list`
 
@@ -168,7 +182,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Policy.

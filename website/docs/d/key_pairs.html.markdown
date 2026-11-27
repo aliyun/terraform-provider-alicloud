@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_key_pairs
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_key_pairs](https://www.terraform.io/docs/providers/alicloud/d/ecs_key_pairs) from version 1.121.0.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_key_pairs](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/ecs_key_pairs) from version 1.121.0.
 
 This data source provides a list of key pairs in an Alibaba Cloud account according to the specified filters.
 
@@ -42,43 +42,71 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of key pair names.
-* `key_pairs` - (Deprecated) A list of key pairs. Each element contains the following attributes:
-  * `id` - ID of the key pair.
-  * `key_name` - Name of the key pair.
-  * `finger_print` - Finger print of the key pair.
-  * `key_pair_name` - The name of the key pair.
-  * `resource_group_id` - The Id of resource group.
-  * `tags` - A map of tags assigned to the key pair.
-  * `instances` - A list of ECS instances that has been bound this key pair.
-    * `availability_zone` - The ID of the availability zone where the ECS instance is located.
-    * `instance_id` - The ID of the ECS instance.
-    * `instance_name` - The name of the ECS instance.
-    * `vswitch_id` - The ID of the vSwitch attached to the ECS instance.
-    * `public_ip` - The public IP address or EIP of the ECS instance.
-    * `private_ip` - The private IP address of the ECS instance.
-    * `description` - Description of the ECS instance.
-    * `image_id` - The image ID.
-    * `instance_type` - The instance type.
-    * `key_name` - The key name.
-    * `region_id` - The region ID.
-    * `status` - The status of the ECS instance.
-* `pairs` - A list of key pairs. Each element contains the following attributes:
-  * `id` - ID of the key pair.
-  * `key_pair_name` - Name of the key pair.
-  * `key_name` - Name of the key pair.
-  * `finger_print` - Finger print of the key pair.
-  * `resource_group_id` - The Id of resource group.
-  * `tags` - A map of tags assigned to the key pair.
-  * `instances` - A list of ECS instances bound to this key pair.
-    * `instance_id` - The ID of the ECS instance.
-    * `instance_name` - The name of the ECS instance.
-    * `description` - Description of the ECS instance.
-    * `image_id` - The image ID.
-    * `region_id` - The region ID.
-    * `availability_zone` - The availability zone ID.
-    * `instance_type` - The instance type.
-    * `vswitch_id` - The vSwitch ID.
-    * `public_ip` - The public IP address.
-    * `private_ip` - The private IP address.
-    * `key_name` - The key name.
-    * `status` - The status of the ECS instance.
+* `key_pairs` - (Deprecated) A list of key pairs.
+* `pairs` - A list of key pairs.
+
+---
+
+### `key_pairs`
+
+The key_pairs supports the following attributes:
+
+* `id` - ID of the key pair.
+* `key_name` - Name of the key pair.
+* `finger_print` - Finger print of the key pair.
+* `key_pair_name` - The name of the key pair.
+* `resource_group_id` - The Id of resource group.
+* `tags` - A map of tags assigned to the key pair.
+* `instances` - A list of ECS instances that has been bound this key pair.
+
+---
+
+### `key_pairs.instances`
+
+The instances supports the following attributes:
+
+* `availability_zone` - The ID of the availability zone where the ECS instance is located.
+* `instance_id` - The ID of the ECS instance.
+* `instance_name` - The name of the ECS instance.
+* `vswitch_id` - The ID of the vSwitch attached to the ECS instance.
+* `public_ip` - The public IP address or EIP of the ECS instance.
+* `private_ip` - The private IP address of the ECS instance.
+* `description` - Description of the ECS instance.
+* `image_id` - The image ID.
+* `instance_type` - The instance type.
+* `key_name` - The key name.
+* `region_id` - The region ID.
+* `status` - The status of the ECS instance.
+
+---
+
+### `pairs`
+
+The pairs supports the following attributes:
+
+* `id` - ID of the key pair.
+* `key_pair_name` - Name of the key pair.
+* `key_name` - Name of the key pair.
+* `finger_print` - Finger print of the key pair.
+* `resource_group_id` - The Id of resource group.
+* `tags` - A map of tags assigned to the key pair.
+* `instances` - A list of ECS instances bound to this key pair.
+
+---
+
+### `pairs.instances`
+
+The instances supports the following attributes:
+
+* `instance_id` - The ID of the ECS instance.
+* `instance_name` - The name of the ECS instance.
+* `description` - Description of the ECS instance.
+* `image_id` - The image ID.
+* `region_id` - The region ID.
+* `availability_zone` - The availability zone ID.
+* `instance_type` - The instance type.
+* `vswitch_id` - The vSwitch ID.
+* `public_ip` - The public IP address.
+* `private_ip` - The private IP address.
+* `key_name` - The key name.
+* `status` - The status of the ECS instance.

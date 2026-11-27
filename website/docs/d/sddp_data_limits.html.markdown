@@ -28,24 +28,31 @@ output "sddp_data_limit_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Data Limit IDs.
+* `ids` - (Optional, Computed)  A list of Data Limit IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `parent_id` - (Optional, ForceNew) The parent asset ID of the data asset.
-* `resource_type` - (Optional, ForceNew) The type of the service to which the data asset belongs. Valid values: `MaxCompute`, `OSS`, `RDS`.
+* `parent_id` - (Optional) The parent asset ID of the data asset.
+* `resource_type` - (Optional) The type of the service to which the data asset belongs. Valid values: `MaxCompute`, `OSS`, `RDS`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `limits` - A list of Sddp Data Limits. Each element contains the following attributes:
-  * `audit_status` - Whether to enable the log auditing feature.
-  * `check_status` - The status of the connectivity test between the data asset and SDDP.
-  * `data_limit_id` - The first ID of the resource.
-  * `engine_type` -The type of the database.
-  * `id` - The ID of the Data Limit.
-  * `local_name` - The name of the service to which the data asset belongs.
-  * `log_store_day` - The retention period of raw logs after you enable the log auditing feature.
-  * `parent_id` - The ID of the data asset.
-  * `port` - The port that is used to connect to the database.
-  * `resource_type` - The type of the service to which the data asset belongs.
-  * `user_name` - The name of the user who owns the data asset.
+* `limits` - A list of Sddp Data Limits.
+
+---
+
+### `limits`
+
+The limits supports the following attributes:
+
+* `audit_status` - Whether to enable the log auditing feature.
+* `check_status` - The status of the connectivity test between the data asset and SDDP.
+* `data_limit_id` - The first ID of the resource.
+* `engine_type` -The type of the database.
+* `id` - The ID of the Data Limit.
+* `local_name` - The name of the service to which the data asset belongs.
+* `log_store_day` - The retention period of raw logs after you enable the log auditing feature.
+* `parent_id` - The ID of the data asset.
+* `port` - The port that is used to connect to the database.
+* `resource_type` - The type of the service to which the data asset belongs.
+* `user_name` - The name of the user who owns the data asset.

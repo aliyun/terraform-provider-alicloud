@@ -41,8 +41,15 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of policy version IDs.
-* `versions` - A list of policy versions. Each element contains the following attributes:
-  * `id` - The ID of the resource, the value is `<policy_name>`:`<version_id>`.
-  * `version_id`- The ID of the policy version.
-  * `is_default_version`- Indicates whether the policy version is the default version.
-  * `policy_document`- (Available in v1.114.0+) The policy document of the policy version.
+* `versions` - A list of policy versions.
+
+---
+
+### `versions`
+
+The versions supports the following attributes:
+
+* `id` - The ID of the resource, the value is `<policy_name>`:`<version_id>`.
+* `version_id`- The ID of the policy version.
+* `is_default_version`- Indicates whether the policy version is the default version.
+* `policy_document`- (Available in v1.114.0+) The policy document of the policy version.

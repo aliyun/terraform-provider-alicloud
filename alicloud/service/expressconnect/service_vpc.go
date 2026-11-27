@@ -28,9 +28,7 @@ func (s *ExpressConnectService) DescribeRouterInterface(id, regionId string) (ri
 	request.Filter = &filter
 	invoker := helper.NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeRouterInterfaces(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeRouterInterfacesResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
@@ -109,9 +107,7 @@ func (s *ExpressConnectService) DeactivateRouterInterface(interfaceId string) er
 	request := vpc.CreateDeactivateRouterInterfaceRequest()
 	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DeactivateRouterInterface(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateDeactivateRouterInterfaceResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "RouterInterface", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -123,9 +119,7 @@ func (s *ExpressConnectService) ActivateRouterInterface(interfaceId string) erro
 	request := vpc.CreateActivateRouterInterfaceRequest()
 	request.RegionId = s.client.RegionId
 	request.RouterInterfaceId = interfaceId
-	raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ActivateRouterInterface(request)
-	})
+	raw, err := s.client.VpcSdkRpc(request, vpc.CreateActivateRouterInterfaceResponse())
 	if err != nil {
 		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "RouterInterface", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
@@ -377,11 +371,9 @@ func (s *ExpressConnectService) ModifyExpressConnectPhysicalConnectionStatus(d *
 func (s *ExpressConnectService) JudgeRegionValidation(key, region string) error {
 	request := ecs.CreateDescribeRegionsRequest()
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeRegions(request)
-	})
+	raw, err := s.client.EcsSdkRpc(request, ecs.CreateDescribeRegionsResponse())
 	if err != nil {
-		return fmt.Errorf("DescribeRegions got an error: %#v", err)
+		return fmt.Errorf("DescribeRegions got an error: %w", err)
 	}
 	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ecs.DescribeRegionsResponse)

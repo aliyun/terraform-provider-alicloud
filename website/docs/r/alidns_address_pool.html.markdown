@@ -91,6 +91,8 @@ The following arguments are supported:
 * `lba_strategy` - (Required)The load balancing policy of the address pool. Valid values:`ALL_RR` or `RATIO`. `ALL_RR`: returns all addresses. `RATIO`: returns addresses by weight.
 * `type` - (Required, ForceNew) The type of the address pool. Valid values: `IPV4`, `IPV6`, `DOMAIN`.
 
+---
+
 ### `address`
 
 The address supports the following:
@@ -99,7 +101,9 @@ The address supports the following:
 * `attribute_info` - (Required) The source region of the address. expressed as a JSON string. The structure is as follows:
   * `LineCodes`: List of home lineCodes.
   * `lineCodeRectifyType`: The rectification type of the line code. Default value: `AUTO`. Valid values: `NO_NEED`: no need for rectification. `RECTIFIED`: rectified. `AUTO`: automatic rectification.
-* `lba_weight` - (Optional) The weight of the address. **NOTE:** The attribute is valid when the attribute `lba_strategy` is `RATIO`.
+* `lba_weight` - (Optional) The weight of the address.
+
+  -> **NOTE:** The attribute is valid when the attribute `lba_strategy` is `RATIO`.
 * `mode` - (Required) The type of the address. Valid values:`SMART`, `ONLINE` and `OFFLINE`.
 * `remark` - (Optional) The description of the address.
 

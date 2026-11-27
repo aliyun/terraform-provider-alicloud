@@ -1,0 +1,125 @@
+# Generated from .aoneci/pull_request.yml by ci/provider-gates/render.py.
+name: Pull Request Checks
+triggers:
+  merge_request: {}
+envs:
+  PROVIDER_PINNED_TITLE: 'yes'
+  CODE_CI_SHALLOW_RANGE: '1'
+  CODE_HEAD: ${{git.commitId}}
+  CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
+  CODE_MR_BASE: '${{git.merge_request.baseCommit ?: ""}}'
+  CODE_PUSH_BEFORE: '${{git.push.beforeSha256 ?: ""}}'
+  CODE_TARGET: '${{git.merge_request.targetBranch ?: ""}}'
+  CODE_DEFAULT_BRANCH: ${{git.defaultBranch}}
+  CODE_MR_SOURCE_PROJECT: '${{git.merge_request.sourceProjectId ?: ""}}'
+  CODE_MR_TARGET_PROJECT: '${{git.merge_request.targetProjectId ?: ""}}'
+  CODE_MR_TITLE: '${{git.merge_request.title ?: ""}}'
+jobs:
+  PinChecker:
+    steps:
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: '${{ git.merge_request.targetBranch ?: git.defaultBranch }}'
+        path: .
+        fetch-depth: '1'
+    - name: Record target checker revision
+      run: |
+        set -eu
+        sha=$(git rev-parse HEAD)
+        echo "Provider checker=$sha candidate=$CODE_HEAD"
+        printf "%s\n" "$sha" > provider-checker.sha
+    - uses: upload-artifact
+      inputs:
+        name: provider-checker.sha
+        path: provider-checker.sha
+        if-no-files-found: error
+  title:
+    steps:
+    - uses: checkout
+      inputs:
+        fetch-depth: '32'
+    - uses: download-artifact
+      inputs:
+        name: provider-checker.sha
+        path: .git/provider-pin
+    - id: checker_pin
+      name: Load pinned checker revision
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        printf %s "$CHECKER_SHA" > "$AONE_CI_OUTPUTS/sha"
+    - uses: checkout
+      inputs:
+        repository-url: https://gitlab.alibaba-inc.com/opensource-tools/terraform-provider-alicloud.git
+        ref: '${{ ''refs/heads/'' + (git.merge_request.targetBranch ?: git.defaultBranch) }}'
+        commit: ${{ steps.checker_pin.outputs.sha }}
+        path: .git/provider-checker
+        fetch-depth: '1'
+    - name: Verify checker and candidate revisions
+      run: |
+        set -euo pipefail
+        if ! IFS= read -r CHECKER_SHA < .git/provider-pin/provider-checker.sha || [[ ! "$CHECKER_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Missing or invalid checker revision. Start a new pipeline run to regenerate the PinChecker artifact." >&2
+          exit 1
+        fi
+        test "$(git rev-parse HEAD)" = "$CODE_HEAD"
+        actual=$(git -C .git/provider-checker rev-parse HEAD)
+        if [[ "$actual" != "$CHECKER_SHA" ]]; then
+          echo "Checker checkout is $actual, expected $CHECKER_SHA from PinChecker. Start a new pipeline run." >&2
+          exit 1
+        fi
+        export GIT_ALTERNATE_OBJECT_DIRECTORIES="$(git -C .git/provider-checker rev-parse --absolute-git-dir)/objects"
+        git restore --worktree --no-overlay --source="$CHECKER_SHA" -- scripts/title scripts/internal/splitlayout
+    - id: scope
+      name: Determine whether title rules apply
+      run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        result=0
+        git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+          ':(glob)scripts/ci/**' ':(glob)scripts/internal/**' ':(glob).aoneci/**' \
+          go.mod go.sum ':(glob)website/docs/**' ':(glob)alicloud/**/*.go' || result=$?
+        case "$result" in
+          0) echo 'No files subject to Provider title rules changed. Pull Request Checks passed.'
+             applicable=no ;;
+          1) applicable=yes ;;
+          *) exit "$result" ;;
+        esac
+        printf '%s' "$applicable" > "$AONE_CI_OUTPUTS/applicable"
+    - name: Setup Go
+      when: ${{ steps.scope.outputs.applicable == 'yes' }}
+      uses: setup-env
+      inputs:
+        go-version: 1.25.8
+    - name: Checking the title info
+      when: ${{ steps.scope.outputs.applicable == 'yes' }}
+      run: |
+        set -euo pipefail
+        range=$(python3 .git/provider-checker/scripts/ci/aone-range.py)
+        eval "$range"
+        baseSha="$DIFF_BASE"
+        headSha="$DIFF_HEAD"
+        if [[ "${PROVIDER_PINNED_TITLE:-no}" != yes ]] && git cat-file -e "${baseSha}:scripts/title/title_check.go" 2>/dev/null; then
+          git checkout "${baseSha}" -- scripts/title scripts/internal/splitlayout
+        fi
+        # Without that path at the base, only the merge request that
+        # introduces the checker can be here: it runs the copy it adds,
+        # under review.
+        unset TITLE_RELEASE_CANDIDATE
+        if [[ "$CODE_MR_TITLE" =~ ^Release\ sync:\ (v2\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]]; then
+          ref="refs/heads/release-sync/${BASH_REMATCH[1]}"
+          # A same-project MR into the default branch has the target repository as origin.
+          test -n "$CODE_MR_TARGET_PROJECT" && test "$CODE_MR_TARGET_PROJECT" = "$CODE_MR_SOURCE_PROJECT" || exit 1
+          test "$CODE_TARGET" = "$CODE_DEFAULT_BRANCH"
+          record=$(git ls-remote --refs --exit-code origin "$ref")
+          export TITLE_RELEASE_CANDIDATE="${record%%$'\t'*}"
+        fi
+        go run scripts/title/title_check.go -title="${CODE_MR_TITLE}" -base="${baseSha}" -head="${headSha}"
+    needs:
+    - PinChecker

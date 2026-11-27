@@ -118,14 +118,21 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - (String) The ID of the data source, derived from the instance and filters so that it stays stable across refreshes.
 * `ids` - (List) When configured, the configured values, order, and unmatched entries are preserved in state. When omitted, this list contains the matched topic names sorted by topic name.
 * `names` - (List) A list of names of the topics that match the configured filters.
-* `topics` - (List) A list of topics that match the configured filters. Each element contains the following attributes:
-  * `topic_name` - (String) The name of the topic.
-  * `message_type` - (String) The message type of the topic. Valid values: `NORMAL`, `FIFO`, `DELAY` and `TRANSACTION`.
-  * `status` - (String) The status of the topic. Valid values: `CREATING` and `RUNNING`.
-  * `remark` - (String) The remark of the topic.
-  * `instance_id` - (String) The ID of the instance that the topic belongs to.
-  * `region_id` - (String) The region ID of the topic.
-  * `create_time` - (String) The time when the topic was created.
-  * `update_time` - (String) The time when the topic was last updated.
-  * `max_send_tps` - (Int) The maximum send TPS of the topic.
-  * `lite_topic_expiration` - (Int) The expiration time of the lite topic. Unit: minutes.
+* `topics` - (List) A list of topics that match the configured filters.
+
+---
+
+### `topics`
+
+The topics supports the following attributes:
+
+* `topic_name` - (String) The name of the topic.
+* `message_type` - (String) The message type of the topic. Valid values: `NORMAL`, `FIFO`, `DELAY` and `TRANSACTION`.
+* `status` - (String) The status of the topic. Valid values: `CREATING` and `RUNNING`.
+* `remark` - (String) The remark of the topic.
+* `instance_id` - (String) The ID of the instance that the topic belongs to.
+* `region_id` - (String) The region ID of the topic.
+* `create_time` - (String) The time when the topic was created.
+* `update_time` - (String) The time when the topic was last updated.
+* `max_send_tps` - (Int) The maximum send TPS of the topic.
+* `lite_topic_expiration` - (Int) The expiration time of the lite topic. Unit: minutes.

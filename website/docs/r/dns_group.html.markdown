@@ -7,9 +7,9 @@ description: |-
   Provides a DNS Group resource.
 ---
 
-# alicloud\_dns\_group
+# alicloud_dns_group
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.84.0`. Please use new resource [alicloud_alidns_domain_group](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_group).
+-> **DEPRECATED:** This resource has been deprecated from version `1.84.0`. Please use new resource [alicloud_alidns_domain_group](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/alidns_domain_group).
 
 Provides a DNS Group resource.
 
@@ -18,7 +18,7 @@ Provides a DNS Group resource.
 ```terraform
 # Add a new Domain group.
 resource "alicloud_dns_group" "group" {
-  name = "testgroup"
+  name = "example-group"
 }
 
 ```
@@ -29,11 +29,10 @@ resource "alicloud_dns_group" "group" {
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the domain group.    
+* `name` - (Required) Name of the domain group.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The group id.
-* `name` - The group name.

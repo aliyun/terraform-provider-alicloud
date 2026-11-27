@@ -77,7 +77,9 @@ The following arguments are supported:
 * `db_instance_storage` - (Required) The db instance storage. Valid values: `1` to `100`.
 * `engine` - (Optional) The database engine of the instance. Valid values: `MongoDB`.
 * `engine_version` - (Required) The database version number. Valid values: `4.2`.
-* `maintain_end_time` - (Optional) The end time of the maintenance window. Specify the time in the `HH:mmZ` format. The time must be in UTC. **NOTE:** The difference between the start time and end time must be one hour. For example, if `maintain_start_time` is `01:00Z`, `maintain_end_time` must be `02:00Z`.
+* `maintain_end_time` - (Optional) The end time of the maintenance window. Specify the time in the `HH:mmZ` format. The time must be in UTC.
+
+  -> **NOTE:** The difference between the start time and end time must be one hour. For example, if `maintain_start_time` is `01:00Z`, `maintain_end_time` must be `02:00Z`.
 * `maintain_start_time` - (Optional) The start time of the maintenance window. Specify the time in the `HH:mmZ` format. The time must be in UTC.
 * `period` - (Optional) The purchase duration of the instance, in months. Valid values: `1` to `9`, `12`, `24`, `36`, `60`.
 * `period_price_type` - (Optional) The period price type. Valid values: `Day`, `Month`.
@@ -88,6 +90,8 @@ The following arguments are supported:
 * `zone_id` - (Required, ForceNew) The ID of the zone. Use this parameter to specify the zone created by the instance.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC network.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+---
 
 ### `security_ip_groups`
 
@@ -106,7 +110,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Serverless Instance.
 * `update` - (Defaults to 10 mins) Used when update the Serverless Instance.

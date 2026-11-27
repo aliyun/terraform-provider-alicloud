@@ -65,7 +65,10 @@ The following arguments are supported:
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance.
 * `cen_owner_id` - (Optional) The cen owner id.
 * `cidr_block` - (Required, ForceNew) Workspace Corresponds to the Security Office Network of IPv4 Segment.
-* `desktop_access_type` - (Optional, Computed) The method that you use to connect to cloud desktops. **Note:** The VPC connection method is provided by Alibaba Cloud PrivateLink. You are not charged for PrivateLink. When you set this parameter to VPC or Any, PrivateLink is automatically activated. Default value: `INTERNET`. Valid values:
+* `desktop_access_type` - (Optional, Computed) The method that you use to connect to cloud desktops.
+
+  -> **NOTE:** The VPC connection method is provided by Alibaba Cloud PrivateLink. You are not charged for PrivateLink. When you set this parameter to VPC or Any, PrivateLink is automatically activated. Default value: `INTERNET`. Valid values:
+
   - `INTERNET`: connects clients to cloud desktops only over the Internet.
   - `VPC`: connects clients to cloud desktops only over a VPC.
   - `ANY`: connects clients to cloud desktops over the Internet or a VPC. You can select a connection method when you use a client to connect to the cloud desktop.
@@ -91,7 +94,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Ad Connector Office Site.
 * `delete` - (Defaults to 1 mins) Used when delete the Ad Connector Office Site.

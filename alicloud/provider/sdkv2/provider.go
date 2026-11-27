@@ -17,12 +17,14 @@ import (
 
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
+	alicloudclient "github.com/aliyun/terraform-provider-alicloud/alicloud/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -237,11 +239,20 @@ func mapString(m map[string]interface{}, key string) (string, bool) {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Provider) (interface{}, diag.Diagnostics) {
-	log.Println("using terraform version:", p.TerraformVersion)
+	if err := ctx.Err(); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	traceID := strings.Trim(uuid.New().String(), "-")
+	ctx = alicloudclient.ProviderContext(ctx, traceID, "")
+	ctx = alicloudclient.RequestContext(ctx, "", "Configure")
+	tflog.Info(ctx, "Configuring Alibaba Cloud Provider", map[string]interface{}{"terraform_version": p.TerraformVersion})
 	// profileConfig is resolved per Configure call from this instance's own
 	// profile / shared_credentials_file, so multiple provider aliases in one
 	// Terraform process never share (or contaminate) each other's profile.
 	profileConfig, err := loadProfileConfig(d)
+	if ctx.Err() != nil {
+		return nil, diag.FromErr(ctx.Err())
+	}
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -277,9 +288,23 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
+	var signVersion sync.Map
+	for _, version := range d.Get("sign_version").(*schema.Set).List() {
+		for key, val := range version.(map[string]interface{}) {
+			signVersion.Store(key, val)
+		}
+	}
+	defaultVersion, _ := signVersion.Load("default")
+	if otsVersion, _ := signVersion.Load("ots"); otsVersion == "v4" && defaultVersion != "v4" {
+		return nil, diag.Errorf("sign_version.ots = v4 requires sign_version.default = v4")
+	}
+	if defaultVersion == "v4" && strings.TrimSpace(region) == "" {
+		return nil, diag.Errorf("sign_version.default = v4 requires a physical signing region; set region in the provider, environment, or CLI profile")
+	}
 	if region == "" {
 		region = "cn-beijing"
 	}
+	ctx = alicloudclient.ProviderContext(ctx, traceID, strings.TrimSpace(region))
 	securityToken, err := getProviderConfig("security_token", "sts_token")
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -305,12 +330,22 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		if v, ok := cfgString(d, "shared_credentials_file"); ok {
 			profileFile = absPath(v)
 		}
+		if err := ctx.Err(); err != nil {
+			return nil, diag.FromErr(err)
+		}
+		tflog.Debug(ctx, "Retrieving CLI profile credentials")
 		provider, err := providers.NewCLIProfileCredentialsProviderBuilder().WithProfileName(profileName).WithProfileFile(profileFile).Build()
+		if ctx.Err() != nil {
+			return nil, diag.FromErr(ctx.Err())
+		}
 		if err != nil {
 			return nil, diag.FromErr(fmt.Errorf("failed to create profile credentials provider: %v", err))
 		}
 		credential = credentials.FromCredentialsProvider("cli_profile", provider)
 		creds, err := credential.GetCredential()
+		if ctx.Err() != nil {
+			return nil, diag.FromErr(ctx.Err())
+		}
 		if err != nil {
 			return nil, diag.FromErr(fmt.Errorf("failed to get credential from profile: %v", err))
 		}
@@ -320,7 +355,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	var credentialsURI, credentialsURIExpiration string
 	if accessKey == "" || secretKey == "" {
 		if v, ok := cfgString(d, "credentials_uri"); ok {
-			credentialsURIResp, err := getClientByCredentialsURI(v)
+			credentialsURIResp, err := getClientByCredentialsURI(ctx, v)
 			if err != nil {
 				return nil, diag.FromErr(err)
 			}
@@ -333,6 +368,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	}
 
 	config := &connectivity.Config{
+		SignVersion:          &signVersion,
 		AccessKey:            strings.TrimSpace(accessKey),
 		SecretKey:            strings.TrimSpace(secretKey),
 		SecurityToken:        strings.TrimSpace(securityToken),
@@ -347,7 +383,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
 		SecureTransport:      strings.TrimSpace(d.Get("secure_transport").(string)),
 		MaxRetryTimeout:      d.Get("max_retry_timeout").(int),
-		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
+		TerraformTraceId:     traceID,
 		TerraformVersion:     p.TerraformVersion,
 	}
 	config.Features = expandFeatures(d.Get("features").([]interface{}))
@@ -357,7 +393,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	if credential != nil {
 		config.Credential = credential
 	}
-	log.Println("alicloud provider trace id:", config.TerraformTraceId)
+	tflog.Debug(ctx, "Shared provider configuration prepared")
 	if accessKey != "" && secretKey != "" && credential == nil {
 		credentialConfig := new(credentials.Config).SetType("access_key").
 			SetAccessKeyId(accessKey).
@@ -651,15 +687,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	}
 	config.ConfigurationSource = strings.Join(configurationSources, " ") + getModuleAddr()
 
-	var signVersion sync.Map
-	config.SignVersion = &signVersion
-	for _, version := range d.Get("sign_version").(*schema.Set).List() {
-		for key, val := range version.(map[string]interface{}) {
-			signVersion.Store(key, val)
-		}
-	}
-
-	if err := config.RefreshAuthCredential(); err != nil {
+	if err := config.RefreshAuthCredentialContext(ctx); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
@@ -669,11 +697,14 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 				"for more information about providing credentials."))
 	}
 
-	client, err := connectivity.NewClient(config)
+	client, err := alicloudclient.NewClientWithValidRegionsContext(ctx, config, connectivity.ValidRegions)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
+	if err := ctx.Err(); err != nil {
+		return nil, diag.FromErr(err)
+	}
+	tflog.Info(ctx, "Alibaba Cloud Provider configured")
 	return client, nil
 }
 
@@ -1088,6 +1119,18 @@ func signVersionSchema() *schema.Schema {
 		MaxItems: 1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"default": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Default request signature version. V4 requires the physical signing region from provider configuration, the environment, or a CLI profile.",
+					ValidateFunc: validation.StringInSlice([]string{"v4"}, false),
+				},
+				// oss and sls stay unvalidated on purpose: their documented
+				// contract predates this block and accepts the v2 spelling
+				// leniently (treated as the default and answered with v4
+				// signing). The newer per-product keys are validated so a
+				// typo cannot silently select the default instead of the
+				// intended override.
 				"oss": {
 					Type:     schema.TypeString,
 					Optional: true,
@@ -1095,6 +1138,40 @@ func signVersionSchema() *schema.Schema {
 				"sls": {
 					Type:     schema.TypeString,
 					Optional: true,
+				},
+				"mns": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "MNS data plane request signature version. The legacy HMAC-SHA1 signature is kept unless this is set to v4 (or sign_version.default = v4 is set); set v1 to opt the MNS data plane out of a default v4 selection.",
+					ValidateFunc: validation.StringInSlice([]string{"v1", "v4"}, false),
+				},
+				"ecs": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Overrides the default request signature version for ECS calls.",
+					ValidateFunc: validation.StringInSlice([]string{"v1", "v4"}, false),
+				},
+				"cms": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Overrides the default request signature version for CMS calls.",
+					ValidateFunc: validation.StringInSlice([]string{"v1", "v4"}, false),
+				},
+				"nas": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Overrides the default request signature version for NAS calls.",
+					ValidateFunc: validation.StringInSlice([]string{"v1", "v4"}, false),
+				},
+				"ots": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+				"vpc": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					Description:  "Overrides the default request signature version for the VPC calls made by the provider's own products (including the cross-product vswitch, route table, NAT gateway, VPN gateway and router interface lookups).",
+					ValidateFunc: validation.StringInSlice([]string{"v1", "v4"}, false),
 				},
 			},
 		},
@@ -2548,18 +2625,29 @@ type CredentialsURIResponse struct {
 	Expiration      string
 }
 
-func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, error) {
-	res, err := http.Get(credentialsURI)
+func getClientByCredentialsURI(ctx context.Context, credentialsURI string) (*CredentialsURIResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, "Retrieving credentials from credentials_uri")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, credentialsURI, nil)
 	if err != nil {
 		return nil, err
 	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("get Credentials from %s failed, status code %d", credentialsURI, res.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2567,7 +2655,7 @@ func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, 
 	var response CredentialsURIResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal credentials failed, the body %s", string(body))
+		return nil, fmt.Errorf("unmarshal credentials failed: %w", err)
 	}
 
 	if response.Code != "Success" {

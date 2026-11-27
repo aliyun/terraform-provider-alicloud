@@ -87,8 +87,12 @@ The following arguments are supported:
 * `vbr_owner_id` - (Optional, ForceNew, Computed, Int) VbrOwnerId
 * `resource_type` - (Optional, ForceNew) The resource type of the transit router vbr attachment. Default value: `VBR`. Valid values: `VBR`.
 * `dry_run` - (Optional, Bool) Specifies whether to perform a dry run. Default value: `false`. Valid values: `true`, `false`.
-* `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.233.1) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
-* `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.233.1) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
+* `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.233.1) Whether to enabled route table association.
+
+  -> **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
+* `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.233.1) Whether to enabled route table propagation.
+
+  -> **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
 
 ## Attributes Reference
 
@@ -102,7 +106,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Vbr Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Transit Router Vbr Attachment.

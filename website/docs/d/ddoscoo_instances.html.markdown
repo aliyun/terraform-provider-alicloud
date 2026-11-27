@@ -44,20 +44,27 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of instance names.
-* `instances` - A list of apis. Each element contains the following attributes:
-  * `id` - The instance's id.
-  * `name` - The instance's remark.
-  * `base_bandwidth` - The instance's base defend bandwidth.
-  * `bandwidth` - The instance's elastic defend bandwidth.
-  * `service_bandwidth` - The instance's business bandwidth.
-  * `port_count` - The instance's count of port retransmission config.
-  * `domain_count` - The instance's count of domain retransmission config.
-  * `remark` - The remark of the instance.
-  * `ip_mode` - The ip mode of the instance.
-  * `debt_status` - The debt status of the instance.
-  * `edition` - The edition of the instance.
-  * `ip_version` - The ip version of the instance.
-  * `status` - The status of the instance.
-  * `enabled` - The enabled of the instance.
-  * `expire_time` - The expiry time of the instance.
-  * `create_time` - The creation time of the instance.
+* `instances` - A list of apis.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The instance's id.
+* `name` - The instance's remark.
+* `base_bandwidth` - The instance's base defend bandwidth.
+* `bandwidth` - The instance's elastic defend bandwidth.
+* `service_bandwidth` - The instance's business bandwidth.
+* `port_count` - The instance's count of port retransmission config.
+* `domain_count` - The instance's count of domain retransmission config.
+* `remark` - The remark of the instance.
+* `ip_mode` - The ip mode of the instance.
+* `debt_status` - The debt status of the instance.
+* `edition` - The edition of the instance.
+* `ip_version` - The ip version of the instance.
+* `status` - The status of the instance.
+* `enabled` - The enabled of the instance.
+* `expire_time` - The expiry time of the instance.
+* `create_time` - The creation time of the instance.

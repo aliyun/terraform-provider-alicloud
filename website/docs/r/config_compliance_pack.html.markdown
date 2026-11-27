@@ -82,7 +82,9 @@ resource "alicloud_config_compliance_pack" "default" {
 
 The following arguments are supported:
 
-* `compliance_pack_name` - (Required) The Compliance Package Name. **NOTE:** From version 1.146.0, `compliance_pack_name` can be modified.
+* `compliance_pack_name` - (Required) The Compliance Package Name.
+
+  -> **NOTE:** From version 1.146.0, `compliance_pack_name` can be modified.
 * `description` - (Required) The Description of compliance pack.
 * `risk_level` - (Required, Int) The Risk Level. Valid values:
   - `1`: critical.
@@ -90,7 +92,9 @@ The following arguments are supported:
   - `3`: info.
 * `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
 * `config_rule_ids` - (Optional, Set, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below.
-* `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. **NOTE:** Field `config_rules` has been deprecated from provider version 1.141.0. New field `config_rule_ids` instead.
+* `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. Use `config_rule_ids` instead.
+
+---
 
 ### `config_rule_ids`
 
@@ -98,12 +102,16 @@ The config_rule_ids supports the following:
 
 * `config_rule_id` - (Optional) The rule ID of Config Rule.
 
+---
+
 ### `config_rules`
 
 The config_rules supports the following:
 
 * `managed_rule_identifier` - (Required) The Managed Rule Identifier.
 * `config_rule_parameters` - (Optional, Set) A list of Config Rule Parameters. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
+
+---
 
 ### `config_rules-config_rule_parameters`
 
@@ -121,7 +129,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Compliance Pack.
 * `update` - (Defaults to 2 mins) Used when update the Compliance Pack.

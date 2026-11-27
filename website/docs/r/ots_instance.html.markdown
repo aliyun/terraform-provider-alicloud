@@ -60,7 +60,7 @@ The following arguments are supported:
   * `TRUST_PROXY` - Trusted proxy, usually the Alibaba Cloud console.
 
   Default to ["TRUST_PROXY"].
-* `accessed_by` - (Optional, Deprecated since v1.221.0) The network limitation of accessing instance. Valid values:
+* `accessed_by` - (Optional) The network limitation of accessing instance. Valid values:
   * `Any` - Allow all network to access the instance.
   * `Vpc` - Only can the attached VPC allow to access the instance.
   * `ConsoleOrVpc` - Allow web console or the attached VPC to access the instance.

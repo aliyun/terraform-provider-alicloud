@@ -5,6 +5,11 @@ and its registrations. New entities use `New Resource: <full-name>` or
 `New Data Source: <full-name>`. Resource and data source names are checked
 separately, including when they share the same name.
 
+The `testcase: ` title rule counts Go test files under `alicloud/`. Tests for
+CI tools such as `scripts/ci/accscope` and `scripts/title` can use a title
+describing the tooling change. When a change also touches provider tests or
+documentation, their existing title rules still apply.
+
 Code MR titles have a 128-character limit. When several new entity names share a
 prefix, one explicit suffix group can preserve all names within that limit:
 
@@ -26,9 +31,33 @@ multiple groups per name, ranges and wildcards are rejected. This syntax does
 not waive the rules for modified entities, docs, tests or whole-product
 migrations. Ellipses remain invalid.
 
-Both Code and GitHub CI invoke `title_check.go` and restore the checker from the
-exact PR base. Merge this policy change first, then update the original MR to
-include the new base before using a compact title. A PR cannot grant itself a
-title exemption by changing its own checker.
+For a new resource and its companion data source, use two ordered suffixes:
+
+```text
+New Resource/Data Source: alicloud_express_connect_router_route_map_association{,s}
+```
+
+The first suffix names the resource (`…_association`), the second the data
+source (`…_associations`). An empty suffix uses the prefix unchanged.
+Use `{,}` when both kinds have exactly the same registered name. Additional
+entities still need their own declarations.
+
+When two or more distinct existing entities require more than 128 characters
+for their mandatory title markers alone, use `provider: <change summary>`.
+For example:
+
+```text
+provider: migrate legacy ECS, NAS, CMS and SLS RPC calls to shared request signing
+```
+
+CI determines eligibility from the diff, counts resources and data sources
+separately, and lists their services and registered names in the job summary.
+Repeated changes to one entity count once. At 128 characters or fewer the
+existing rules apply. Mixed changes must still explicitly declare new entities
+after the summary, e.g. `provider: fix shared signing; New Resource: alicloud_example`.
+
+A new Code MR Title run uses the current target branch checker against the MR
+commit. After a rule merges, edit the title and start a new run on the existing
+commit. The GitHub workflow uses the PR base checker.
 
 Run the regression suite with `go test ./scripts/title`.

@@ -117,6 +117,8 @@ The following arguments are supported:
 * `vswitch_auto` - (Optional) Whether to use switch automatic mode. Value: **true**: Use automatic mode: **false**: Use manual mode.
 * `vswitch_cidr` - (Optional) The network segment of the virtual switch. Required for Switch automatic mode.
 
+---
+
 ### `nat_route_entry_list`
 
 The nat_route_entry_list supports the following:
@@ -134,7 +136,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Nat Firewall.
 * `delete` - (Defaults to 5 mins) Used when delete the Nat Firewall.

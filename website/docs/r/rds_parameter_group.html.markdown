@@ -58,6 +58,8 @@ The following arguments are supported:
 * `parameter_group_desc` - (Optional) The description of the parameter template.
 * `parameter_group_name` - (Required) The name of the parameter template.
 
+---
+
 ### `param_detail`
 
 The param_detail supports the following:

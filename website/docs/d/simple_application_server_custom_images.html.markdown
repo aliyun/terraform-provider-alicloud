@@ -38,8 +38,8 @@ output "simple_application_server_custom_image_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Custom Image IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Custom Image name.
+* `ids` - (Optional, Computed)  A list of Custom Image IDs.
+* `name_regex` - (Optional) A regex string to filter results by Custom Image name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -47,9 +47,16 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Custom Image names.
-* `images` - A list of Simple Application Server Custom Images. Each element contains the following attributes:
-  * `custom_image_id` - The first ID of the resource.
-  * `custom_image_name` - The name of the resource.
-  * `description` - Image description information.
-  * `id` - The ID of the Custom Image.
-  * `platform` - The type of operating system used by the Mirror. Valid values: `Linux`, `Windows`.
+* `images` - A list of Simple Application Server Custom Images.
+
+---
+
+### `images`
+
+The images supports the following attributes:
+
+* `custom_image_id` - The first ID of the resource.
+* `custom_image_name` - The name of the resource.
+* `description` - Image description information.
+* `id` - The ID of the Custom Image.
+* `platform` - The type of operating system used by the Mirror. Valid values: `Linux`, `Windows`.

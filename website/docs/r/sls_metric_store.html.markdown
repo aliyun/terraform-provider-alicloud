@@ -72,6 +72,8 @@ The following arguments are supported:
 * `mode` - (Optional, ForceNew) The type of the MetricStore. Valid values: `standard`. Default value: `standard`.
 * `encrypt_conf` - (Optional) The encryption configuration. See [`encrypt_conf`](#encrypt_conf) below.
 
+---
+
 ### `encrypt_conf`
 
 The `encrypt_conf` block supports:
@@ -79,6 +81,8 @@ The `encrypt_conf` block supports:
 * `enable` - (Required) Specifies whether to enable encryption.
 * `encrypt_type` - (Optional, ForceNew) The encryption algorithm. Valid values: `default`.
 * `user_cmk_info` - (Optional, ForceNew) The BYOK (Bring Your Own Key) configuration. See [`user_cmk_info`](#encrypt_conf-user_cmk_info) below.
+
+---
 
 ### `encrypt_conf-user_cmk_info`
 

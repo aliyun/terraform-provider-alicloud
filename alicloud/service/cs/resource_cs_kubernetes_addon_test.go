@@ -1,12 +1,18 @@
 package cs_test
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cs"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/msgpack"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -358,6 +364,161 @@ func TestAccAliCloudCSKubernetesAddon_vk(t *testing.T) {
 				),
 			},
 		},
+	})
+}
+
+// TestUnitCSKubernetesAddonTimeoutsPlanConsistency reproduces, at the gRPC
+// protocol level, the plan serialization asymmetry behind the Terraform apply
+// error "Provider produced inconsistent final plan ... .timeouts: was absent,
+// but now present" reported for alicloud_cs_kubernetes_addon.
+//
+// Terraform Core keeps the planned state produced during planning and, while
+// applying, re-expands the plan for each instance once configuration
+// expressions that were unknown at plan time have been resolved. helper/schema
+// serializes the declared timeouts block into the planned state only when the
+// proposed value is wholly known (copyTimeoutValues drops it otherwise), so a
+// timeouts block that is wholly unknown at plan time - for example a dynamic
+// block whose for_each depends on another resource created in the same apply -
+// leaves the saved plan with .timeouts null. When the instance is re-planned
+// during apply with the resolved timeouts values, the block is copied and the
+// re-expanded plan has .timeouts present. Terraform Core compares the two and
+// rejects the difference with ".timeouts: was absent, but now present".
+//
+// The "original plan" case asserts the wholly-unknown timeouts block is
+// silently dropped, the "apply-time re-expansion" case asserts the resolved
+// block is present: the two planned states differ only in the timeouts
+// known-ness of the configuration, which is the inconsistency Core reports.
+// The last case records the related variant where a single timeouts attribute
+// is unknown at plan time: planning fails outright with a duration parsing
+// error, so that variant cannot reach the apply-time error.
+//
+// These expectations document current SDK behavior while it reproduces the
+// defect; an SDK fix that preserves the timeouts block would flip them.
+func TestUnitCSKubernetesAddonTimeoutsPlanConsistency(t *testing.T) {
+	const typeName = "alicloud_cs_kubernetes_addon"
+
+	server := (&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			typeName: cs.ResourceCSKubernetesAddon(),
+		},
+	}).GRPCProvider()
+
+	res := cs.ResourceCSKubernetesAddon()
+	objType := res.CoreConfigSchema().ImpliedType()
+	timeoutsType := objType.AttributeTypes()["timeouts"]
+
+	// A configuration for creating the node-local-dns addon: required
+	// arguments set, every other attribute null.
+	base := make(map[string]cty.Value, len(objType.AttributeTypes()))
+	for name, attrType := range objType.AttributeTypes() {
+		base[name] = cty.NullVal(attrType)
+	}
+	base["cluster_id"] = cty.StringVal("cluster-unit-test")
+	base["name"] = cty.StringVal("node-local-dns")
+	delete(base, "timeouts")
+
+	withTimeouts := func(timeouts cty.Value) cty.Value {
+		attrs := make(map[string]cty.Value, len(base)+1)
+		for name, value := range base {
+			attrs[name] = value
+		}
+		attrs["timeouts"] = timeouts
+		return cty.ObjectVal(attrs)
+	}
+
+	// The resolved timeouts block, as decoded from `timeouts { create = "30m" }`.
+	resolved := make(map[string]cty.Value, len(timeoutsType.AttributeTypes()))
+	for name, attrType := range timeoutsType.AttributeTypes() {
+		resolved[name] = cty.NullVal(attrType)
+	}
+	resolved["create"] = cty.StringVal("30m")
+
+	marshal := func(v cty.Value) *tfprotov5.DynamicValue {
+		t.Helper()
+		raw, err := msgpack.Marshal(v, objType)
+		if err != nil {
+			t.Fatalf("marshaling value: %s", err)
+		}
+		return &tfprotov5.DynamicValue{MsgPack: raw}
+	}
+
+	nullPriorState := marshal(cty.NullVal(objType))
+
+	plan := func(config cty.Value) (*tfprotov5.PlanResourceChangeResponse, cty.Value) {
+		t.Helper()
+		resp, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+			TypeName:         typeName,
+			PriorState:       nullPriorState,
+			ProposedNewState: marshal(config),
+			Config:           marshal(config),
+		})
+		if err != nil {
+			t.Fatalf("PlanResourceChange call failed: %s", err)
+		}
+		planned := cty.NullVal(objType)
+		if resp.PlannedState != nil && len(resp.PlannedState.MsgPack) > 0 {
+			planned, err = msgpack.Unmarshal(resp.PlannedState.MsgPack, objType)
+			if err != nil {
+				t.Fatalf("unmarshaling planned state: %s", err)
+			}
+		}
+		return resp, planned
+	}
+
+	diagnosticsText := func(resp *tfprotov5.PlanResourceChangeResponse) string {
+		var parts []string
+		for _, d := range resp.Diagnostics {
+			if d.Summary != "" {
+				parts = append(parts, d.Summary)
+			}
+			if d.Detail != "" {
+				parts = append(parts, d.Detail)
+			}
+		}
+		return strings.Join(parts, "; ")
+	}
+
+	t.Run("original plan drops wholly unknown timeouts", func(t *testing.T) {
+		resp, planned := plan(withTimeouts(cty.UnknownVal(timeoutsType)))
+
+		if len(resp.Diagnostics) > 0 {
+			t.Fatalf("planning with wholly unknown timeouts returned diagnostics: %s", diagnosticsText(resp))
+		}
+		if !planned.GetAttr("timeouts").IsNull() {
+			t.Fatalf("planned timeouts = %#v, want null: the block is dropped while it is not wholly known", planned.GetAttr("timeouts"))
+		}
+	})
+
+	t.Run("apply-time re-expansion keeps resolved timeouts", func(t *testing.T) {
+		resp, planned := plan(withTimeouts(cty.ObjectVal(resolved)))
+
+		if len(resp.Diagnostics) > 0 {
+			t.Fatalf("planning with resolved timeouts returned diagnostics: %s", diagnosticsText(resp))
+		}
+		timeouts := planned.GetAttr("timeouts")
+		if timeouts.IsNull() {
+			t.Fatal("planned timeouts is null, want the configured block to be copied into the planned state")
+		}
+		if got := timeouts.GetAttr("create"); !got.RawEquals(cty.StringVal("30m")) {
+			t.Fatalf("planned timeouts.create = %#v, want \"30m\"", got)
+		}
+	})
+
+	t.Run("partially unknown timeouts fail planning with a duration error", func(t *testing.T) {
+		unknown := make(map[string]cty.Value, len(resolved))
+		for name, value := range resolved {
+			unknown[name] = value
+		}
+		unknown["create"] = cty.UnknownVal(cty.String)
+
+		resp, _ := plan(withTimeouts(cty.ObjectVal(unknown)))
+
+		if len(resp.Diagnostics) == 0 {
+			t.Fatal("planning with a partially unknown timeouts block returned no diagnostics, want a duration parsing error")
+		}
+		if text := diagnosticsText(resp); !strings.Contains(text, "Error parsing") {
+			t.Fatalf("unexpected diagnostics for a partially unknown timeouts block: %s", text)
+		}
 	})
 }
 

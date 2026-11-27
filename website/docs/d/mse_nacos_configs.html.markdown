@@ -76,12 +76,12 @@ data "alicloud_mse_nacos_configs" "example" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of MSE Engine Configs ids. It is formatted to `<instance_id>:<namespace_id>:<data_id>:<group>`.
+* `ids` - (Optional, Computed) A list of MSE Engine Configs ids. It is formatted to `<instance_id>:<namespace_id>:<data_id>:<group>`.
 * `accept_language` - (Optional) The language type of the returned information. Valid values: `zh`, `en`.
-* `instance_id` - (Required, ForceNew) The ID of the instance.
-* `data_id` - (Optional, ForceNew) The ID of the data.
-* `namespace_id` - (Optional, ForceNew) The id of Namespace.
-* `group` - (Optional, ForceNew) The ID of the group.
+* `instance_id` - (Required) The ID of the instance.
+* `data_id` - (Optional) The ID of the data.
+* `namespace_id` - (Optional) The id of Namespace.
+* `group` - (Optional) The ID of the group.
 * `app_name` - (Optional) The name of the application.
 * `tags` - (Optional) The tags of the configuration.
 * `request_pars` - (Optional) The extended request parameters. The JSON format is supported.
@@ -93,15 +93,22 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `configs` - A list of Mse Nacos Configs. Each element contains the following attributes:
-  * `id` -  The ID of the Nacos Config. It is formatted to `<instance_id>:<namespace_id>:<data_id>:<group>`.
-  * `data_id` -  The ID of the data.
-  * `group` -  The ID of the group.
-  * `app_name` -  The name of the application.
-  * `tags` -  The tags of the configuration.
-  * `content` -  The content of the configuration.
-  * `md5` - The message digest of the configuration.
-  * `beta_ips` - The list of IP addresses where the beta release of the configuration is performed.
-  * `desc` - The description of the configuration.
-  * `encrypted_data_key` - The encryption key.
-  * `type` - The format of the configuration. Supported formats include TEXT, JSON, and XML.
+* `configs` - A list of Mse Nacos Configs.
+
+---
+
+### `configs`
+
+The configs supports the following attributes:
+
+* `id` -  The ID of the Nacos Config. It is formatted to `<instance_id>:<namespace_id>:<data_id>:<group>`.
+* `data_id` -  The ID of the data.
+* `group` -  The ID of the group.
+* `app_name` -  The name of the application.
+* `tags` -  The tags of the configuration.
+* `content` -  The content of the configuration.
+* `md5` - The message digest of the configuration.
+* `beta_ips` - The list of IP addresses where the beta release of the configuration is performed.
+* `desc` - The description of the configuration.
+* `encrypted_data_key` - The encryption key.
+* `type` - The format of the configuration. Supported formats include TEXT, JSON, and XML.

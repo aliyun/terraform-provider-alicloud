@@ -60,34 +60,48 @@ output "cloud_sso_user_id_4" {
 
 The following arguments are supported:
 
-* `directory_id` - (Required, ForceNew) The ID of the Directory.
+* `directory_id` - (Required) The ID of the Directory.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of User IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by User name.
+* `ids` - (Optional, Computed)  A list of User IDs.
+* `name_regex` - (Optional) A regex string to filter results by User name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `provision_type` - (Optional, ForceNew) ProvisionType. Valid values: `Manual`, `Synchronized`.
-* `status` - (Optional, ForceNew) The status of user. Valid values: `Disabled`, `Enabled`.
+* `provision_type` - (Optional) ProvisionType. Valid values: `Manual`, `Synchronized`.
+* `status` - (Optional) The status of user. Valid values: `Disabled`, `Enabled`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of User names.
-* `users` - A list of Cloud Sso Users. Each element contains the following attributes:
-  * `create_time` - The create time of the user.
-  * `description` - The description of user.
-  * `directory_id` - The ID of the Directory.
-  * `display_name` - The display name of user.
-  * `email` - The User's Contact Email Address.
-  * `first_name` - The first name of user.
-  * `id` - The ID of the User.
-  * `last_name` - The last name of user.
-  * `mfa_devices` - The List of MFA Device for User.
-    * `device_id` - The MFA Device ID.
-    * `device_name` - The MFA Device Name.
-    * `device_type` - The MFA Device Type.
-    * `effective_time` - The Effective Time of MFA Device.
-  * `provision_type` - ProvisionType.
-  * `status` - User status. Valid values: `Enabled` and `Disabled`.
-  * `user_id` - The User ID of the group.
-  * `user_name` - The name of user.
+* `users` - A list of Cloud Sso Users.
+
+---
+
+### `users`
+
+The users supports the following attributes:
+
+* `create_time` - The create time of the user.
+* `description` - The description of user.
+* `directory_id` - The ID of the Directory.
+* `display_name` - The display name of user.
+* `email` - The User's Contact Email Address.
+* `first_name` - The first name of user.
+* `id` - The ID of the User.
+* `last_name` - The last name of user.
+* `mfa_devices` - The List of MFA Device for User.
+* `provision_type` - ProvisionType.
+* `status` - User status. Valid values: `Enabled` and `Disabled`.
+* `user_id` - The User ID of the group.
+* `user_name` - The name of user.
+
+---
+
+### `users.mfa_devices`
+
+The mfa_devices supports the following attributes:
+
+* `device_id` - The MFA Device ID.
+* `device_name` - The MFA Device Name.
+* `device_type` - The MFA Device Type.
+* `effective_time` - The Effective Time of MFA Device.

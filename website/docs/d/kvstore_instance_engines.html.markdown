@@ -47,7 +47,14 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instance_engines` - A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) available instance engines. Each element contains the following attributes:
-    * `zone_id` - The Zone to launch the Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance.
-    * `engine` - Database type.
-    * `engine_version` - Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance version.
+* `instance_engines` - A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) available instance engines.
+
+---
+
+### `instance_engines`
+
+The instance_engines supports the following attributes:
+
+* `zone_id` - The Zone to launch the Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance.
+* `engine` - Database type.
+* `engine_version` - Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance version.

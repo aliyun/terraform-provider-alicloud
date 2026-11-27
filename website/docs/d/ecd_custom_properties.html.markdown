@@ -30,17 +30,31 @@ output "ecd_custom_property_id_1" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Custom Property IDs.
+* `ids` - (Optional, Computed)  A list of Custom Property IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `properties` - A list of Ecd Custom Properties. Each element contains the following attributes:
-  * `custom_property_id` - The first ID of the resource.
-  * `id` - The ID of the Custom Property.
-  * `property_key` - The Custom attribute key.
-  * `property_values` - Custom attribute sets the value of.
-    * `property_value` - The value of an attribute.
-    * `property_value_id` - The value of an attribute id.
+* `properties` - A list of Ecd Custom Properties.
+
+---
+
+### `properties`
+
+The properties supports the following attributes:
+
+* `custom_property_id` - The first ID of the resource.
+* `id` - The ID of the Custom Property.
+* `property_key` - The Custom attribute key.
+* `property_values` - Custom attribute sets the value of.
+
+---
+
+### `properties.property_values`
+
+The property_values supports the following attributes:
+
+* `property_value` - The value of an attribute.
+* `property_value_id` - The value of an attribute id.

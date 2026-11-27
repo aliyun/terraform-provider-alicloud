@@ -88,6 +88,8 @@ The following arguments are supported:
 * `ike_config` - (Optional) The configuration of Phase 1 negotiations. See [`ike_config`](#ike_config) below.
 * `ipsec_config` - (Optional) The configuration of Phase 2 negotiations. See [`ipsec_config`](#ipsec_config) below.
 
+---
+
 ### `ike_config`
 
 The ike_config supports the following:
@@ -100,6 +102,8 @@ The ike_config supports the following:
 * `ike_version` - (Optional) The IKE version. Valid values: `ikev1` and `ikev2`. Default value: `ikev2`.
 * `local_id` - (Optional) The identifier of the IPsec server. The value can be a fully qualified domain name (FQDN) or an IP address. The default value is the public IP address of the VPN gateway.
 * `remote_id` - (Optional) The identifier of the customer gateway. The value can be an FQDN or an IP address. By default, this parameter is not specified.
+
+---
 
 ### `ipsec_config`
 
@@ -118,7 +122,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Ipsec Server.
 * `update` - (Defaults to 1 mins) Used when update the Ipsec Server.

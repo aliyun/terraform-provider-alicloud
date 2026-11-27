@@ -5,6 +5,8 @@ package intercept
 
 import (
 	"context"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/client"
 )
 
 type Op string
@@ -21,6 +23,17 @@ type Call struct {
 	Name string // Terraform type name, e.g. "alicloud_vpc"
 	Op   Op
 	Meta interface{} // *connectivity.AliyunClient on both stacks
+}
+
+type ContextBootstrap func(context.Context, Call) context.Context
+
+func BootstrapContext(service string) ContextBootstrap {
+	return func(ctx context.Context, call Call) context.Context {
+		if c, ok := call.Meta.(*client.AliyunClient); ok {
+			ctx = c.ProviderContext(ctx)
+		}
+		return client.RequestContext(ctx, service, string(call.Op))
+	}
 }
 
 // Interceptor wraps one invocation: Before runs in forward order and aborts the

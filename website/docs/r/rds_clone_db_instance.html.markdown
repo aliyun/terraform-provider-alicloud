@@ -223,12 +223,16 @@ The following arguments are supported:
 
 * `serverless_config` - (Optional, Available since v1.200.0) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.See [`serverless_config`](#serverless_config) below.
 
+---
+
 ### `parameters`
 
 The parameters support the following:
 
 * `name` - (Required) The parameters name.
 * `value` - (Required) The parameters value.
+
+---
 
 ### `pg_hba_conf`
 
@@ -247,6 +251,8 @@ The pg_hba_conf support the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
+---
 
 ### `serverless_config`
 
@@ -283,7 +289,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 300 mins) Used when create the Clone DB Instance.
 * `update` - (Defaults to 30 mins) Used when update the Clone DB Instance.

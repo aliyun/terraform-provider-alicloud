@@ -1,18 +1,10 @@
 name: Pull Request Checks
 
 triggers:
-  merge_request:
-    paths:
-      - 'scripts/ci/**'
-      - 'scripts/internal/**'
-      - '.aoneci/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'website/docs/**'
-      - 'alicloud/*.go'
-      - 'alicloud/**/*.go'
+  merge_request: {}
 
 envs:
+  PROVIDER_PINNED_TITLE: 'no'
   CODE_CI_SHALLOW_RANGE: '1'
   CODE_HEAD: '${{git.commitId}}'
   CODE_MR_ID: '${{git.merge_request.id ?: ""}}'
@@ -27,14 +19,33 @@ envs:
 jobs:
   title:
     steps:
-      - name: Setup Go
-        uses: setup-env
-        inputs:
-          go-version: '1.25.8'
       - uses: checkout
         inputs:
           fetch-depth: '32'
+      - id: scope
+        name: Determine whether title rules apply
+        run: |
+          set -euo pipefail
+          range=$(python3 scripts/ci/aone-range.py)
+          eval "$range"
+          result=0
+          git diff --quiet --no-ext-diff "$DIFF_BASE" "$DIFF_HEAD" -- \
+            ':(glob)scripts/ci/**' ':(glob)scripts/internal/**' ':(glob).aoneci/**' \
+            go.mod go.sum ':(glob)website/docs/**' ':(glob)alicloud/**/*.go' || result=$?
+          case "$result" in
+            0) echo 'No files subject to Provider title rules changed. Pull Request Checks passed.'
+               applicable=no ;;
+            1) applicable=yes ;;
+            *) exit "$result" ;;
+          esac
+          printf '%s' "$applicable" > "$AONE_CI_OUTPUTS/applicable"
+      - name: Setup Go
+        when: ${{ steps.scope.outputs.applicable == 'yes' }}
+        uses: setup-env
+        inputs:
+          go-version: '1.25.8'
       - name: Checking the title info
+        when: ${{ steps.scope.outputs.applicable == 'yes' }}
         # The title entries are derived from the register.go registration
         # join (scripts/title/title_check.go), not from filenames: a service
         # implementation stem names no entity on its own, and a migration
@@ -47,7 +58,7 @@ jobs:
           eval "$range"
           baseSha="$DIFF_BASE"
           headSha="$DIFF_HEAD"
-          if git cat-file -e "${baseSha}:scripts/title/title_check.go" 2>/dev/null; then
+          if [[ "${PROVIDER_PINNED_TITLE:-no}" != yes ]] && git cat-file -e "${baseSha}:scripts/title/title_check.go" 2>/dev/null; then
             git checkout "${baseSha}" -- scripts/title scripts/internal/splitlayout
           fi
           # Without that path at the base, only the merge request that

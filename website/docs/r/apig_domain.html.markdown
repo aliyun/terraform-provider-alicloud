@@ -67,12 +67,16 @@ The following arguments are supported:
 * `tls_max` - (Optional) The maximum version of the TLS protocol supported, up to TLS 1.3.
 * `tls_min` - (Optional) Minimum TLS protocol version. TLS 1.0 is the minimum supported version.
 
+---
+
 ### `tls_cipher_suites_config`
 
 The tls_cipher_suites_config supports the following:
 
 * `config_type` - (Optional) The configuration type, which can be Default or Custom.
 * `tls_cipher_suite` - (Optional, List) TLS cipher suite. See [`tls_cipher_suite`](#tls_cipher_suites_config-tls_cipher_suite) below.
+
+---
 
 ### `tls_cipher_suites_config-tls_cipher_suite`
 
@@ -89,7 +93,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain.

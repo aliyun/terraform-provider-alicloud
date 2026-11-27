@@ -5,7 +5,22 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The fixtures below reference the harness's import-state identifiers as
+// source text, which by itself cannot prove those identifiers exist in the
+// terraform-plugin-testing version this repository pins. These compile-time
+// references pin the real surface: if upstream renames a field or constant
+// the checker matches on, this package stops compiling instead of silently
+// widening or narrowing the matching.
+var _ = []resource.TestStep{
+	{ImportStateKind: resource.ImportCommandWithID},
+	{ImportStateKind: resource.ImportBlockWithID},
+	{ImportState: true, ImportStateVerify: true, ImportStatePersist: false},
+	{Destroy: false, RefreshState: false, ExpectNonEmptyPlan: false, ExpectError: nil},
+	{PreConfig: nil, Check: nil},
+}
 
 func fixture(steps string) string {
 	return `package alicloud
@@ -46,15 +61,44 @@ func TestListReorderCoverage(t *testing.T) {
 		{"plan changed membership", fixture(apply + strings.Replace(plan, `"b","a"`, `"b","c"`, 1) + reorderedApply), true},
 		{"plan changed sibling", fixture(apply + strings.Replace(plan, `"ids":`, `"name":"changed","ids":`, 1) + reorderedApply), false},
 		{"unchanged plan step", fixture(apply + strings.Replace(plan, `"b","a"`, `"a","b"`, 1) + reorderedApply), true},
+		// Both preserved rules keep the chain: an isolated CLI verified
+		// import (mainline verifiesIsolatedImport) and a config-less import
+		// verification (isNonPersistentImportStep). A bare non-persistent
+		// import is tolerated too: without ImportStatePersist the imported
+		// state is discarded, so the last applied config still describes the
+		// remote world. Anything persistent, shared, plannable, configured or
+		// state-changing breaks the pairing.
 		{"isolated verified import", fixture(apply + `{ImportState:true,ImportStateVerify:true,ResourceName:resourceId,ImportStateVerifyIgnore:[]string{"write_only"}},` + plan + reorderedApply), true},
+		{"intervening import", fixture(apply + plan + `{ImportState:true},` + reorderedApply), true},
+		{"intervening import without plan", fixture(apply + `{ImportState:true,ImportStateVerify:true},` + reorderedApply), true},
+		{"intervening import kind CLI", fixture(apply + plan + `{ImportStateKind:resource.ImportCommandWithID},` + reorderedApply), true},
+		{"intervening import kind CLI with verify flags", fixture(apply + plan + `{ImportState:true,ImportStateKind:resource.ImportCommandWithID,ImportStateVerify:true,ImportStateVerifyIgnore:[]string{"dry_run"}},` + reorderedApply), true},
+		{"repeated intervening imports", fixture(apply + plan + `{ImportState:true},{ImportState:true},` + reorderedApply), true},
 		{"explicit CLI verified import", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ImportStatePersist:false,ImportStateKind:resource.ImportCommandWithID},` + reorderedApply), true},
 		{"persistent import", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ImportStatePersist:true},` + reorderedApply), false},
+		{"persistent import without verify flags", fixture(apply + plan + `{ImportState:true,ImportStatePersist:true},` + reorderedApply), false},
+		// v1.16.0 of terraform-plugin-testing defines no shared-state kind; this
+		// fixture exercises the guard for any qualified kind other than the CLI
+		// import, which routes the imported state through other machinery.
+		{"import kind other than the CLI import breaks chain", fixture(apply + plan + `{ImportStateKind:resource.ImportStateKindSharedState},` + reorderedApply), false},
+		{"import kind other than CLI with import state breaks chain", fixture(apply + plan + `{ImportState:true,ImportStateKind:resource.ImportStateKindSharedState},` + reorderedApply), false},
+		{"import kind from another package is not an import", fixture(apply + plan + `{ImportState:true,ImportStateKind:other.ImportCommandWithID},` + reorderedApply), false},
+		{"import kind bare identifier is not an import", fixture(apply + plan + `{ImportState:true,ImportStateKind:ImportCommandWithID},` + reorderedApply), false},
 		{"configured import", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,Config:"override"},` + reorderedApply), false},
-		{"unverified import", fixture(apply + plan + `{ImportState:true},` + reorderedApply), false},
 		{"plannable import", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ImportStateKind:resource.ImportBlockWithID},` + reorderedApply), false},
-		{"import with callback", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,PreConfig:prepare},` + reorderedApply), false},
+		{"import with destroy breaks chain", fixture(apply + plan + `{ImportState:true,Destroy:true},` + reorderedApply), false},
 		{"import with refresh", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,RefreshState:true},` + reorderedApply), false},
+		{"import with taint breaks chain", fixture(apply + plan + `{ImportState:true,Taint:[]string{"alicloud_example.default"}},` + reorderedApply), false},
+		{"import with callback", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,PreConfig:prepare},` + reorderedApply), false},
+		{"import with pre config breaks chain", fixture(apply + plan + `{ImportState:true,PreConfig:func(){}},` + reorderedApply), false},
+		{"import with post config breaks chain", fixture(apply + plan + `{ImportState:true,PostConfig:func(){}},` + reorderedApply), false},
+		{"import with skip func breaks chain", fixture(apply + plan + `{ImportState:true,SkipFunc:skip},` + reorderedApply), false},
+		{"import with expect error breaks chain", fixture(apply + plan + `{ImportState:true,ExpectError:err},` + reorderedApply), false},
+		{"import with expect non-empty plan breaks chain", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ExpectNonEmptyPlan:true},` + reorderedApply), false},
+		{"import with check breaks chain", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,Check:makeCheck},` + reorderedApply), false},
+		{"import with error match breaks chain", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ErrorMatch:"conflict"},` + reorderedApply), false},
 		{"import with unknown persist", fixture(apply + plan + `{ImportState:true,ImportStateVerify:true,ImportStatePersist:persist},` + reorderedApply), false},
+		{"import step is not coverage itself", fixture(apply + plan + `{ImportState:true},`), false},
 		{"apply is plan only", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{PlanOnly:true,Config:", 1)), false},
 		{"apply error", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{ExpectError:err,Config:", 1)), false},
 		{"apply skipped", fixture(apply + plan + strings.Replace(reorderedApply, "{Config:", "{SkipFunc:skip,Config:", 1)), false},

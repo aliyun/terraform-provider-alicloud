@@ -237,9 +237,15 @@ The following arguments are supported:
 * `support_tracing` - (Optional, Computed) Whether to activate the message trace function. The values are as follows:  true: Enable message trace function false: message trace function is not enabled Description The Platinum Edition instance provides the 15-day message trace function free of charge. The trace function can only be enabled and the trace storage duration can only be set to 15 days. For instances of other specifications, you can enable or disable the trace function.
 * `tags` - (Optional, Map, Available since v1.283.0) A mapping of tags to assign to the resource.
 * `tracing_storage_time` - (Optional, Computed) Configure the storage duration of message traces. Unit: Days. The value is as follows:  3:3 days 7:7 days 15:15 days This parameter is valid when SupportTracing is true.
-* `vpc_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the VPC. **NOTE:** From version 1.274.0, `vpc_id` is required.
-* `vswitch_ids` - (Optional, ForceNew, List, Available since v1.274.0) The IDs of the vSwitches with which the instance is associated. `vswitch_ids` only supports setting two values. **NOTE:** From version 1.274.0, `vswitch_ids` is required.
-* `security_group_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the security group. **NOTE:** From version 1.274.0, `security_group_id` is required.
+* `vpc_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the VPC.
+
+  -> **NOTE:** From version 1.274.0, `vpc_id` is required.
+* `vswitch_ids` - (Optional, ForceNew, List, Available since v1.274.0) The IDs of the vSwitches with which the instance is associated. `vswitch_ids` only supports setting two values.
+
+  -> **NOTE:** From version 1.274.0, `vswitch_ids` is required.
+* `security_group_id` - (Optional, ForceNew, Available since v1.274.0) The ID of the security group.
+
+  -> **NOTE:** From version 1.274.0, `security_group_id` is required.
 
 ## Attributes Reference
 
@@ -251,7 +257,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

@@ -226,6 +226,8 @@ The following arguments are supported:
 * `resource_sub_type` - (Required, ForceNew, String) The subtype of the node pool that the policy applies to. Valid values: `ess`, `lingjun`.
 * `rules` - (Required, List) The repair rules. See [`rules`](#rules) below. At least one rule is required.
 
+---
+
 ### `rules`
 
 The rules support the following:
@@ -233,11 +235,15 @@ The rules support the following:
 * `incidents` - (Required, List) The incidents that trigger the repair. See [`incidents`](#rules-incidents) below.
 * `repair_procedure` - (Required, List) The repair procedures executed in order when the incidents are detected. See [`repair_procedure`](#rules-repair_procedure) below. The procedures must be a subsequence of the built-in template of the incident, and the procedures marked as required in the template must be included. A procedure cannot be repeated, and `QuarantineNode` must be listed before `Evict` and `UnquarantineNode`.
 
+---
+
 ### `rules-incidents`
 
 The incidents support the following:
 
 * `name` - (Required, String) The name of the incident. It must be a built-in system incident supported by `resource_sub_type`, see [Incident reference](#incident-reference), for example `NTPProblem`.
+
+---
 
 ### `rules-repair_procedure`
 
@@ -246,6 +252,8 @@ The repair_procedure supports the following:
 * `name` - (Required, String) The name of the repair procedure, one of `QuarantineNode`, `Evict`, `Repair` or `UnquarantineNode`. Each procedure can be used once per rule. See [Repair procedure reference](#repair-procedure-reference) for the dependency and required procedures of each template.
 * `config` - (Optional, String) The configuration of the procedure as a JSON object, for example `jsonencode({ evict_timeout = 300 })` for `Evict`. An empty value and an empty JSON object are equivalent. See the `config` key table in [Repair procedure reference](#repair-procedure-reference) for the accepted keys.
 * `intervention` - (Optional, List, MaxItems: 1) The manual approval configuration of the procedure. See [`intervention`](#rules-repair_procedure-intervention) below.
+
+---
 
 ### `rules-repair_procedure-intervention`
 
@@ -258,12 +266,16 @@ The intervention supports the following:
 
 When manual approval is enabled, the procedure pauses after the inquiring label is written, and all subsequent procedures of the same policy wait until the approved label is written to the node.
 
+---
+
 ### `rules-repair_procedure-intervention-inquiring_label`
 
 The inquiring_label supports the following:
 
 * `key` - (Required, String) The key of the label. Both labels must use the same key.
 * `value` - (Required, String) The value of the label.
+
+---
 
 ### `rules-repair_procedure-intervention-approved_label`
 
@@ -283,7 +295,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the auto repair policy.
 * `update` - (Defaults to 5 mins) Used when updating the auto repair policy.

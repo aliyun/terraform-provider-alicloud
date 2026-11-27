@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func WrapResource(name string, r resource.Resource, chain []intercept.Interceptor) resource.Resource {
-	if r == nil || len(chain) == 0 {
+func WrapResource(name string, r resource.Resource, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) resource.Resource {
+	if r == nil || (len(chain) == 0 && bootstrap == nil) {
 		return r
 	}
-	core := &wrappedResource{name: name, inner: r, chain: chain}
+	core := &wrappedResource{name: name, inner: r, chain: chain, bootstrap: bootstrap}
 	_, withImportState := r.(resource.ResourceWithImportState)
 	_, withIdentity := r.(resource.ResourceWithIdentity)
 	switch {
@@ -38,17 +38,18 @@ func WrapResource(name string, r resource.Resource, chain []intercept.Intercepto
 	}
 }
 
-func WrapDataSource(name string, ds datasource.DataSource, chain []intercept.Interceptor) datasource.DataSource {
-	if ds == nil || len(chain) == 0 {
+func WrapDataSource(name string, ds datasource.DataSource, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) datasource.DataSource {
+	if ds == nil || (len(chain) == 0 && bootstrap == nil) {
 		return ds
 	}
-	return &wrappedDataSource{name: name, inner: ds, chain: chain}
+	return &wrappedDataSource{name: name, inner: ds, chain: chain, bootstrap: bootstrap}
 }
 
 type wrappedResource struct {
-	name  string
-	inner resource.Resource
-	chain []intercept.Interceptor
+	name      string
+	inner     resource.Resource
+	chain     []intercept.Interceptor
+	bootstrap intercept.ContextBootstrap
 
 	// Not shared across operations: the Framework builds a fresh resource per RPC.
 	providerData interface{}
@@ -74,23 +75,23 @@ func (w *wrappedResource) Schema(ctx context.Context, req resource.SchemaRequest
 }
 
 func (w *wrappedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	runIntercepted(ctx, w.name, intercept.OpCreate, w.chain, &resp.Diagnostics, w.providerData,
-		func() { w.inner.Create(ctx, req, resp) })
+	runIntercepted(ctx, w.name, intercept.OpCreate, w.chain, w.bootstrap, &resp.Diagnostics, w.providerData,
+		func(ctx context.Context) { w.inner.Create(ctx, req, resp) })
 }
 
 func (w *wrappedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	runIntercepted(ctx, w.name, intercept.OpRead, w.chain, &resp.Diagnostics, w.providerData,
-		func() { w.inner.Read(ctx, req, resp) })
+	runIntercepted(ctx, w.name, intercept.OpRead, w.chain, w.bootstrap, &resp.Diagnostics, w.providerData,
+		func(ctx context.Context) { w.inner.Read(ctx, req, resp) })
 }
 
 func (w *wrappedResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	runIntercepted(ctx, w.name, intercept.OpUpdate, w.chain, &resp.Diagnostics, w.providerData,
-		func() { w.inner.Update(ctx, req, resp) })
+	runIntercepted(ctx, w.name, intercept.OpUpdate, w.chain, w.bootstrap, &resp.Diagnostics, w.providerData,
+		func(ctx context.Context) { w.inner.Update(ctx, req, resp) })
 }
 
 func (w *wrappedResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	runIntercepted(ctx, w.name, intercept.OpDelete, w.chain, &resp.Diagnostics, w.providerData,
-		func() { w.inner.Delete(ctx, req, resp) })
+	runIntercepted(ctx, w.name, intercept.OpDelete, w.chain, w.bootstrap, &resp.Diagnostics, w.providerData,
+		func(ctx context.Context) { w.inner.Delete(ctx, req, resp) })
 }
 
 func (w *wrappedResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -189,9 +190,10 @@ func (w *resourceWithImportStateAndIdentity) IdentitySchema(ctx context.Context,
 }
 
 type wrappedDataSource struct {
-	name  string
-	inner datasource.DataSource
-	chain []intercept.Interceptor
+	name      string
+	inner     datasource.DataSource
+	chain     []intercept.Interceptor
+	bootstrap intercept.ContextBootstrap
 
 	providerData interface{}
 }
@@ -212,8 +214,8 @@ func (w *wrappedDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 }
 
 func (w *wrappedDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	runIntercepted(ctx, w.name, intercept.OpRead, w.chain, &resp.Diagnostics, w.providerData,
-		func() { w.inner.Read(ctx, req, resp) })
+	runIntercepted(ctx, w.name, intercept.OpRead, w.chain, w.bootstrap, &resp.Diagnostics, w.providerData,
+		func(ctx context.Context) { w.inner.Read(ctx, req, resp) })
 }
 
 func (w *wrappedDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -239,12 +241,17 @@ func (w *wrappedDataSource) ValidateConfig(ctx context.Context, req datasource.V
 
 // The Framework reports through resp.Diagnostics, so that pointer is both the
 // input and the output of the bridge.
-func runIntercepted(ctx context.Context, name string, op intercept.Op, chain []intercept.Interceptor, diags *diag.Diagnostics, meta interface{}, inner func()) {
-	*diags = intercept.Around(ctx, chain, intercept.Call{Name: name, Op: op, Meta: meta},
+func runIntercepted(ctx context.Context, name string, op intercept.Op, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap, diags *diag.Diagnostics, meta interface{}, inner func(context.Context)) {
+	call := intercept.Call{Name: name, Op: op, Meta: meta}
+	if bootstrap != nil {
+		ctx = bootstrap(ctx, call)
+	}
+	out := intercept.Around(ctx, chain, call,
 		func() diag.Diagnostics {
-			inner()
+			inner(ctx)
 			return *diags
 		}, bridge)
+	diags.Append(out...)
 }
 
 var bridge = intercept.DiagBridge[diag.Diagnostics]{

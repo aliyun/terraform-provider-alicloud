@@ -58,6 +58,8 @@ The following arguments are supported:
 * `function_name` - (Required, ForceNew) The name of the domain config.
 * `function_args` - (Required, List) The args of the domain config. See [`function_args`](#function_args) below for details.
 
+---
+
 ### `function_args`
 
 The `function_args` block supports the following:

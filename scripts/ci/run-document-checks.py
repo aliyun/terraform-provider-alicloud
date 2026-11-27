@@ -20,14 +20,18 @@ GROUPS = {
 
 # The provider index page documents provider configuration, not a resource,
 # data source or ephemeral resource. The page template in
-# scripts/document/document_check.go does not apply to it; the Markdown, link,
+# scripts/document/document_check.go does not apply to it; the Markdown lint,
 # spelling and Terraform example checks still do.
 PROVIDER_INDEX_DOC = 'website/docs/index.html.markdown'
 
-COMMANDS = {'markdown-link': "find website/docs -type f -name '*.md' -print0 |\n"
-                  '  xargs -0 -r npx --yes markdown-link-check@3.14.2 \\\n'
-                  '    --quiet --verbose --config .markdown-link-check.json\n',
- 'markdown-lint': 'git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n'
+LINK_CHECK = ('npx --yes markdown-link-check@3.14.2'
+              ' --quiet --verbose --config .markdown-link-check.json')
+
+# Transport failures do not mean the address is dead, and markdown-link-check
+# reports them as Status: 0 rather than an HTTP code.
+TRANSIENT_LINK_FAILURES = 'ETIMEDOUT|ECONNRESET|EAI_AGAIN|socket hang up'
+
+COMMANDS = {'markdown-lint': 'git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n'
                   'markdown_files=()\n'
                   "while IFS= read -r -d '' changed_file; do\n"
                   '  if [[ -f "$changed_file" ]] &&\n'
@@ -59,12 +63,62 @@ def file_loop(files, command):
     return 'for doc in ' + ' '.join(shlex.quote('./' + p) for p in files) + '; do\n' + command + '\ndone'
 
 
+def output_match(pattern):
+    """Test captured output for one retry signal.
+
+    The caller runs with `-o pipefail`. Feeding the output through a pipe lets
+    `grep -q` exit on its first match, which kills the writer with SIGPIPE and
+    reports the pipeline as failed; here-string has no second process, so the
+    verdict depends only on the text and not on how much of it there is.
+    """
+    return "grep -qE '" + pattern + "' <<< \"$output\""
+
+
+def link_retry(command, attempts=3, delay=2):
+    """Retry one link check while it only fails on transport errors.
+
+    The changed pages are checked one after another, so without this a single
+    reset aborts every page behind it and the whole run has to start over. The
+    retry stays on the file that failed; a dead address still fails on its
+    first attempt because its status is not zero.
+
+    This is the per-page budget. run_checks() also retries transient group failures.
+    """
+    return ('attempt=0\n'
+            'while :; do\n'
+            '  attempt=$((attempt + 1))\n'
+            '  if output=$(' + command + ' 2>&1); then\n'
+            '    printf \'%s\\n\' "$output"\n'
+            '    break\n'
+            '  fi\n'
+            '  printf \'%s\\n\' "$output"\n'
+            '  if (( attempt >= ' + str(attempts) + ' )); then\n'
+            '    exit 1\n'
+            '  fi\n'
+            '  if ! ' + output_match('Status: 0') + '; then\n'
+            '    exit 1\n'
+            '  fi\n'
+            '  if ' + output_match('Status: [1-9]') + '; then\n'
+            '    exit 1\n'
+            '  fi\n'
+            '  if ! ' + output_match(TRANSIENT_LINK_FAILURES) + '; then\n'
+            '    exit 1\n'
+            '  fi\n'
+            '  echo "Network failure, retrying ($attempt/' + str(attempts) + ') in ' + str(delay) + 's."\n'
+            '  sleep ' + str(delay) + '\n'
+            'done')
+
+
 def content_command(files):
     if not files:
         return 'echo "No resource or data source documentation files changed."'
+    # One checker process takes every page: it builds the registration
+    # index once and reports each failing page, while a per-document loop
+    # under bash -e would stop at the first failing page and leave the
+    # documents behind it unchecked.
     return ('checker="$RUNNER_TEMP/document-check"\n'
-            'go build -o "$checker" scripts/document/document_check.go\n' +
-            file_loop(files, '"$checker" "$doc"'))
+            'go build -o "$checker" scripts/document/document_check.go\n'
+            '"$checker" ' + ' '.join(shlex.quote('./' + p) for p in files))
 
 
 def scoped_commands(paths, full=False):
@@ -78,12 +132,9 @@ def scoped_commands(paths, full=False):
     docs = [p for p in paths if p.startswith('website/docs/') and Path(p).is_file()]
     markdown = [p for p in docs if p.endswith(('.md', '.markdown'))]
     commands = dict(COMMANDS)
-    # Retain the existing global .md link check: a changed/deleted target may
-    # break links in an unchanged source. Also check changed .markdown files,
-    # which the old '*.md' glob did not include.
-    commands['markdown-link'] += file_loop(
-        [p for p in paths if p.startswith('website/docs/') and p.endswith('.markdown') and Path(p).is_file()],
-        'npx --yes markdown-link-check@3.14.2 --quiet --verbose --config .markdown-link-check.json "$doc"') + '\n'
+    commands['markdown-link'] = file_loop(
+        [p for p in markdown if p.startswith(('website/docs/r/', 'website/docs/d/'))],
+        link_retry(LINK_CHECK + ' "$doc"'))
     commands['markdown-lint'] = ('git diff --check "$DIFF_BASE" "$DIFF_HEAD" -- website/docs\n' +
         file_loop(markdown, 'python3 scripts/ci/markdown-lint.py "$doc"'))
     commands['Content'] = content_command([p for p in docs if p != PROVIDER_INDEX_DOC])
@@ -114,8 +165,10 @@ def run_checks(checks, summary_path=None):
                     stream.seek(offset)
                     output = stream.read()
                 statuses = re.findall(r'^\s*\[[^\]]+\].*?Status:\s*(\d+)', output, re.MULTILINE)
-                transient = (statuses and all(status == '0' for status in statuses)
-                             and re.search(r'\b(ETIMEDOUT|ECONNRESET|EAI_AGAIN)\b', output))
+                # The outer retry also covers a transient pinned-tool download
+                # failure, which has no per-link HTTP status.
+                transient = ((not statuses or all(status == '0' for status in statuses))
+                             and re.search(r'\b(?:' + TRANSIENT_LINK_FAILURES + r')\b', output) is not None)
                 if process.returncode == 0 or name != 'markdown-link' or not transient or attempt == 2:
                     break
                 delay = (2, 5)[attempt]

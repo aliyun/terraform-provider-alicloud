@@ -43,11 +43,18 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `acls` - A list of sasl acls. Each element contains the following attributes:
-  * `id` - (Available since v1.285.0) The resource ID in terraform of Sasl Acl. It formats as `<instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>`.
-  * `username` - The username of the sasl acl.
-  * `acl_resource_type` - The resource type of the sasl acl.
-  * `acl_resource_name` - The resource name of the sasl acl.
-  * `acl_resource_pattern_type` - The resource pattern type of the sasl acl.
-  * `host` - The host of the sasl acl.
-  * `acl_operation_type` - The operation type of the sasl acl.
+* `acls` - A list of sasl acls.
+
+---
+
+### `acls`
+
+The acls supports the following attributes:
+
+* `id` - (Available since v1.285.0) The resource ID in terraform of Sasl Acl. It formats as `<instance_id>:<username>:<acl_resource_type>:<acl_resource_name>:<acl_resource_pattern_type>:<acl_operation_type>`.
+* `username` - The username of the sasl acl.
+* `acl_resource_type` - The resource type of the sasl acl.
+* `acl_resource_name` - The resource name of the sasl acl.
+* `acl_resource_pattern_type` - The resource pattern type of the sasl acl.
+* `host` - The host of the sasl acl.
+* `acl_operation_type` - The operation type of the sasl acl.

@@ -56,25 +56,32 @@ output "vpc_ipv6_egress_rule_id_4" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Ipv6 Egress Rule IDs.
-* `instance_id` - (Optional, ForceNew) The ID of the instance that is associated with the IPv6 address to which the egress-only rule is applied.
-* `ipv6_egress_rule_name` - (Optional, ForceNew) The name of the resource.
-* `ipv6_gateway_id` - (Required, ForceNew) The ID of the IPv6 gateway.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Ipv6 Egress Rule name.
+* `ids` - (Optional, Computed)  A list of Ipv6 Egress Rule IDs.
+* `instance_id` - (Optional) The ID of the instance that is associated with the IPv6 address to which the egress-only rule is applied.
+* `ipv6_egress_rule_name` - (Optional) The name of the resource.
+* `ipv6_gateway_id` - (Required) The ID of the IPv6 gateway.
+* `name_regex` - (Optional) A regex string to filter results by Ipv6 Egress Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Deleting`, `Pending`.
+* `status` - (Optional) The status of the resource. Valid values: `Available`, `Deleting`, `Pending`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Ipv6 Egress Rule names.
-* `rules` - A list of Vpc Ipv6 Egress Rules. Each element contains the following attributes:
-	* `description` - The description of the egress-only rule.
-	* `id` - The ID of the Ipv6 Egress Rule. The value formats as `<ipv6_gateway_id>:<ipv6_egress_rule_id>`.
-	* `instance_id` - The ID of the instance to which the egress-only rule is applied.
-	* `instance_type` - The type of the instance to which the egress-only rule is applied.
-	* `ipv6_egress_rule_id` - The first ID of the resource.
-	* `ipv6_egress_rule_name` - The name of the resource.
-	* `ipv6_gateway_id` - The ID of the IPv6 gateway.
-	* `status` - The status of the resource. Valid values: `Available`, `Pending` and `Deleting`.
+* `rules` - A list of Vpc Ipv6 Egress Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `description` - The description of the egress-only rule.
+* `id` - The ID of the Ipv6 Egress Rule. The value formats as `<ipv6_gateway_id>:<ipv6_egress_rule_id>`.
+* `instance_id` - The ID of the instance to which the egress-only rule is applied.
+* `instance_type` - The type of the instance to which the egress-only rule is applied.
+* `ipv6_egress_rule_id` - The first ID of the resource.
+* `ipv6_egress_rule_name` - The name of the resource.
+* `ipv6_gateway_id` - The ID of the IPv6 gateway.
+* `status` - The status of the resource. Valid values: `Available`, `Pending` and `Deleting`.

@@ -19,68 +19,78 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func WrapResource(name string, r *schema.Resource, chain []intercept.Interceptor) *schema.Resource {
-	if r == nil || len(chain) == 0 {
+func WrapResource(name string, r *schema.Resource, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) *schema.Resource {
+	if r == nil || (len(chain) == 0 && (bootstrap == nil || !hasContextCRUD(r))) {
 		return r
 	}
 	cp := *r
-	wrapCreate(&cp, name, chain)
-	wrapRead(&cp, name, chain)
-	wrapUpdate(&cp, name, chain)
-	wrapDelete(&cp, name, chain)
+	wrapCreate(&cp, name, chain, bootstrap)
+	wrapRead(&cp, name, chain, bootstrap)
+	wrapUpdate(&cp, name, chain, bootstrap)
+	wrapDelete(&cp, name, chain, bootstrap)
 	return &cp
 }
 
-func WrapDataSource(name string, ds *schema.Resource, chain []intercept.Interceptor) *schema.Resource {
-	if ds == nil || len(chain) == 0 {
+func hasContextCRUD(r *schema.Resource) bool {
+	return (r.Create == nil && (r.CreateWithoutTimeout != nil || r.CreateContext != nil)) ||
+		(r.Read == nil && (r.ReadWithoutTimeout != nil || r.ReadContext != nil)) ||
+		(r.Update == nil && (r.UpdateWithoutTimeout != nil || r.UpdateContext != nil)) ||
+		(r.Delete == nil && (r.DeleteWithoutTimeout != nil || r.DeleteContext != nil))
+}
+
+func WrapDataSource(name string, ds *schema.Resource, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) *schema.Resource {
+	if ds == nil || (len(chain) == 0 && (bootstrap == nil || ds.Read != nil || (ds.ReadWithoutTimeout == nil && ds.ReadContext == nil))) {
 		return ds
 	}
 	cp := *ds
-	wrapRead(&cp, name, chain)
+	wrapRead(&cp, name, chain, bootstrap)
 	return &cp
 }
 
-func wrapCreate(r *schema.Resource, name string, chain []intercept.Interceptor) {
+func wrapCreate(r *schema.Resource, name string, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) {
 	if r.Create != nil {
 		r.Create = wrapOp(name, intercept.OpCreate, chain, r.Create)
 	} else if r.CreateWithoutTimeout != nil {
-		r.CreateWithoutTimeout = wrapOpContext(name, intercept.OpCreate, chain, r.CreateWithoutTimeout)
+		r.CreateWithoutTimeout = wrapOpContext(name, intercept.OpCreate, chain, bootstrap, r.CreateWithoutTimeout)
 	} else if r.CreateContext != nil {
-		r.CreateContext = wrapOpContext(name, intercept.OpCreate, chain, r.CreateContext)
+		r.CreateContext = wrapOpContext(name, intercept.OpCreate, chain, bootstrap, r.CreateContext)
 	}
 }
 
-func wrapRead(r *schema.Resource, name string, chain []intercept.Interceptor) {
+func wrapRead(r *schema.Resource, name string, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) {
 	if r.Read != nil {
 		r.Read = wrapOp(name, intercept.OpRead, chain, r.Read)
 	} else if r.ReadWithoutTimeout != nil {
-		r.ReadWithoutTimeout = wrapOpContext(name, intercept.OpRead, chain, r.ReadWithoutTimeout)
+		r.ReadWithoutTimeout = wrapOpContext(name, intercept.OpRead, chain, bootstrap, r.ReadWithoutTimeout)
 	} else if r.ReadContext != nil {
-		r.ReadContext = wrapOpContext(name, intercept.OpRead, chain, r.ReadContext)
+		r.ReadContext = wrapOpContext(name, intercept.OpRead, chain, bootstrap, r.ReadContext)
 	}
 }
 
-func wrapUpdate(r *schema.Resource, name string, chain []intercept.Interceptor) {
+func wrapUpdate(r *schema.Resource, name string, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) {
 	if r.Update != nil {
 		r.Update = wrapOp(name, intercept.OpUpdate, chain, r.Update)
 	} else if r.UpdateWithoutTimeout != nil {
-		r.UpdateWithoutTimeout = wrapOpContext(name, intercept.OpUpdate, chain, r.UpdateWithoutTimeout)
+		r.UpdateWithoutTimeout = wrapOpContext(name, intercept.OpUpdate, chain, bootstrap, r.UpdateWithoutTimeout)
 	} else if r.UpdateContext != nil {
-		r.UpdateContext = wrapOpContext(name, intercept.OpUpdate, chain, r.UpdateContext)
+		r.UpdateContext = wrapOpContext(name, intercept.OpUpdate, chain, bootstrap, r.UpdateContext)
 	}
 }
 
-func wrapDelete(r *schema.Resource, name string, chain []intercept.Interceptor) {
+func wrapDelete(r *schema.Resource, name string, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap) {
 	if r.Delete != nil {
 		r.Delete = wrapOp(name, intercept.OpDelete, chain, r.Delete)
 	} else if r.DeleteWithoutTimeout != nil {
-		r.DeleteWithoutTimeout = wrapOpContext(name, intercept.OpDelete, chain, r.DeleteWithoutTimeout)
+		r.DeleteWithoutTimeout = wrapOpContext(name, intercept.OpDelete, chain, bootstrap, r.DeleteWithoutTimeout)
 	} else if r.DeleteContext != nil {
-		r.DeleteContext = wrapOpContext(name, intercept.OpDelete, chain, r.DeleteContext)
+		r.DeleteContext = wrapOpContext(name, intercept.OpDelete, chain, bootstrap, r.DeleteContext)
 	}
 }
 
 func wrapOp(name string, op intercept.Op, chain []intercept.Interceptor, inner func(*schema.ResourceData, interface{}) error) func(*schema.ResourceData, interface{}) error {
+	if len(chain) == 0 {
+		return inner
+	}
 	return func(d *schema.ResourceData, meta interface{}) error {
 		return intercept.Execute(context.Background(), chain, intercept.Call{Name: name, Op: op, Meta: meta}, func() error {
 			return inner(d, meta)
@@ -88,9 +98,13 @@ func wrapOp(name string, op intercept.Op, chain []intercept.Interceptor, inner f
 	}
 }
 
-func wrapOpContext(name string, op intercept.Op, chain []intercept.Interceptor, inner func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics) func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics {
+func wrapOpContext(name string, op intercept.Op, chain []intercept.Interceptor, bootstrap intercept.ContextBootstrap, inner func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics) func(context.Context, *schema.ResourceData, interface{}) diag.Diagnostics {
 	return func(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-		return intercept.Around(ctx, chain, intercept.Call{Name: name, Op: op, Meta: meta},
+		call := intercept.Call{Name: name, Op: op, Meta: meta}
+		if bootstrap != nil {
+			ctx = bootstrap(ctx, call)
+		}
+		return intercept.Around(ctx, chain, call,
 			func() diag.Diagnostics { return inner(ctx, d, meta) }, bridge)
 	}
 }

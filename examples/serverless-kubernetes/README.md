@@ -5,9 +5,9 @@ A terraform example to launching a serverless kubernetes cluster in alibaba clou
 
 These types of the module resource are supported:
 
-- [VPC](https://www.terraform.io/docs/providers/alicloud/r/vpc.html)
-- [Subnet](https://www.terraform.io/docs/providers/alicloud/r/vswitch.html)
-- [Serverless](https://www.terraform.io/docs/providers/alicloud/r/cs_serverless_kubernetes.html)
+- [VPC](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc)
+- [Subnet](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vswitch)
+- [Serverless](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_serverless_kubernetes)
 
 
 Usage

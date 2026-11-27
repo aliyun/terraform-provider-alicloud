@@ -53,13 +53,20 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of Cache Reserve Instances. Each element contains the following attributes:
-  * `id` - The ID of the Cache Reserve Instance.
-  * `cache_reserve_instance_id` - The ID of the Cache Reserve Instance.
-  * `quota_gb` - The cache reserve capacity, in GB.
-  * `cr_region` - The region where the cache reserve instance is used.
-  * `payment_type` - The payment type of the resource.
-  * `period` - The purchase duration of the instance, in months.
-  * `status` - The status of the instance.
-  * `create_time` - The time when the instance was created.
-  * `expire_time` - The expiration time of the instance.
+* `instances` - A list of Cache Reserve Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - The ID of the Cache Reserve Instance.
+* `cache_reserve_instance_id` - The ID of the Cache Reserve Instance.
+* `quota_gb` - The cache reserve capacity, in GB.
+* `cr_region` - The region where the cache reserve instance is used.
+* `payment_type` - The payment type of the resource.
+* `period` - The purchase duration of the instance, in months.
+* `status` - The status of the instance.
+* `create_time` - The time when the instance was created.
+* `expire_time` - The expiration time of the instance.

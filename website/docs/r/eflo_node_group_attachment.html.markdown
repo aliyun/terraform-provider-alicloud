@@ -63,6 +63,8 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) vswitch id
 * `vpc_id` - (Required, ForceNew) Vpc id
 
+---
+
 ### `data_disk`
 
 The data_disk supports the following:
@@ -80,7 +82,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3605 mins) Used when create the Node Group Attachment.
 * `delete` - (Defaults to 3605 mins) Used when delete the Node Group Attachment.

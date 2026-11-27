@@ -201,6 +201,8 @@ Removed params
 
 * `log_config` - (Optional, Deprecated) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
 
+---
+
 ### `addons`
 
 The addons supports the following:
@@ -223,6 +225,8 @@ addons {
 }
 ```
 
+---
+
 ### `worker_data_disks`
 
 The worker_data_disks supports the following:
@@ -237,12 +241,16 @@ The worker_data_disks supports the following:
 * `name` - (Optional) The name of the data disks.
 * `device` - (Optional) The device of the data disks.
 
+---
+
 ### `log_config`
 
 The log_config supports the following:
 
 * `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
 * `project` - (Optional) Log Service project name, cluster logs will output to this project.
+
+---
 
 ### `runtime`
 
@@ -269,23 +277,44 @@ The following attributes are exported:
 * `slb_id` - The ID of APIServer load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_nodes` - List of cluster worker nodes.
-  * `id` - ID of the node.
-  * `name` - Node name.
-  * `private_ip` - The private IP address of node.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
 * `connections` - (List) A list of kubernetes cluster connection information.
-  * `api_server_internet` - API Server Internet endpoint.
-  * `api_server_intranet` - API Server Intranet endpoint.
-  * `master_public_ip` - Master node SSH IP address.
-  * `service_domain` - Service Access Domain.
 * `certificate_authority` - (List, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
-  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
-  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
-  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+
+---
+
+### `worker_nodes`
+
+The worker_nodes supports the following attributes:
+
+* `id` - ID of the node.
+* `name` - Node name.
+* `private_ip` - The private IP address of node.
+
+---
+
+### `connections`
+
+The connections supports the following attributes:
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
+* `service_domain` - Service Access Domain.
+
+---
+
+### `certificate_authority`
+
+The certificate_authority supports the following attributes:
+
+* `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+* `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+* `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.

@@ -100,41 +100,8 @@ The following arguments are supported:
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
-* `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
-* `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
-* `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
 
   -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
-
-### `ui_proxy_conn_addrs`
-
-The ui_proxy_conn_addrs supports the following:
-
-* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
-* `conn_addr` - (Optional) The Phoenix address.
-* `net_type` - (Optional) The type of the network. Valid values:
-  - `2`: The instance is connected over an internal network.
-  - `0`: The instance is connected over the Internet.
-
-### `zk_conn_addrs`
-
-The zk_conn_addrs supports the following:
-
-* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
-* `conn_addr` - (Optional) The Phoenix address.
-* `net_type` - (Optional) The type of the network. Valid values:
-  - `2`: The instance is connected over an internal network.
-  - `0`: The instance is connected over the Internet.
-
-### `slb_conn_addrs`
-
-The slb_conn_addrs supports the following:
-
-* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
-* `conn_addr` - (Optional) The Phoenix address.
-* `net_type` - (Optional) The type of the network. Valid values:
-  - `2`: The instance is connected over an internal network.
-  - `0`: The instance is connected over the Internet.
 
 ## Attributes Reference
 
@@ -142,10 +109,49 @@ The following attributes are exported:
 
 * `id` - The ID of the HBase.
 * `master_instance_quantity` - Count nodes of the master node.
+* `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
+* `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
+* `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
+
+---
+
+### `ui_proxy_conn_addrs`
+
+The ui_proxy_conn_addrs supports the following:
+
+* `conn_addr_port` - (Computed) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Computed) The Phoenix address.
+* `net_type` - (Computed) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
+
+---
+
+### `zk_conn_addrs`
+
+The zk_conn_addrs supports the following:
+
+* `conn_addr_port` - (Computed) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Computed) The Phoenix address.
+* `net_type` - (Computed) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
+
+---
+
+### `slb_conn_addrs`
+
+The slb_conn_addrs supports the following:
+
+* `conn_addr_port` - (Computed) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Computed) The Phoenix address.
+* `net_type` - (Computed) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when creating the HBase instance (until it reaches the initial `ACTIVATION` status).
 * `update` - (Defaults to 60 mins) Used when updating the HBase instance (until it reaches the initial `ACTIVATION` status).

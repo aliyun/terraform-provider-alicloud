@@ -12,7 +12,7 @@ Provides a EIP Bandwidth Plan (CBWP) Common Bandwidth Package resource.
 
 -> **NOTE:** Terraform will auto build common bandwidth package instance while it uses `alicloud_common_bandwidth_package` to build a common bandwidth package resource.
 
-For additional details, see the documentation[https://help.aliyun.com/zh/internet-shared-bandwidth/user-guide/internet-shared-bandwidth-overview?spm=a2c4g.11186623.help-menu-55092.d_1_0.492c69ffKLbVqS].
+For additional details, see [the documentation](https://www.alibabacloud.com/help/product/55092.html).
 
 For information about EIP Bandwidth Plan (CBWP) Common Bandwidth Package and how to use it, see [What is Common Bandwidth Package](https://www.alibabacloud.com/help/en/eip-bandwidth-plan).
 
@@ -74,7 +74,7 @@ The description must be 0 to 256 characters in length and cannot start with `htt
   - `false` (default): deletes the Internet Shared Bandwidth instance only when no EIPs are associated with the Internet Shared Bandwidth instance.
   - `true`: disassociates all EIPs from the Internet Shared Bandwidth instance and deletes the Internet Shared Bandwidth instance.
 * `internet_charge_type` - (Optional, ForceNew, Computed) Billing method of Internet Shared Bandwidth. Valid values:
-`PayByTraffic`: billed by primary traffic. 
+`PayByTraffic`: billed by primary traffic.
 
   - `PayByBandwidth` (default): Billing by bandwidth.
   - `PayBy95`: Billed as Enhanced 95.
@@ -86,17 +86,17 @@ The description must be 0 to 256 characters in length and cannot start with `htt
 
 If you are allowed to use single-ISP bandwidth, you can also use one of the following values:
 
-  - `ChinaTelecom`
-  - `ChinaUnicom`
-  - `ChinaMobile`
-  - `ChinaTelecom_L2`
-  - `ChinaUnicom_L2`
-  - `ChinaMobile_L2`
+- `ChinaTelecom`
+- `ChinaUnicom`
+- `ChinaMobile`
+- `ChinaTelecom_L2`
+- `ChinaUnicom_L2`
+- `ChinaMobile_L2`
 
 If your services are deployed in China East 1 Finance, this parameter is required and you must set the value to `BGP_FinanceCloud`.
 * `ratio` - (Optional, ForceNew, Computed, Int, Available since v1.55.3) The percentage of the minimum bandwidth commitment. The value is only `20`.
 
- This parameter is required when the value of `InternetChargeType` is `PayBy95`. 
+ This parameter is required when the value of `InternetChargeType` is `PayBy95`.
 
   -> **NOTE:** This parameter is available only on the Alibaba Cloud China site.
 
@@ -117,12 +117,12 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `payment_type` - The billing type of the Internet Shared Bandwidth instance. Valid values: `PayAsYouGo`, `Subscription`.
 * `create_time` - The creation time.
-* `region_id` - The pagination token that is used in the next request to retrieve a new page of results. 
+* `region_id` - The pagination token that is used in the next request to retrieve a new page of results.
 * `status` - The status of the Internet Shared Bandwidth instance. Default value: `Available`.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Common Bandwidth Package.
 * `delete` - (Defaults to 5 mins) Used when delete the Common Bandwidth Package.
 * `update` - (Defaults to 5 mins) Used when update the Common Bandwidth Package.

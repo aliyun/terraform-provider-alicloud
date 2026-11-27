@@ -32,21 +32,28 @@ output "first_privatelink_vpc_endpoint_connection_id" {
 
 The following arguments are supported:
 
-* `endpoint_id` - (Optional, ForceNew) The ID of the Vpc Endpoint.
-* `endpoint_owner_id` - (Optional, ForceNew) The endpoint owner id.
+* `endpoint_id` - (Optional) The ID of the Vpc Endpoint.
+* `endpoint_owner_id` - (Optional) The endpoint owner id.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `service_id` - (Required, ForceNew) The ID of the Vpc Endpoint Service.
-* `status` - (Optional, ForceNew) The status of Vpc Endpoint Connection. Valid Values: `Connected`, `Connecting`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting`, `Pending` and `ServiceDeleted`.
+* `service_id` - (Required) The ID of the Vpc Endpoint Service.
+* `status` - (Optional) The status of Vpc Endpoint Connection. Valid Values: `Connected`, `Connecting`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting`, `Pending` and `ServiceDeleted`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Connection IDs.
-* `connections` - A list of Privatelink Vpc Endpoint Connections. Each element contains the following attributes:
-  * `bandwidth` - The Bandwidth.
-  * `traffic_control_mode` - The traffic control mode of the endpoint connection.
-  * `endpoint_id` - The ID of the Vpc Endpoint.
-  * `endpoint_owner_id` - The owner ID of the endpoint.
-  * `id` - The ID of the Vpc Endpoint Connection.
-  * `status` - The status of Vpc Endpoint Connection.
+* `connections` - A list of Privatelink Vpc Endpoint Connections.
+
+---
+
+### `connections`
+
+The connections supports the following attributes:
+
+* `bandwidth` - The Bandwidth.
+* `traffic_control_mode` - The traffic control mode of the endpoint connection.
+* `endpoint_id` - The ID of the Vpc Endpoint.
+* `endpoint_owner_id` - The owner ID of the endpoint.
+* `id` - The ID of the Vpc Endpoint Connection.
+* `status` - The status of Vpc Endpoint Connection.

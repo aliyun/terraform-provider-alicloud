@@ -32,13 +32,13 @@ output "alicloud_bss_openapi_pricing_module_example_id" {
 
 The following arguments are supported:
 
-* `product_code` - (Required, ForceNew) The product code.
-* `product_type` - (Optional, ForceNew) The product type.
-* `subscription_type` - (Required, ForceNew) Subscription type. Value:
+* `product_code` - (Required) The product code.
+* `product_type` - (Optional) The product type.
+* `subscription_type` - (Required) Subscription type. Value:
   * Subscription: Prepaid.
   * PayAsYouGo: postpaid.
-* `ids` - (Optional, ForceNew) A list of Price Module IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Property name.
+* `ids` - (Optional) A list of Price Module IDs.
+* `name_regex` - (Optional) A regex string to filter results by Property name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -46,19 +46,33 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of name of Pricing Modules.
-* `modules` - A list of Pricing Module Entries. Each element contains the following attributes:
-  * `id` - The ID of the pricing module. The value is formulated as `<product_code>:<product_type>:<subscription_type>:<code>`.
-  * `code` - Property Code.
-  * `pricing_module_name` - Attribute name.
-  * `product_code` - The product code.
-  * `product_type` - The product type.
-  * `subscription_type` - The subscription type.
-  * `unit` - Attribute unit.
-  * `values` - Property.
-    * `name` - The module Code corresponds to the attribute value.
-    * `remark` - Module value description information.
-    * `type` - The attribute value type corresponding to the module Code. Value:
-      * single_float: single value type.
-      * range_float: range value type.
-    * `value` - The module Code corresponds to the attribute value.
-          > format 1024-1024000 when Type = range_float: 1024 means from 1024 to 1024000, step size 1024.
+* `modules` - A list of Pricing Module Entries.
+
+---
+
+### `modules`
+
+The modules supports the following attributes:
+
+* `id` - The ID of the pricing module. The value is formulated as `<product_code>:<product_type>:<subscription_type>:<code>`.
+* `code` - Property Code.
+* `pricing_module_name` - Attribute name.
+* `product_code` - The product code.
+* `product_type` - The product type.
+* `subscription_type` - The subscription type.
+* `unit` - Attribute unit.
+* `values` - Property.
+
+---
+
+### `modules.values`
+
+The values supports the following attributes:
+
+* `name` - The module Code corresponds to the attribute value.
+* `remark` - Module value description information.
+* `type` - The attribute value type corresponding to the module Code. Value:
+  * single_float: single value type.
+  * range_float: range value type.
+* `value` - The module Code corresponds to the attribute value.
+      > format 1024-1024000 when Type = range_float: 1024 means from 1024 to 1024000, step size 1024.

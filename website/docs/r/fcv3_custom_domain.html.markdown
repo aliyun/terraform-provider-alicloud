@@ -271,12 +271,16 @@ The following arguments are supported:
 * `tls_config` - (Optional, Computed, Set) TLS configuration information See [`tls_config`](#tls_config) below.
 * `waf_config` - (Optional, Set) Web application firewall configuration information See [`waf_config`](#waf_config) below.
 
+---
+
 ### `auth_config`
 
 The auth_config supports the following:
 
 * `auth_info` - (Optional) Authentication Information
 * `auth_type` - (Optional) Authentication type. anonymous, function, or jwt.
+
+---
 
 ### `cert_config`
 
@@ -285,6 +289,8 @@ The cert_config supports the following:
 * `cert_name` - (Optional) Certificate Name
 * `certificate` - (Optional) PEM format certificate
 * `private_key` - (Optional) Private Key in PEM format
+
+---
 
 ### `cors_config`
 
@@ -297,11 +303,15 @@ The cors_config supports the following:
 * `expose_headers` - (Optional, List, Available since v1.270.0) List of response headers that can be exposed to the browser.
 * `max_age` - (Optional, Int, Available since v1.270.0) Cache time (seconds) for preflight request results. Browsers will not resend preflight requests within this time.
 
+---
+
 ### `route_config`
 
 The route_config supports the following:
 
 * `routes` - (Optional, List) Routing Configuration List See [`routes`](#route_config-routes) below.
+
+---
 
 ### `route_config-routes`
 
@@ -313,6 +323,8 @@ The route_config-routes supports the following:
 * `qualifier` - (Optional) Version or Alias
 * `rewrite_config` - (Optional, Computed, Set) Override Configuration See [`rewrite_config`](#route_config-routes-rewrite_config) below.
 
+---
+
 ### `route_config-routes-rewrite_config`
 
 The route_config-routes-rewrite_config supports the following:
@@ -321,12 +333,16 @@ The route_config-routes-rewrite_config supports the following:
 * `regex_rules` - (Optional, List) Regular match rule list See [`regex_rules`](#route_config-routes-rewrite_config-regex_rules) below.
 * `wildcard_rules` - (Optional, List) List of wildcard matching rules See [`wildcard_rules`](#route_config-routes-rewrite_config-wildcard_rules) below.
 
+---
+
 ### `route_config-routes-rewrite_config-equal_rules`
 
 The route_config-routes-rewrite_config-equal_rules supports the following:
 
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
+
+---
 
 ### `route_config-routes-rewrite_config-regex_rules`
 
@@ -335,12 +351,16 @@ The route_config-routes-rewrite_config-regex_rules supports the following:
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
 
+---
+
 ### `route_config-routes-rewrite_config-wildcard_rules`
 
 The route_config-routes-rewrite_config-wildcard_rules supports the following:
 
 * `match` - (Optional) Matching Rules
 * `replacement` - (Optional) Replace Rules
+
+---
 
 ### `tls_config`
 
@@ -349,6 +369,8 @@ The tls_config supports the following:
 * `cipher_suites` - (Optional, List) List of TLS cipher suites
 * `max_version` - (Optional) The maximum version of TLS. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0
 * `min_version` - (Optional) TLS minimum version number. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0
+
+---
 
 ### `waf_config`
 
@@ -369,7 +391,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Custom Domain.
 * `delete` - (Defaults to 5 mins) Used when delete the Custom Domain.

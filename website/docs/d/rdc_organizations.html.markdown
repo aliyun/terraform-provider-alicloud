@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testAccOrganizations-Organizations"
+  default = "rdc-organizations-example"
 }
 
 resource "alicloud_rdc_organization" "default" {
@@ -48,17 +48,24 @@ output "rdc_organization_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Organization IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Organization name.
+* `ids` - (Optional, Computed)  A list of Organization IDs.
+* `name_regex` - (Optional) A regex string to filter results by Organization name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `real_pk` - (Optional, ForceNew) User pk, not required, only required when the ak used by the calling interface is inconsistent with the user pk
+* `real_pk` - (Optional) User pk, not required, only required when the ak used by the calling interface is inconsistent with the user pk
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Organization names.
-* `organizations` - A list of Rdc Organizations. Each element contains the following attributes:
-  * `id` - The ID of the Organization.
-  * `organization_id` - The first ID of the resource.
-  * `organization_name` - Company name.
+* `organizations` - A list of Rdc Organizations.
+
+---
+
+### `organizations`
+
+The organizations supports the following attributes:
+
+* `id` - The ID of the Organization.
+* `organization_id` - The first ID of the resource.
+* `organization_name` - Company name.

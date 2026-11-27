@@ -36,25 +36,39 @@ output "vpc_prefix_list_id_2" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `true`. Set it to `false` can hide the `entrys` to output.
-* `ids` - (Optional, ForceNew, Computed) A list of Prefix List IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Prefix List name.
+* `ids` - (Optional, Computed) A list of Prefix List IDs.
+* `name_regex` - (Optional) A regex string to filter results by Prefix List name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `prefix_list_name` - (Optional, ForceNew) The name of the prefix list.
+* `prefix_list_name` - (Optional) The name of the prefix list.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Prefix List names.
-* `lists` - A list of Vpc Prefix Lists. Each element contains the following attributes:
-  * `create_time` - The time when the prefix list was created.
-  * `entrys` - The CIDR address block list of the prefix list.
-    * `cidr` - The CIDR address block of the prefix list.
-    * `description` - The description of the cidr entry.
-  * `id` - The ID of the Prefix List.
-  * `ip_version` - The IP version of the prefix list.
-  * `max_entries` - The maximum number of entries for CIDR address blocks in the prefix list.
-  * `prefix_list_id` - The ID of the query Prefix List.
-  * `prefix_list_name` - The name of the prefix list.
-  * `share_type` - The share type of the prefix list.
-  * `prefix_list_description` - The description of the prefix list.
+* `lists` - A list of Vpc Prefix Lists.
+
+---
+
+### `lists`
+
+The lists supports the following attributes:
+
+* `create_time` - The time when the prefix list was created.
+* `entrys` - The CIDR address block list of the prefix list.
+* `id` - The ID of the Prefix List.
+* `ip_version` - The IP version of the prefix list.
+* `max_entries` - The maximum number of entries for CIDR address blocks in the prefix list.
+* `prefix_list_id` - The ID of the query Prefix List.
+* `prefix_list_name` - The name of the prefix list.
+* `share_type` - The share type of the prefix list.
+* `prefix_list_description` - The description of the prefix list.
+
+---
+
+### `lists.entrys`
+
+The entrys supports the following attributes:
+
+* `cidr` - The CIDR address block of the prefix list.
+* `description` - The description of the cidr entry.

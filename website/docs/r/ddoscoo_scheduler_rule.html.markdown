@@ -66,6 +66,8 @@ The following arguments are supported:
     `6`: Cloud product interaction.
 * `rules` - (Required) The information about the scheduling rules. See [`rules`](#rules) below.
 
+---
+
 ### `rules`
 
 The rules supports the following:
@@ -80,8 +82,10 @@ The rules supports the following:
     `2`: the IP address of the interaction resource (in the tiered protection scenario)
     `3`: the IP address used to accelerate access (in the network acceleration scenario)
     `6` the IP address of the interaction resource (in the cloud service interaction scenario)
-* `region_id` - (Optional) The region where the interaction resource that is used in the scheduling rule is deployed. **NOTE:** This parameter is returned only if the RuleType parameter is set to 2.
-* `status` - (Optional) The status of the scheduling rule.
+* `region_id` - (Optional) The region where the interaction resource that is used in the scheduling rule is deployed.
+
+  -> **NOTE:** This parameter is returned only if the RuleType parameter is set to 2.
+* `status` - (Computed) The status of the scheduling rule.
 
 ## Attributes Reference
 
@@ -94,7 +98,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available in 1.163.0+
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the scheduler rule.
 * `update` - (Defaults to 1 mins) Used when update the scheduler rule.

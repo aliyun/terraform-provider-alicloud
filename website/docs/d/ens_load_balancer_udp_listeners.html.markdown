@@ -82,21 +82,50 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Load Balancer Udp Listener IDs.
-* `listeners` - A list of Load Balancer Udp Listener Entries. Each element contains the following attributes:
-  * `id` - The ID of the listener. The value is formulated as `<load_balancer_id>:<listener_port>`.
-  * `listener_port` - The frontend port used by the load balancer instance.
-  * `load_balancer_id` - The ID of the load balancer instance.
-  * `protocol` - The protocol of the listener. The value is `udp`.
-  * `description` - The description of the listener.
-  * `status` - The status of the listener.
-  * `backend_server_port` - **NOTE:** This field is only available when `enable_details` is `true`. The port used by the backend server of the load balancer instance.
-  * `eip_transmit` - **NOTE:** This field is only available when `enable_details` is `true`. Whether EIP transparent transmission is enabled.
-  * `established_timeout` - **NOTE:** This field is only available when `enable_details` is `true`. The timeout period of the connection. Unit: seconds.
-  * `health_check_connect_port` - **NOTE:** This field is only available when `enable_details` is `true`. The port used for health checks.
-  * `health_check_connect_timeout` - **NOTE:** This field is only available when `enable_details` is `true`. The amount of time to wait for a response from the health check. Unit: seconds.
-  * `health_check_exp` - **NOTE:** This field is only available when `enable_details` is `true`. The expected response string for the UDP listener health check.
-  * `health_check_interval` - **NOTE:** This field is only available when `enable_details` is `true`. The interval between two consecutive health checks. Unit: seconds.
-  * `health_check_req` - **NOTE:** This field is only available when `enable_details` is `true`. The request string for the UDP listener health check.
-  * `healthy_threshold` - **NOTE:** This field is only available when `enable_details` is `true`. The number of consecutive successful health checks that must occur before a backend server is declared healthy.
-  * `scheduler` - **NOTE:** This field is only available when `enable_details` is `true`. The scheduling algorithm.
-  * `unhealthy_threshold` - **NOTE:** This field is only available when `enable_details` is `true`. The number of consecutive failed health checks that must occur before a backend server is declared unhealthy.
+* `listeners` - A list of Load Balancer Udp Listener Entries.
+
+---
+
+### `listeners`
+
+The listeners supports the following attributes:
+
+* `id` - The ID of the listener. The value is formulated as `<load_balancer_id>:<listener_port>`.
+* `listener_port` - The frontend port used by the load balancer instance.
+* `load_balancer_id` - The ID of the load balancer instance.
+* `protocol` - The protocol of the listener. The value is `udp`.
+* `description` - The description of the listener.
+* `status` - The status of the listener.
+* `backend_server_port` - The port used by the backend server of the load balancer instance.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `eip_transmit` - Whether EIP transparent transmission is enabled.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `established_timeout` - The timeout period of the connection. Unit: seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `health_check_connect_port` - The port used for health checks.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `health_check_connect_timeout` - The amount of time to wait for a response from the health check. Unit: seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `health_check_exp` - The expected response string for the UDP listener health check.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `health_check_interval` - The interval between two consecutive health checks. Unit: seconds.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `health_check_req` - The request string for the UDP listener health check.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `healthy_threshold` - The number of consecutive successful health checks that must occur before a backend server is declared healthy.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `scheduler` - The scheduling algorithm.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `unhealthy_threshold` - The number of consecutive failed health checks that must occur before a backend server is declared unhealthy.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.

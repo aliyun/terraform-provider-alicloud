@@ -589,9 +589,7 @@ func (s *RamService) DescribeRamRoleAttachment(id string) (*ecs.DescribeInstance
 	request.InstanceIds = parts[1]
 	var raw interface{}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeInstanceRamRole(request)
-		})
+		raw, err = s.client.EcsSdkRpc(request, ecs.CreateDescribeInstanceRamRoleResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
 				return retry.RetryableError(errs.WrapError(err))

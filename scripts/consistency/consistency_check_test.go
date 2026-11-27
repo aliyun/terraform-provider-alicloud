@@ -2,10 +2,13 @@
 package main
 
 import (
+	"bytes"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	log "github.com/sirupsen/logrus"
 )
 
 // testAttrFieldRegex mirrors the package-internal attributeFieldRegex used by
@@ -309,5 +312,287 @@ func TestUnitParseMatchLineAttributeClosedGroupStillRecognized(t *testing.T) {
 			t.Errorf("closed group %q: got Optional=%q Required=%q ForceNew=%v, want %q %q %v",
 				c.line, got.Optional, got.Required, got.ForceNew, c.opt, c.req, c.force)
 		}
+	}
+}
+
+// testArgsFieldRegex mirrors the package-internal argumentsFieldRegex used by
+// parseResourceDocs for the Argument Reference phase. The original
+// ssl_vpn_client_cert counterexample documented its Computed-only fields
+// there, so the reverse-consistency tests must exercise that doc shape.
+var testArgsFieldRegex = regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-? ?(\\(.*\\)) ?(.*)")
+
+func argsWords(line string) []string {
+	m := testArgsFieldRegex.FindStringSubmatch(line)
+	if m == nil {
+		return nil
+	}
+	return m
+}
+
+// captureConsistencyLogs redirects the package logger to a buffer while fn
+// runs, so the tests can assert that consistencyCheck names the offending
+// attribute in its error output.
+func captureConsistencyLogs(t *testing.T, fn func()) string {
+	t.Helper()
+	var buf bytes.Buffer
+	old := log.StandardLogger().Out
+	log.SetOutput(&buf)
+	defer log.SetOutput(old)
+	fn()
+	return buf.String()
+}
+
+// TestUnitConsistencyCheckComputedOnlyDocsOptionalRejected is the reverse
+// negative for Optional: a Computed-only schema attribute documented with
+// "(Optional)" must be rejected and the failure must name the attribute.
+// Before the fix only the forward branch existed (schema Optional=true ⇒
+// docs must say Optional), so this direction slipped through.
+func TestUnitConsistencyCheckComputedOnlyDocsOptionalRejected(t *testing.T) {
+	schemaDefined := map[string]*schema.Schema{
+		"status": {Type: schema.TypeString, Computed: true},
+	}
+	docs := map[string]ResourceAttribute{
+		"status": *parseMatchLine(
+			argsWords("* `status` - (Optional) The status of the client certificate."), "Argument", ""),
+	}
+	if docs["status"].Optional != "true" {
+		t.Fatalf("counterexample docs must parse Optional=\"true\", got %q", docs["status"].Optional)
+	}
+	out := captureConsistencyLogs(t, func() {
+		if consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined) {
+			t.Error("consistencyCheck should FAIL when a Computed-only schema attribute is documented as (Optional)")
+		}
+	})
+	if !strings.Contains(out, "'status'") {
+		t.Errorf("failure output must name the offending attribute 'status', got: %s", out)
+	}
+}
+
+// TestUnitConsistencyCheckComputedOnlyDocsRequiredRejected is the reverse
+// negative for Required: a Computed-only schema attribute documented with
+// "(Required)" must be rejected and the failure must name the attribute.
+func TestUnitConsistencyCheckComputedOnlyDocsRequiredRejected(t *testing.T) {
+	schemaDefined := map[string]*schema.Schema{
+		"ca_cert": {Type: schema.TypeString, Computed: true},
+	}
+	docs := map[string]ResourceAttribute{
+		"ca_cert": *parseMatchLine(
+			argsWords("* `ca_cert` - (Required) The client ca cert."), "Argument", ""),
+	}
+	if docs["ca_cert"].Required != "true" {
+		t.Fatalf("counterexample docs must parse Required=\"true\", got %q", docs["ca_cert"].Required)
+	}
+	out := captureConsistencyLogs(t, func() {
+		if consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined) {
+			t.Error("consistencyCheck should FAIL when a Computed-only schema attribute is documented as (Required)")
+		}
+	})
+	if !strings.Contains(out, "'ca_cert'") {
+		t.Errorf("failure output must name the offending attribute 'ca_cert', got: %s", out)
+	}
+}
+
+// TestUnitConsistencyCheckComputedOnlyCompliantDocsPass keeps the compliant
+// shapes passing after the reverse branch is added: a Computed-only attribute
+// documented as a read-only attribute (Attribute phase, no modifier), a real
+// Optional, an Optional+Computed and a Required attribute keep passing. This
+// guards against the reverse check over-reaching into forward-consistent
+// documentation.
+func TestUnitConsistencyCheckComputedOnlyCompliantDocsPass(t *testing.T) {
+	cases := []struct {
+		name        string
+		schemaField string
+		schemaDef   *schema.Schema
+		docLine     string
+		phase       string
+	}{
+		{
+			name:        "computed-only documented read-only",
+			schemaField: "status",
+			schemaDef:   &schema.Schema{Type: schema.TypeString, Computed: true},
+			docLine:     "  * `status` - The status of the client certificate.",
+			phase:       "Attribute",
+		},
+		{
+			name:        "real optional",
+			schemaField: "name",
+			schemaDef:   &schema.Schema{Type: schema.TypeString, Optional: true},
+			docLine:     "* `name` - (Optional) The name of the client certificate.",
+			phase:       "Argument",
+		},
+		{
+			name:        "optional plus computed",
+			schemaField: "name",
+			schemaDef:   &schema.Schema{Type: schema.TypeString, Optional: true, Computed: true},
+			docLine:     "* `name` - (Optional) The name of the client certificate.",
+			phase:       "Argument",
+		},
+		{
+			name:        "required",
+			schemaField: "ssl_vpn_server_id",
+			schemaDef:   &schema.Schema{Type: schema.TypeString, Required: true},
+			docLine:     "* `ssl_vpn_server_id` - (Required) The ID of the SSL-VPN server.",
+			phase:       "Argument",
+		},
+	}
+	for _, c := range cases {
+		var words []string
+		if c.phase == "Argument" {
+			words = argsWords(c.docLine)
+		} else {
+			words = attrWords(c.docLine)
+		}
+		if words == nil {
+			t.Errorf("%s: doc line did not match the %s-phase regex: %q", c.name, c.phase, c.docLine)
+			continue
+		}
+		attribute := parseMatchLine(words, c.phase, "")
+		if attribute == nil {
+			t.Errorf("%s: parseMatchLine returned nil for %q", c.name, c.docLine)
+			continue
+		}
+		schemaDefined := map[string]*schema.Schema{c.schemaField: c.schemaDef}
+		docs := map[string]ResourceAttribute{c.schemaField: *attribute}
+		out := captureConsistencyLogs(t, func() {
+			if !consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined) {
+				t.Error("compliant docs should PASS")
+			}
+		})
+		if strings.Contains(out, "should not be marked") {
+			t.Errorf("%s: reverse check must stay silent for compliant docs, got: %s", c.name, out)
+		}
+	}
+}
+
+// TestUnitConsistencyCheckComputedOnlyProseNotReverseFlagged guards the
+// read-only documentation shape against prose false positives: an Attribute
+// phase line whose description tail merely mentions "Optional" or "Required"
+// in free-form prose sets no modifier (the closed modifier-group regex), so
+// the reverse branch must not fire.
+func TestUnitConsistencyCheckComputedOnlyProseNotReverseFlagged(t *testing.T) {
+	schemaDefined := map[string]*schema.Schema{
+		"status": {Type: schema.TypeString, Computed: true},
+	}
+	cases := []string{
+		"  * `status` - Optional metadata returned by the service.",
+		"  * `status` - Required for subsequent API calls.",
+		"  * `status` - (Optional metadata returned by the service).",
+	}
+	for _, line := range cases {
+		words := attrWords(line)
+		if words == nil {
+			t.Errorf("line did not match regex: %q", line)
+			continue
+		}
+		attribute := parseMatchLine(words, "Attribute", "")
+		if attribute == nil {
+			t.Errorf("parseMatchLine returned nil for %q", line)
+			continue
+		}
+		if attribute.Optional != "" || attribute.Required != "" {
+			t.Errorf("prose %q must not parse modifiers, got Optional=%q Required=%q", line, attribute.Optional, attribute.Required)
+			continue
+		}
+		docs := map[string]ResourceAttribute{"status": *attribute}
+		if !consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined) {
+			t.Errorf("prose %q must not trigger the reverse check", line)
+		}
+	}
+}
+
+// TestUnitConsistencyCheckSslVpnClientCertOriginalCounterexample reproduces
+// the original counterexample from ticket 40430 / CR 31118684 at its
+// pre-fix shape: five Computed-only schema attributes whose Argument
+// Reference lines carried "(Optional)" (website/docs/r/ssl_vpn_client_cert.
+// html.markdown on master). The reverse branch must reject the combination
+// and name each of the five fields.
+func TestUnitConsistencyCheckSslVpnClientCertOriginalCounterexample(t *testing.T) {
+	schemaDefined := map[string]*schema.Schema{
+		"ssl_vpn_server_id": {Type: schema.TypeString, Required: true, ForceNew: true},
+		"name":              {Type: schema.TypeString, Optional: true},
+		"status":            {Type: schema.TypeString, Computed: true},
+		"ca_cert":           {Type: schema.TypeString, Computed: true},
+		"client_cert":       {Type: schema.TypeString, Computed: true},
+		"client_key":        {Type: schema.TypeString, Computed: true},
+		"client_config":     {Type: schema.TypeString, Computed: true},
+	}
+	docLines := []string{
+		"* `name` - (Optional) The name of the client certificate.",
+		"* `ssl_vpn_server_id` - (Required, ForceNew) The ID of the SSL-VPN server.",
+		"* `status` - (Optional) The status of the client certificate.",
+		"* `ca_cert` - (Optional) The client ca cert.",
+		"* `client_cert` - (Optional) The client cert.",
+		"* `client_key` - (Optional) The client key.",
+		"* `client_config` - (Optional) The vpn client config.",
+	}
+	docs := make(map[string]ResourceAttribute)
+	for _, line := range docLines {
+		words := argsWords(line)
+		if words == nil {
+			t.Fatalf("counterexample doc line did not match the Argument-phase regex: %q", line)
+		}
+		attribute := parseMatchLine(words, "Argument", "")
+		if attribute == nil {
+			t.Fatalf("parseMatchLine returned nil for %q", line)
+		}
+		docs[attribute.Name] = *attribute
+	}
+	var inconsistent bool
+	out := captureConsistencyLogs(t, func() {
+		inconsistent = !consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined)
+	})
+	if !inconsistent {
+		t.Fatal("consistencyCheck should FAIL on the original ssl_vpn_client_cert counterexample")
+	}
+	for _, field := range []string{"status", "ca_cert", "client_cert", "client_key", "client_config"} {
+		if !strings.Contains(out, "'"+field+"'") {
+			t.Errorf("failure output must name the misdocumented attribute %q, got: %s", field, out)
+		}
+	}
+}
+
+// TestUnitConsistencyCheckSslVpnClientCertCorrectedDocsPass is the corrected
+// counterpart of the counterexample: the five read-only attributes move to
+// the Attributes Reference with no modifier while the configurable arguments
+// keep theirs, and consistencyCheck passes — the shape the original CR
+// 31118684 corrected the docs to.
+func TestUnitConsistencyCheckSslVpnClientCertCorrectedDocsPass(t *testing.T) {
+	schemaDefined := map[string]*schema.Schema{
+		"ssl_vpn_server_id": {Type: schema.TypeString, Required: true, ForceNew: true},
+		"name":              {Type: schema.TypeString, Optional: true},
+		"status":            {Type: schema.TypeString, Computed: true},
+		"ca_cert":           {Type: schema.TypeString, Computed: true},
+		"client_cert":       {Type: schema.TypeString, Computed: true},
+		"client_key":        {Type: schema.TypeString, Computed: true},
+		"client_config":     {Type: schema.TypeString, Computed: true},
+	}
+	argumentLines := []string{
+		"* `name` - (Optional) The name of the client certificate.",
+		"* `ssl_vpn_server_id` - (Required, ForceNew) The ID of the SSL-VPN server.",
+	}
+	attributeLines := []string{
+		"  * `status` - The status of the client certificate.",
+		"  * `ca_cert` - The client ca cert.",
+		"  * `client_cert` - The client cert.",
+		"  * `client_key` - The client key.",
+		"  * `client_config` - The vpn client config.",
+	}
+	docs := make(map[string]ResourceAttribute)
+	for _, line := range argumentLines {
+		attribute := parseMatchLine(argsWords(line), "Argument", "")
+		if attribute == nil {
+			t.Fatalf("parseMatchLine returned nil for %q", line)
+		}
+		docs[attribute.Name] = *attribute
+	}
+	for _, line := range attributeLines {
+		attribute := parseMatchLine(attrWords(line), "Attribute", "")
+		if attribute == nil {
+			t.Fatalf("parseMatchLine returned nil for %q", line)
+		}
+		docs[attribute.Name] = *attribute
+	}
+	if !consistencyCheck("alicloud_ssl_vpn_client_cert", docs, schemaDefined) {
+		t.Error("corrected ssl_vpn_client_cert docs should PASS")
 	}
 }

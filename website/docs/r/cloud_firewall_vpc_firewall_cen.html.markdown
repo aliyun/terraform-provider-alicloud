@@ -55,6 +55,8 @@ The following arguments are supported:
   - `en`: English.
 * `local_vpc` - (Required, ForceNew) The details of the VPC. See [`local_vpc`](#local_vpc) below.
 
+---
+
 ### `local_vpc`
 
 The local_vpc supports the following:
@@ -68,33 +70,61 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `connect_type` - Intercommunication type, value: expressconnect: Express Channel cen: Cloud Enterprise Network
 * `local_vpc` - The details of the VPC.
-    * `attachment_id` - The connection ID of the network instance.
-    * `attachment_name` - The connection name of the network instance.
-    * `defend_cidr_list` - The list of network segments protected by the VPC firewall.
-    * `eni_list` - List of elastic network cards.
-        * `eni_id` - The ID of the instance of the ENI in the VPC.
-        * `eni_private_ip_address` - The private IP address of the ENI in the VPC.
-    * `manual_vswitch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
-    * `network_instance_name` - The name of the network instance.
-    * `network_instance_type` - The type of the network instance. Value: **VPC * *.
-    * `owner_id` - The UID of the Alibaba Cloud account to which the VPC belongs.
-    * `region_no` - The region ID of the VPC.
-    * `route_mode` - Routing mode,. Value:-auto: indicates automatic mode.-manual: indicates manual mode.
-    * `support_manual_mode` - Whether routing mode supports manual mode. Value:-**1**: Supported.-**0**: Not supported.
-    * `transit_router_id` - The ID of the CEN-TR instance.
-    * `transit_router_type` - The version of the cloud enterprise network forwarding router (CEN-TR). Value:-**Basic**: Basic Edition.-**Enterprise**: Enterprise Edition.
-    * `vpc_cidr_table_list` - The VPC network segment list.
-        * `route_entry_list` - The list of route entries in the VPC.
-            * `destination_cidr` - The target network segment of the VPC.
-            * `next_hop_instance_id` - The ID of the next hop instance in the VPC.
-        * `route_table_id` - The ID of the route table of the VPC.
-    * `vpc_id` - The ID of the VPC instance.
-    * `vpc_name` - The instance name of the VPC.
 * `vpc_firewall_id` - VPC firewall ID
+
+---
+
+### `local_vpc`
+
+The local_vpc supports the following attributes:
+
+* `attachment_id` - The connection ID of the network instance.
+* `attachment_name` - The connection name of the network instance.
+* `defend_cidr_list` - The list of network segments protected by the VPC firewall.
+* `eni_list` - List of elastic network cards.
+* `manual_vswitch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
+* `network_instance_name` - The name of the network instance.
+* `network_instance_type` - The type of the network instance. Value: **VPC**.
+* `owner_id` - The UID of the Alibaba Cloud account to which the VPC belongs.
+* `region_no` - The region ID of the VPC.
+* `route_mode` - Routing mode,. Value:-auto: indicates automatic mode.-manual: indicates manual mode.
+* `support_manual_mode` - Whether routing mode supports manual mode. Value:-**1**: Supported.-**0**: Not supported.
+* `transit_router_id` - The ID of the CEN-TR instance.
+* `transit_router_type` - The version of the cloud enterprise network forwarding router (CEN-TR). Value:-**Basic**: Basic Edition.-**Enterprise**: Enterprise Edition.
+* `vpc_cidr_table_list` - The VPC network segment list.
+* `vpc_id` - The ID of the VPC instance.
+* `vpc_name` - The instance name of the VPC.
+
+---
+
+### `local_vpc.eni_list`
+
+The eni_list supports the following attributes:
+
+* `eni_id` - The ID of the instance of the ENI in the VPC.
+* `eni_private_ip_address` - The private IP address of the ENI in the VPC.
+
+---
+
+### `local_vpc.vpc_cidr_table_list`
+
+The vpc_cidr_table_list supports the following attributes:
+
+* `route_entry_list` - The list of route entries in the VPC.
+* `route_table_id` - The ID of the route table of the VPC.
+
+---
+
+### `local_vpc.vpc_cidr_table_list.route_entry_list`
+
+The route_entry_list supports the following attributes:
+
+* `destination_cidr` - The target network segment of the VPC.
+* `next_hop_instance_id` - The ID of the next hop instance in the VPC.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 31 mins) Used when create the Vpc Firewall Cen.
 * `update` - (Defaults to 31 mins) Used when update the Vpc Firewall Cen.

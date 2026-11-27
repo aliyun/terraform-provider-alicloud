@@ -1,4 +1,27 @@
-## 2.4.0 (Unreleased)
+## 2.4.0 (November 27, 2026)
+
+FEATURES:
+
+- **New Data Source documentation:** `alicloud_ecs_auto_provisioning_groups`
+- **New Data Source documentation:** `alicloud_ecs_image_pipeline_executions`
+- **New Data Source:** `alicloud_polardb_network_channels`
+- **New Data Source documentation:** `alicloud_reserved_instances`
+- **New Data Source documentation:** `alicloud_rocketmq_consumer_groups`
+- **New Data Source documentation:** `alicloud_rocketmq_instances`
+- **New Data Source documentation:** `alicloud_rocketmq_topics`
+- **New Resource documentation:** `alicloud_pvtz_inbound_endpoint`
+
+ENHANCEMENTS:
+
+- Provider: extend V4 request signing support for legacy ECS, NAS, CMS, SLS, OTS, MNS, FC and VPC calls.
+- resource/alicloud_eflo_node_group: support `system_disk.file_system_mount_enabled`.
+
+BUG FIXES:
+
+- resource/alicloud_cs_kubernetes_addon: run the addon uninstall operation on delete. ([#11617](https://github.com/aliyun/terraform-provider-alicloud/pull/11617))
+- resource/alicloud_eflo_cluster: preserve the resource group ID when the service returns an empty value.
+- resource/alicloud_express_connect_router_tr_association: only delete attachments owned by the association.
+- resource/alicloud_slb_master_slave_server_group: retry transient errors when creating a master-slave server group.
 
 ## 2.3.0 (November 19, 2026)
 

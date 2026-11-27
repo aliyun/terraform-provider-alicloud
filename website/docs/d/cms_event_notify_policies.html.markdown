@@ -87,10 +87,10 @@ output "alicloud_cms_event_notify_policy_example_id" {
 
 The following arguments are supported:
 
-* `name` - (ForceNew, Optional) Filters results by fuzzy matching on the policy name.
-* `order_by` - (ForceNew, Optional) The sorting field. Supported values include createTime, updateTime, and name.
-* `order_desc` - (ForceNew, Optional) Specifies whether to sort in descending order. A value of true indicates descending order, and a value of false indicates ascending order.
-* `workspace` - (Required, ForceNew) The workspace ID, which is used to isolate notification policy resources for different business workspaces. Example: `default-cms-xxxx-cn-hangzhou`.
+* `name` - (Optional) Filters results by fuzzy matching on the policy name.
+* `order_by` - (Optional) The sorting field. Supported values include createTime, updateTime, and name.
+* `order_desc` - (Optional) Specifies whether to sort in descending order. A value of true indicates descending order, and a value of false indicates ascending order.
+* `workspace` - (Required) The workspace ID, which is used to isolate notification policy resources for different business workspaces. Example: `default-cms-xxxx-cn-hangzhou`.
 * `ids` - (Optional, Computed) A list of Event Notify Policy IDs. The value is formulated as `<uuid>:<workspace>`.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -100,70 +100,200 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Event Notify Policy IDs.
-* `policies` - A list of Event Notify Policy Entries. Each element contains the following attributes:
-  * `create_time` - The creation time.
-  * `description` - The description of the policy.
-  * `enabled` - Indicates whether the policy is enabled.
-  * `name` - The name of the notification policy.
-  * `notify_strategy` - The notification strategy sub-entity, which includes grouping and merging settings, notification routing, channels, and custom templates.
-    * `custom_template_entries` - The list of custom notification templates.
-      * `template_uuid` - The UUID of the template.
-    * `description` - The description.
-    * `grouping_setting` - The grouping and merging settings.
-      * `grouping_keys` - The event fields used to group and merge notifications. Events sharing the same values are merged into a single notification.
-      * `period_min` - The check period in minutes. This parameter does not take effect on this API.
-      * `silence_sec` - The silence duration in seconds. This parameter does not take effect on this API.
-      * `times` - The number of triggers. This parameter does not take effect on this API.
-    * `ignore_restored_notification` - Indicates whether to ignore notifications for recovered events. `true` means no recovery notification is sent.
-    * `routes` - The notification channel routing settings.
-      * `channels` - The notification channels.
-        * `channel_type` - The channel type. Valid values: `DING`, `WEIXIN`, `FEISHU`, `SLACK`, `TEAMS`, `CONTACT`, `GROUP`, `DUTY`, `DING_COOL_APP`.
-        * `enabled_sub_channels` - The enabled notification methods. Applies only when `channel_type` is `CONTACT`, `GROUP` or `DUTY`. Valid values: `EMAIL`, `SMS`, `VOICE`, `DING`, `WEIXIN`, `FEISHU`, `WEBHOOK`.
-        * `receivers` - The list of recipients for the channel.
-      * `digital_employee_name` - The name of the digital employee.
-      * `effect_time_range` - The effective time range.
-        * `day_in_week` - The effective days of the week.
-        * `end_time_in_minute` - The end time in minutes.
-        * `start_time_in_minute` - The start time in minutes.
-        * `time_zone` - The time zone, such as Asia/Shanghai.
-      * `enable_rca` - Specifies whether to enable Root Cause Analysis (RCA).
-      * `filter_setting` - Route-level event filtering.
-        * `conditions` - Filter conditions.
-          * `field` - The filter field.
-          * `op` - The filter operator.
-          * `value` - The filter value.
-        * `expression` - The relational expression.
-        * `relation` - The logical relationship between conditions.
-  * `response_plan` - **NOTE:** This field is only available when `enable_details` is `true`. Response plan sub-entities: escalation, repeated notification, automatic recovery, and action integration.
-    * `auto_recover_seconds` - The auto-recovery duration in seconds. An event is recovered automatically when it is not triggered again within this duration.
-    * `escalation_id` - The list of escalation plan IDs.
-    * `pushing_setting` - Action integration push settings.
-      * `alert_action_ids` - The list of alert action integration IDs triggered by alerts.
-      * `restore_action_ids` - The list of action integration IDs triggered upon recovery.
-    * `repeat_notify_setting` - Repeated notification configuration.
-      * `end_incident_state` - The incident state at which repeated notifications stop. For example: `RECOVERED`.
-      * `repeat_interval` - The interval between repeated notifications, in seconds.
-  * `subscription` - **NOTE:** This field is only available when `enable_details` is `true`. Subscription sub-entities: event filtering, cross-workspace routing, and the switch for legacy product event subscription.
-    * `filter_setting` - Event content filtering.
-      * `conditions` - Filter conditions.
-        * `field` - Filter field.
-        * `op` - Filter operator.
-        * `value` - The filter value.
-      * `expression` - Relational expression.
-      * `relation` - Condition relationship.
-    * `subscribe_legacy_event` - Specifies whether to subscribe to legacy product events (events with an empty workspace, such as CMS 1.
-    * `workspace_filter_setting` - Cross-workspace event routing (global subscription).
-      * `tag_selector` - The tag selector.
-        * `conditions` - The filter conditions.
-          * `field` - The filter field.
-          * `op` - The filter operator.
-          * `value` - The filter value.
-        * `expression` - The relational expression.
-        * `relation` - The condition relation.
-      * `workspace_uuids` - The list of workspace UUIDs.
-  * `update_time` - The update time.
-  * `user_id` - The user ID.
-  * `uuid` - The unique identifier of the notification policy, which is returned by the creation API.
-  * `version` - Private parameter for update operation.
-  * `workspace` - The workspace ID, which is used to isolate notification policy resources for different business workspaces.
-  * `id` - The ID of the resource supplied above.
+* `policies` - A list of Event Notify Policy Entries.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `create_time` - The creation time.
+* `description` - The description of the policy.
+* `enabled` - Indicates whether the policy is enabled.
+* `name` - The name of the notification policy.
+* `notify_strategy` - The notification strategy sub-entity, which includes grouping and merging settings, notification routing, channels, and custom templates.
+* `response_plan` - Response plan sub-entities: escalation, repeated notification, automatic recovery, and action integration.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `subscription` - Subscription sub-entities: event filtering, cross-workspace routing, and the switch for legacy product event subscription.
+
+  -> **NOTE:** This field is only available when `enable_details` is `true`.
+* `update_time` - The update time.
+* `user_id` - The user ID.
+* `uuid` - The unique identifier of the notification policy, which is returned by the creation API.
+* `version` - Private parameter for update operation.
+* `workspace` - The workspace ID, which is used to isolate notification policy resources for different business workspaces.
+* `id` - The ID of the resource supplied above.
+
+---
+
+### `policies.notify_strategy`
+
+The notify_strategy supports the following attributes:
+
+* `custom_template_entries` - The list of custom notification templates.
+* `description` - The description.
+* `grouping_setting` - The grouping and merging settings.
+* `ignore_restored_notification` - Indicates whether to ignore notifications for recovered events. `true` means no recovery notification is sent.
+* `routes` - The notification channel routing settings.
+
+---
+
+### `policies.notify_strategy.custom_template_entries`
+
+The custom_template_entries supports the following attributes:
+
+* `template_uuid` - The UUID of the template.
+
+---
+
+### `policies.notify_strategy.grouping_setting`
+
+The grouping_setting supports the following attributes:
+
+* `grouping_keys` - The event fields used to group and merge notifications. Events sharing the same values are merged into a single notification.
+* `period_min` - The check period in minutes. This parameter does not take effect on this API.
+* `silence_sec` - The silence duration in seconds. This parameter does not take effect on this API.
+* `times` - The number of triggers. This parameter does not take effect on this API.
+
+---
+
+### `policies.notify_strategy.routes`
+
+The routes supports the following attributes:
+
+* `channels` - The notification channels.
+* `digital_employee_name` - The name of the digital employee.
+* `effect_time_range` - The effective time range.
+* `enable_rca` - Specifies whether to enable Root Cause Analysis (RCA).
+* `filter_setting` - Route-level event filtering.
+
+---
+
+### `policies.notify_strategy.routes.channels`
+
+The channels supports the following attributes:
+
+* `channel_type` - The channel type. Valid values: `DING`, `WEIXIN`, `FEISHU`, `SLACK`, `TEAMS`, `CONTACT`, `GROUP`, `DUTY`, `DING_COOL_APP`.
+* `enabled_sub_channels` - The enabled notification methods. Applies only when `channel_type` is `CONTACT`, `GROUP` or `DUTY`. Valid values: `EMAIL`, `SMS`, `VOICE`, `DING`, `WEIXIN`, `FEISHU`, `WEBHOOK`.
+* `receivers` - The list of recipients for the channel.
+
+---
+
+### `policies.notify_strategy.routes.effect_time_range`
+
+The effect_time_range supports the following attributes:
+
+* `day_in_week` - The effective days of the week.
+* `end_time_in_minute` - The end time in minutes.
+* `start_time_in_minute` - The start time in minutes.
+* `time_zone` - The time zone, such as Asia/Shanghai.
+
+---
+
+### `policies.notify_strategy.routes.filter_setting`
+
+The filter_setting supports the following attributes:
+
+* `conditions` - Filter conditions.
+* `expression` - The relational expression.
+* `relation` - The logical relationship between conditions.
+
+---
+
+### `policies.notify_strategy.routes.filter_setting.conditions`
+
+The conditions supports the following attributes:
+
+* `field` - The filter field.
+* `op` - The filter operator.
+* `value` - The filter value.
+
+---
+
+### `policies.response_plan`
+
+The response_plan supports the following attributes:
+
+* `auto_recover_seconds` - The auto-recovery duration in seconds. An event is recovered automatically when it is not triggered again within this duration.
+* `escalation_id` - The list of escalation plan IDs.
+* `pushing_setting` - Action integration push settings.
+* `repeat_notify_setting` - Repeated notification configuration.
+
+---
+
+### `policies.response_plan.pushing_setting`
+
+The pushing_setting supports the following attributes:
+
+* `alert_action_ids` - The list of alert action integration IDs triggered by alerts.
+* `restore_action_ids` - The list of action integration IDs triggered upon recovery.
+
+---
+
+### `policies.response_plan.repeat_notify_setting`
+
+The repeat_notify_setting supports the following attributes:
+
+* `end_incident_state` - The incident state at which repeated notifications stop. For example: `RECOVERED`.
+* `repeat_interval` - The interval between repeated notifications, in seconds.
+
+---
+
+### `policies.subscription`
+
+The subscription supports the following attributes:
+
+* `filter_setting` - Event content filtering.
+* `subscribe_legacy_event` - Specifies whether to subscribe to legacy product events (events with an empty workspace, such as CMS 1.
+* `workspace_filter_setting` - Cross-workspace event routing (global subscription).
+
+---
+
+### `policies.subscription.filter_setting`
+
+The filter_setting supports the following attributes:
+
+* `conditions` - Filter conditions.
+* `expression` - Relational expression.
+* `relation` - Condition relationship.
+
+---
+
+### `policies.subscription.filter_setting.conditions`
+
+The conditions supports the following attributes:
+
+* `field` - Filter field.
+* `op` - Filter operator.
+* `value` - The filter value.
+
+---
+
+### `policies.subscription.workspace_filter_setting`
+
+The workspace_filter_setting supports the following attributes:
+
+* `tag_selector` - The tag selector.
+* `workspace_uuids` - The list of workspace UUIDs.
+
+---
+
+### `policies.subscription.workspace_filter_setting.tag_selector`
+
+The tag_selector supports the following attributes:
+
+* `conditions` - The filter conditions.
+* `expression` - The relational expression.
+* `relation` - The condition relation.
+
+---
+
+### `policies.subscription.workspace_filter_setting.tag_selector.conditions`
+
+The conditions supports the following attributes:
+
+* `field` - The filter field.
+* `op` - The filter operator.
+* `value` - The filter value.

@@ -2,13 +2,16 @@ package cloudmonitorservice
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
+	legacyclient "github.com/aliyun/terraform-provider-alicloud/alicloud/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -139,12 +142,10 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 	listRequest := cms.CreateDescribeSiteMonitorListRequest()
 	listRequest.Keyword = keyword
 	listRequest.TaskId = id
-	var raw interface{}
+	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeSiteMonitorList(listRequest)
-		})
+		response, err = s.client.LegacySdkRpc(listRequest, "/", cms.CreateDescribeSiteMonitorListResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{errs.ThrottlingUser, "ExceedingQuota"}) {
 				wait()
@@ -157,7 +158,10 @@ func (s *CmsService) DescribeSiteMonitor(id, keyword string) (siteMonitor cms.Si
 	if err != nil {
 		return siteMonitor, errs.WrapError(err)
 	}
-	list := raw.(*cms.DescribeSiteMonitorListResponse)
+	list := &cms.DescribeSiteMonitorListResponse{}
+	if err := legacyCmsResponse(response, list, "SiteMonitors"); err != nil {
+		return siteMonitor, errs.WrapError(err)
+	}
 	if len(list.SiteMonitors.SiteMonitor) < 1 {
 		return siteMonitor, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("Site Monitor", id))
 
@@ -174,12 +178,10 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 	request := cms.CreateDescribeSiteMonitorAttributeRequest()
 	request.TaskId = id
 
-	var raw interface{}
+	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeSiteMonitorAttribute(request)
-		})
+		response, err = s.client.LegacySdkRpc(request, "/", cms.CreateDescribeSiteMonitorAttributeResponse())
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{errs.ThrottlingUser, "ExceedingQuota"}) {
 				wait()
@@ -193,8 +195,11 @@ func (s *CmsService) GetIspCities(id string) (ispCities IspCities, err error) {
 		return nil, errs.WrapError(err)
 	}
 
-	response := raw.(*cms.DescribeSiteMonitorAttributeResponse)
-	ispCity := response.SiteMonitors.IspCities.IspCity
+	attribute := &cms.DescribeSiteMonitorAttributeResponse{}
+	if err := legacyCmsResponse(response, attribute, "SiteMonitors"); err != nil {
+		return nil, errs.WrapError(err)
+	}
+	ispCity := attribute.SiteMonitors.IspCities.IspCity
 
 	var list []map[string]string
 	for _, element := range ispCity {
@@ -212,9 +217,7 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 	var response *cms.DescribeContactListResponse
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DescribeContactList(request)
-		})
+		raw, err := s.client.LegacySdkRpc(request, "/", cms.CreateDescribeContactListResponse())
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -222,8 +225,11 @@ func (s *CmsService) DescribeCmsAlarmContact(id string) (object cms.Contact, err
 			}
 			return retry.NonRetryableError(err)
 		}
-		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*cms.DescribeContactListResponse)
+		logs.AddDebug(request.GetActionName(), raw, request)
+		response = &cms.DescribeContactListResponse{}
+		if err := legacyCmsResponse(raw, response, "Contacts"); err != nil {
+			return retry.NonRetryableError(errs.WrapError(err))
+		}
 		return nil
 	})
 	if err != nil {
@@ -255,18 +261,21 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 	request.PageSize = requests.NewInteger(20)
 	for {
 
-		var raw interface{}
+		var response *cms.DescribeContactGroupListResponse
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			raw, err = s.client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-				return cmsClient.DescribeContactGroupList(request)
-			})
+			raw, err := s.client.LegacySdkRpc(request, "/", cms.CreateDescribeContactGroupListResponse())
 			if err != nil {
 				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(request.GetActionName(), raw, request)
+			response = &cms.DescribeContactGroupListResponse{}
+			if err := legacyCmsResponse(raw, response, "ContactGroupList"); err != nil {
+				return retry.NonRetryableError(errs.WrapError(err))
 			}
 			return nil
 		})
@@ -279,8 +288,6 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 			err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			return object, err
 		}
-		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*cms.DescribeContactGroupListResponse)
 		if response.Code != "200" {
 			err = errs.Error("DescribeContactGroupList failed for %s", response.Message)
 			return object, err
@@ -306,6 +313,27 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 	}
 	err = errs.WrapErrorf(errs.NotFoundErr("CmsAlarmContactGroup", id), errs.NotFoundMsg, errs.ProviderERROR)
 	return
+}
+
+// legacyCmsResponse rehydrates a shared-path RPC response map into the typed
+// SDK response so callers migrated off WithCmsClient keep their downstream
+// field access unchanged. Every CMS RPC reply carries a top-level Code, so a
+// payload without it is a structure mismatch and is reported as an error
+// instead of decoding into an empty list that callers would misread as
+// "resource absent". Callers that translate an empty list into "resource
+// absent" pass their envelope key (Contacts, ContactGroupList, SiteMonitors,
+// ...): a payload missing it is equally a structure mismatch, not an empty
+// result.
+func legacyCmsResponse(raw map[string]interface{}, response interface{}, envelopeKeys ...string) error {
+	if _, ok := raw["Code"]; !ok {
+		return fmt.Errorf("unexpected CMS response for %T: no top-level Code field", response)
+	}
+	for _, key := range envelopeKeys {
+		if _, ok := raw[key]; !ok {
+			return fmt.Errorf("unexpected CMS response for %T: no top-level %q field", response, key)
+		}
+	}
+	return legacyclient.LegacyRpcResponse(raw, response)
 }
 
 func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]interface{}, err error) {
@@ -992,4 +1020,31 @@ func (s *CmsService) CmsDynamicTagGroupStateRefreshFunc(id string, failStates []
 // NewCmsService constructs a CmsService bound to the provider client.
 func NewCmsService(client *connectivity.AliyunClient) *CmsService {
 	return &CmsService{client: client}
+}
+
+// Match the service code exactly. Error messages and HTTP status alone do
+// not establish that the resource is absent. ResourceNotFound is a built-in
+// alias accepted alongside the per-call codes, so every call site matches it
+// regardless of its own list. Errors none of the branches recognize (wrapped
+// transport failures without a business code) return false on purpose: the
+// delete then fails loudly instead of assuming the resource is gone.
+func cmsContactAbsent(err error, absentCodes ...string) bool {
+	var teaErr *tea.SDKError
+	var sdkErr interface{ ErrorCode() string }
+	var daraErr interface{ GetCode() *string }
+	var code string
+	switch {
+	case errors.As(err, &teaErr):
+		code = tea.StringValue(teaErr.Code)
+	case errors.As(err, &sdkErr):
+		code = sdkErr.ErrorCode()
+	case errors.As(err, &daraErr):
+		code = tea.StringValue(daraErr.GetCode())
+	}
+	for _, absent := range absentCodes {
+		if code == absent {
+			return true
+		}
+	}
+	return code == "ResourceNotFound"
 }

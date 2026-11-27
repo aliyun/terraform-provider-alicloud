@@ -32,8 +32,8 @@ output "first_event_bridge_event_source_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Event Source IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Event Source name.
+* `ids` - (Optional, Computed)  A list of Event Source IDs.
+* `name_regex` - (Optional) A regex string to filter results by Event Source name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -41,11 +41,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Event Source names.
-* `sources` - A list of Event Bridge Event Sources. Each element contains the following attributes:
-  * `description` - The detail describe of event source.
-  * `event_source_name` - The code name of event source.
-  * `external_source_config` - The config of external data source.
-  * `external_source_type` - The type of external data source.
-  * `id` - The ID of the Event Source.
-  * `linked_external_source` - Whether to connect to an external data source.
-  * `type` - The type of the event source.
+* `sources` - A list of Event Bridge Event Sources.
+
+---
+
+### `sources`
+
+The sources supports the following attributes:
+
+* `description` - The detail describe of event source.
+* `event_source_name` - The code name of event source.
+* `external_source_config` - The config of external data source.
+* `external_source_type` - The type of external data source.
+* `id` - The ID of the Event Source.
+* `linked_external_source` - Whether to connect to an external data source.
+* `type` - The type of the event source.

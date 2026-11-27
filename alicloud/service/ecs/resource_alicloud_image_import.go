@@ -206,9 +206,7 @@ func resourceAliCloudImageImportCreate(d *schema.ResourceData, meta interface{})
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
-		raw, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ImportImage(request)
-		})
+		raw, err = client.EcsSdkRpc(request, ecs.CreateImportImageResponse())
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

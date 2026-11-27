@@ -72,6 +72,8 @@ The following arguments are supported:
 
   -> **NOTE:** `description`, `config.service_names` and `config.metadata_field` are updated in place; an update replaces `service_names` and `metadata_field` as a whole. `config.source` cannot be changed after creation and `context_type` is not updated by the API, so changing either of them recreates the Context Store. Clearing `config.service_names` or removing the `config` block also recreates the Context Store, because the API keeps the stored service names when they are omitted and rejects an empty list.
 
+---
+
 ### `config`
 
 The config supports the following:
@@ -79,6 +81,8 @@ The config supports the following:
 * `metadata_field` - (Optional, Map) The mapping between business metadata fields and storage fields. The map key is the business field name and the map value (string) is the field name used in storage, for example `userId = "user_id"`. An update replaces the whole mapping, and removing a key deletes it from the Context Store. The Get API returns the mapping mixed with internal keys, so this field is kept from the prior state and cannot be recovered by `terraform import`; the first apply after importing sends the configured mapping again in place.
 * `service_names` - (Optional, List) The list of service names whose data is imported into the Context Store. It must be a non-empty list when `context_type` is `experience`. An update replaces the whole list and keeps its order.
 * `source` - (Optional, ForceNew, List) The log data source of the Context Store. See [`source`](#config-source) below.
+
+---
 
 ### `config-source`
 
@@ -99,7 +103,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Context Store.
 * `delete` - (Defaults to 5 mins) Used when delete the Context Store.

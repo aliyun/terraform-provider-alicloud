@@ -142,16 +142,23 @@ The following attributes are exported:
 * `tunnel_stage` -  The stage of OTS tunnel, valid values: `InitBaseDataAndStreamShard`, `ProcessBaseData`, `ProcessStream`.
 * `expired` - Whether the tunnel has expired.
 * `create_time` - The creation time of the Tunnel.
-* `channels` - The channels of OTS tunnel. Each element contains the following attributes:
-  * `channel_id` - The id of the channel.
-  * `channel_type` - The type of the channel, valid values: `BaseData`, `Stream`.
-  * `channel_status` - The status of the channel, valid values: `WAIT`, `OPEN`, `CLOSING`, `CLOSE`, `TERMINATED`.
-  * `client_id` - The client id of the channel.
-  * `channel_rpo` - The latest consumption time of the channel, unix time in nanosecond.
-  
+* `channels` - The channels of OTS tunnel.
+
+---
+
+### `channels`
+
+The channels supports the following attributes:
+
+* `channel_id` - The id of the channel.
+* `channel_type` - The type of the channel, valid values: `BaseData`, `Stream`.
+* `channel_status` - The status of the channel, valid values: `WAIT`, `OPEN`, `CLOSING`, `CLOSE`, `TERMINATED`.
+* `client_id` - The client id of the channel.
+* `channel_rpo` - The latest consumption time of the channel, unix time in nanosecond.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the OTS tunnel.
 * `delete` - (Defaults to 10 mins) Used when delete the OTS tunnel.

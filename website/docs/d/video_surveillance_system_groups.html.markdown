@@ -37,35 +37,53 @@ output "vs_group" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Group IDs.
-* `in_protocol` - (Optional, ForceNew) The use of the access protocol support gb28181, Real Time Messaging Protocol (rtmp). Valid values: `gb28181`, `rtmp`.
-* `name` - (Optional, ForceNew) The name.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group name.
+* `ids` - (Optional, Computed)  A list of Group IDs.
+* `in_protocol` - (Optional) The use of the access protocol support gb28181, Real Time Messaging Protocol (rtmp). Valid values: `gb28181`, `rtmp`.
+* `name` - (Optional) The name.
+* `name_regex` - (Optional) A regex string to filter results by Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status. Valid values: `on`,`off`.
+* `status` - (Optional) The status. Valid values: `on`,`off`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group names.
-* `groups` - A list of Video Surveillance System Groups. Each element contains the following attributes:
-  * `app` - The App Name of Group.
-  * `callback` - The space within the device status update of the callback, need to start with http:// or https:// at the beginning.
-  * `create_time` - The creation time of the Group.
-  * `description` - The description of the Group.
-  * `enabled` - Whether to open Group.
-  * `gb_id` - Space of national standard ID. **NOTE:** Available only in the national standard access space.
-  * `gb_ip` - Space of national standard signaling server address. **NOTE:** Available only in the national standard access space.
-  * `group_id` - The ID of Group.
-  * `group_name` - The name of Group.
-  * `id` - The ID of the Group.
-  * `in_protocol` - The use of the access protocol support `gb28181`,`rtmp`(Real Time Messaging Protocol).
-  * `out_protocol` - The use of space play Protocol multi-valued separate them with commas (,). Valid values: `flv`,`hls`, `rtmp`(Real Time Messaging Protocol).
-  * `play_domain` -The domain name of plan streaming used by the group.
-  * `push_domain` - The domain name of push streaming used by the group.
-  * `stats` - The Device statistics of Group.
-    * `device_num` - The total number of devices in the group.
-    * `ied_num` - The total number of smart devices in the group.
-    * `ipc_num` - The total number of cameras in the group.
-    * `platform_num` - The total number of platforms in the group.
+* `groups` - A list of Video Surveillance System Groups.
+
+---
+
+### `groups`
+
+The groups supports the following attributes:
+
+* `app` - The App Name of Group.
+* `callback` - The space within the device status update of the callback, need to start with http:// or https:// at the beginning.
+* `create_time` - The creation time of the Group.
+* `description` - The description of the Group.
+* `enabled` - Whether to open Group.
+* `gb_id` - Space of national standard ID.
+
+  -> **NOTE:** Available only in the national standard access space.
+* `gb_ip` - Space of national standard signaling server address.
+
+  -> **NOTE:** Available only in the national standard access space.
+* `group_id` - The ID of Group.
+* `group_name` - The name of Group.
+* `id` - The ID of the Group.
+* `in_protocol` - The use of the access protocol support `gb28181`,`rtmp`(Real Time Messaging Protocol).
+* `out_protocol` - The use of space play Protocol multi-valued separate them with commas (,). Valid values: `flv`,`hls`, `rtmp`(Real Time Messaging Protocol).
+* `play_domain` -The domain name of plan streaming used by the group.
+* `push_domain` - The domain name of push streaming used by the group.
+* `stats` - The Device statistics of Group.
+
+---
+
+### `groups.stats`
+
+The stats supports the following attributes:
+
+* `device_num` - The total number of devices in the group.
+* `ied_num` - The total number of smart devices in the group.
+* `ipc_num` - The total number of cameras in the group.
+* `platform_num` - The total number of platforms in the group.

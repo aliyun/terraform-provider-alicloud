@@ -138,6 +138,8 @@ The following arguments are supported:
 * `lang` - (Optional, ForceNew, Available since v1.62.1) The language of code.
 * `user_client_ip` - (Optional, ForceNew, Available since v1.62.1) The user custom IP address.
 
+---
+
 ### `vpcs`
 
 The vpcs support the following:
@@ -149,7 +151,7 @@ The vpcs support the following:
 
 -> **NOTE:** Available since v1.110.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the Private Zone Attachment.
 * `update` - (Defaults to 5 mins) Used when updating the Private Zone Attachment.

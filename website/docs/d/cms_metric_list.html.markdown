@@ -54,14 +54,21 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - (String) The ID of the data source. It is computed from the metric name and namespace.
 * `actual_period` - (String) The actual period at which monitoring data is collected. This value is returned by the server.
 * `next_token` - (String) The pagination token that can be used in the next request to retrieve more datapoints.
-* `datapoints` - (List) A list of Cms Metric Datapoints. Each element contains the following attributes:
-  * `uuid` - (String) The unique identifier of the datapoint.
-  * `metric_name` - (String) The name of the monitoring metric.
-  * `timestamp` - (String) The timestamp that indicates when the metric value was collected.
-  * `average` - (Float) The average of the metric values within the statistical period.
-  * `sum` - (Float) The sum of the metric values within the statistical period.
-  * `maximum` - (Float) The maximum metric value within the statistical period.
-  * `minimum` - (Float) The minimum metric value within the statistical period.
-  * `count` - (Float) The number of times that the metric value is collected within the statistical period.
-  * `user_id` - (String) The ID of the Alibaba Cloud user.
-  * `instance_id` - (String) The ID of the instance.
+* `datapoints` - (List) A list of Cms Metric Datapoints.
+
+---
+
+### `datapoints`
+
+The datapoints supports the following attributes:
+
+* `uuid` - (String) The unique identifier of the datapoint.
+* `metric_name` - (String) The name of the monitoring metric.
+* `timestamp` - (String) The timestamp that indicates when the metric value was collected.
+* `average` - (Float) The average of the metric values within the statistical period.
+* `sum` - (Float) The sum of the metric values within the statistical period.
+* `maximum` - (Float) The maximum metric value within the statistical period.
+* `minimum` - (Float) The minimum metric value within the statistical period.
+* `count` - (Float) The number of times that the metric value is collected within the statistical period.
+* `user_id` - (String) The ID of the Alibaba Cloud user.
+* `instance_id` - (String) The ID of the instance.

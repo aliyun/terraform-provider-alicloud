@@ -174,13 +174,13 @@ output "emrv2_clusters_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Cluster IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Cluster name.
-* `cluster_name` - (Optional, ForceNew) The cluster name.
-* `resource_group_id` - (Optional, ForceNew) The Resource Group ID.
-* `cluster_types` - (Optional, ForceNew) The cluster types.
-* `cluster_states` - (Optional, ForceNew) The cluster states.
-* `payment_types` - (Optional, ForceNew) The cluster payment types.
+* `ids` - (Optional, Computed)  A list of Cluster IDs.
+* `name_regex` - (Optional) A regex string to filter results by Cluster name.
+* `cluster_name` - (Optional) The cluster name.
+* `resource_group_id` - (Optional) The Resource Group ID.
+* `cluster_types` - (Optional) The cluster types.
+* `cluster_states` - (Optional) The cluster states.
+* `payment_types` - (Optional) The cluster payment types.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `next_token` - (Optional) The next token is used to list clusters for next page.
@@ -192,21 +192,35 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Cluster names.
 * `ids` - A list of Cluster IDS.
-* `clusters` - A list of Emr Clusters. Each element contains the following attributes:
-  * `cluster_id` - The first ID of the resource.
-  * `cluster_name` - The name of the emr cluster.
-  * `cluster_type` - The type of the emr cluster.
-  * `cluster_state` - The state of the emr cluster.
-  * `payment_type` - The payment type of the emr cluster.
-  * `create_time` - The creation time of the resource.
-  * `ready_time` - The ready time of the resource.
-  * `expire_time` - The expire time of the resource.
-  * `end_time` - The end time of the resource.
-  * `release_version` - The release version of the resource.
-  * `resource_group_id` - The resource group id of the resource.
-  * `state_change_reason` - The cluster state change reason.
-  * `tags` - A mapping of tags to assign to the resource.
-    * `key` - The key of the tag.
-    * `value` - The value of the tag.
-  * `emr_default_role` - The ecs default role belongs to this emr cluster.
+* `clusters` - A list of Emr Clusters.
 * `total_count` - The total count of list clusters.
+
+---
+
+### `clusters`
+
+The clusters supports the following attributes:
+
+* `cluster_id` - The first ID of the resource.
+* `cluster_name` - The name of the emr cluster.
+* `cluster_type` - The type of the emr cluster.
+* `cluster_state` - The state of the emr cluster.
+* `payment_type` - The payment type of the emr cluster.
+* `create_time` - The creation time of the resource.
+* `ready_time` - The ready time of the resource.
+* `expire_time` - The expire time of the resource.
+* `end_time` - The end time of the resource.
+* `release_version` - The release version of the resource.
+* `resource_group_id` - The resource group id of the resource.
+* `state_change_reason` - The cluster state change reason.
+* `tags` - A mapping of tags to assign to the resource.
+* `emr_default_role` - The ecs default role belongs to this emr cluster.
+
+---
+
+### `clusters.tags`
+
+The tags supports the following attributes:
+
+* `key` - The key of the tag.
+* `value` - The value of the tag.

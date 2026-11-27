@@ -53,7 +53,9 @@ The following arguments are supported:
 * `scope` - (Optional, String) The scope of the reserved instance. Valid values: `Region` and `Zone`. `zone_id` is required when the value is `Zone`, and must not be set when the value is `Region`.
 * `offering_type` - (Optional, String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
 * `allocation_type` - (Optional, String) The allocation type. Valid values: `Normal` and `Shared`. Defaults to `Normal` on the server side.
-* `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 100 entries is allowed. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`. **Note:** `Expired` is deprecated by `DescribeReservedInstances` and may be removed from the API. It is still accepted for compatibility; new configurations should filter with the other values.
+* `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 100 entries is allowed. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`.
+
+  -> **NOTE:** `Expired` is deprecated by `DescribeReservedInstances` and may be removed from the API. It is still accepted for compatibility; new configurations should filter with the other values.
 * `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters, so an empty value is rejected; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain `http://` or `https://`. A null value is rejected as well: omit the entry to leave the tag out of the request. A tag filter returns at most 1,000 reserved instances; when more may match, query `ListTagResources` instead.
 * `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` to `2147483647` (`PageNumber` is an int32 on the wire). Defaults to `1`. The rows of the pages before `page_number` are not read and are not part of the result. When the API reports `TotalCount`, `total_count` still includes those skipped rows; an unknown-total fallback contains only the rows read. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.
 * `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`. A page with fewer entries than this value ends the read only when the rows read account for every row that is readable from `page_number`; otherwise the read is reported as incomplete.
@@ -65,23 +67,37 @@ The following attributes are exported in addition to the arguments listed above:
 * `id` - (Computed, String) The ID of the data source, derived from the matched reserved instance IDs.
 * `total_count` - (Computed, Int) The `TotalCount` reported by `DescribeReservedInstances` for the configured filters. When present, it counts every matching reserved instance in the region, including rows skipped by `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written. When a valid `ReservedInstances` container is present but `TotalCount` is omitted or null, the total falls back to the number of rows read, which excludes skipped rows. A response with neither the container nor a usable `TotalCount` is rejected.
 * `names` - (Computed, List of String) A list of reserved instance names that match the configured filters.
-* `instances` - (Computed, List of Object) A list of reserved instances. Each element contains the following attributes:
-  * `reserved_instance_id` - (String) The ID of the reserved instance.
-  * `reserved_instance_name` - (String) The name of the reserved instance.
-  * `status` - (String) The status of the reserved instance. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`.
-  * `creation_time` - (String) The time when the reserved instance was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `start_time` - (String) The time when the reserved instance takes effect, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `expired_time` - (String) The time when the reserved instance expires, in UTC and formatted as `2026-11-05T10:00:00Z`.
-  * `instance_type` - (String) The instance type, for example `ecs.g6.large`.
-  * `instance_amount` - (Int) The number of instances that the reserved instance covers.
-  * `region_id` - (String) The ID of the region.
-  * `zone_id` - (String) The ID of the zone.
-  * `scope` - (String) The scope of the reserved instance as returned by the service, for example `region`. Use the request-side `scope` values `Region` and `Zone` when filtering.
-  * `platform` - (String) The platform of the instances covered by the reserved instance, for example `Linux` or `Windows`.
-  * `offering_type` - (String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
-  * `allocation_status` - (String) The allocation status of the reserved instance. This value is meaningful only when `allocation_type` is `Shared`. Valid values: `allocated` (allocated to another user) and `beAllocated` (allocated by another user).
-  * `description` - (String) The description of the reserved instance.
-  * `resource_group_id` - (String) The ID of the resource group.
-  * `operation_locks` - (List of Object) The locks applied to the reserved instance. Each element contains:
-    * `lock_reason` - (String) The reason why the reserved instance is locked. Valid values: `financial` and `security`.
-  * `tags` - (Map of String) A mapping of tags.
+* `instances` - (Computed, List of Object) A list of reserved instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `reserved_instance_id` - (String) The ID of the reserved instance.
+* `reserved_instance_name` - (String) The name of the reserved instance.
+* `status` - (String) The status of the reserved instance. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`.
+* `creation_time` - (String) The time when the reserved instance was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `start_time` - (String) The time when the reserved instance takes effect, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `expired_time` - (String) The time when the reserved instance expires, in UTC and formatted as `2026-11-05T10:00:00Z`.
+* `instance_type` - (String) The instance type, for example `ecs.g6.large`.
+* `instance_amount` - (Int) The number of instances that the reserved instance covers.
+* `region_id` - (String) The ID of the region.
+* `zone_id` - (String) The ID of the zone.
+* `scope` - (String) The scope of the reserved instance as returned by the service, for example `region`. Use the request-side `scope` values `Region` and `Zone` when filtering.
+* `platform` - (String) The platform of the instances covered by the reserved instance, for example `Linux` or `Windows`.
+* `offering_type` - (String) The payment type. Valid values: `No Upfront`, `Partial Upfront` and `All Upfront`.
+* `allocation_status` - (String) The allocation status of the reserved instance. This value is meaningful only when `allocation_type` is `Shared`. Valid values: `allocated` (allocated to another user) and `beAllocated` (allocated by another user).
+* `description` - (String) The description of the reserved instance.
+* `resource_group_id` - (String) The ID of the resource group.
+* `operation_locks` - (List of Object) The locks applied to the reserved instance.
+* `tags` - (Map of String) A mapping of tags.
+
+---
+
+### `instances.operation_locks`
+
+The operation_locks supports the following attributes:
+
+* `lock_reason` - (String) The reason why the reserved instance is locked. Valid values: `financial` and `security`.

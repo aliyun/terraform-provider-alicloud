@@ -63,6 +63,8 @@ The following arguments are supported:
 You can add up to 50 stream classification rules at a time. See [`traffic_match_rules`](#traffic_match_rules) below.
 * `transit_router_id` - (Required, ForceNew) TransitRouterId
 
+---
+
 ### `traffic_match_rules`
 
 The traffic_match_rules supports the following:
@@ -115,7 +117,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 8 mins) Used when create the Traffic Marking Policy.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Marking Policy.

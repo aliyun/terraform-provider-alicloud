@@ -135,7 +135,7 @@ Global params:
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since v1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 * `runtime` - (Optional, Available since v1.103.2) A list of runtime containers. If you select another container runtime, see [How do I select between Docker and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm?spm=a2c63.p38356.b99.440.22563866AJkBgI). See [`runtime`](#runtime) below.
-* `enable_ssh` - (Optional, ForceNew) Enable login to the node through SSH. Default to `false`.
+* `enable_ssh` - (Optional) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Optional, Available since v1.103.2) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). Only works for **Create** Operation.
@@ -204,6 +204,8 @@ The following parameters have been removed from the resource. Use `alicloud_cs_k
 
 `master_instance_type`, `worker_instance_type`, `vswitch_id`, `vswitch_ids`, `force_update`, `log_config`, `cluster_network_type`, `worker_data_disk_category`, `worker_data_disk_size`, `worker_numbers`, `nodes`, `exclude_autoscaler_nodes`, `kube_config`, `availability_zone`, `worker_number`, `worker_vswitch_ids`, `worker_instance_types`, `worker_instance_charge_type`, `worker_period`, `worker_period_unit`, `worker_auto_renew`, `worker_auto_renew_period`, `worker_disk_category`, `worker_disk_size`, `worker_data_disks`, `node_port_range`, `cpu_policy`, `user_data`, `taints`, `worker_disk_performance_level`, `worker_disk_snapshot_policy_id`
 
+---
+
 ### `addons`
 
 The addons supports the following:
@@ -226,6 +228,8 @@ addons {
 }
 ```
 
+---
+
 ### `runtime`
 
 * `name` - (Optional) The name of the runtime. Supported runtimes can be queried by data source [alicloud_cs_kubernetes_version](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_version).
@@ -239,6 +243,8 @@ The following example is the definition of runtime block:
     version = "1.6.28"
   }
 ```
+
+---
 
 ### `delete_options`
 
@@ -289,29 +295,45 @@ The following attributes are exported:
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
 * `connections` - (List) A list of kubernetes cluster connection information.
-  * `api_server_internet` - API Server Internet endpoint.
-  * `api_server_intranet` - API Server Intranet endpoint.
-  * `master_public_ip` - Master node SSH IP address.
-  * `service_domain` - Service Access Domain.
 * `certificate_authority` - (List, Deprecated from v1.248.0) Nested attribute containing certificate authority data for your cluster. Please use the attribute [certificate_authority](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#certificate_authority) of new DataSource `alicloud_cs_cluster_credential` to replace it.
-  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
-  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
-  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 * `slb_id` - The ID of APIServer load balancer.
-* `master_nodes` - (Optional) The master nodes. See [`master_nodes`](#master_nodes) below.
+* `master_nodes` - (Computed) The master nodes. See [`master_nodes`](#master_nodes) below.
+
+---
+
+### `connections`
+
+The connections supports the following attributes:
+
+* `api_server_internet` - API Server Internet endpoint.
+* `api_server_intranet` - API Server Intranet endpoint.
+* `master_public_ip` - Master node SSH IP address.
+* `service_domain` - Service Access Domain.
+
+---
+
+### `certificate_authority`
+
+The certificate_authority supports the following attributes:
+
+* `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+* `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+* `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+
+---
 
 ### `master_nodes`
 
 The master_nodes supports the following:
 
-* `id` - (Optional) The id of a node.
-* `name` - (Optional) The name of a node.
-* `private_ip` - (Optional) The private ip of a node.
+* `id` - (Computed) The id of a node.
+* `name` - (Computed) The name of a node.
+* `private_ip` - (Computed) The private ip of a node.
 
 ## Timeouts
 
 -> **NOTE:** Available since v1.58.0.
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.

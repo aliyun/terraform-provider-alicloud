@@ -68,6 +68,8 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the PrefixList belongs.
 * `tags` - (Optional, Map, Available since v1.205.0) The tags of PrefixList.
 
+---
+
 ### `entrys`
 
 The Entries supports the following:
@@ -82,21 +84,28 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the prefix list was created.
 * `prefix_list_association` - The association list information of the prefix list.
-  * `owner_id` - The ID of the Alibaba Cloud account (primary account) to which the prefix list belongs.
-  * `prefix_list_id` - The instance ID of the prefix list.
-  * `reason` - Reason when the association fails.
-  * `region_id` - The region ID of the prefix list to be queried.
-  * `resource_id` - The ID of the associated resource.
-  * `resource_type` - The associated resource type. Value:-**vpcRouteTable**: The VPC route table.-**trRouteTable**: the routing table of the forwarding router.
-  * `resource_uid` - The ID of the Alibaba Cloud account (primary account) to which the resource bound to the prefix list belongs.
-  * `status` - The association status of the prefix list. Value:-**Created**: Success.-**ModifyFailed**: is not associated with the latest version.-**Creating**: Creating.-**Modifying**: Modifying.-**Deleting**: Deleting.-**Deleted**: Deleted.
 * `prefix_list_id` - The ID of the query Prefix List.
 * `share_type` - The share type of the prefix list. Value:-**Shared**: indicates that the prefix list is a Shared prefix list.-Null: indicates that the prefix list is not a shared prefix list.
 * `status` - Resource attribute fields that represent the status of the resource.
 
+---
+
+### `prefix_list_association`
+
+The prefix_list_association supports the following attributes:
+
+* `owner_id` - The ID of the Alibaba Cloud account (primary account) to which the prefix list belongs.
+* `prefix_list_id` - The instance ID of the prefix list.
+* `reason` - Reason when the association fails.
+* `region_id` - The region ID of the prefix list to be queried.
+* `resource_id` - The ID of the associated resource.
+* `resource_type` - The associated resource type. Value:-**vpcRouteTable**: The VPC route table.-**trRouteTable**: the routing table of the forwarding router.
+* `resource_uid` - The ID of the Alibaba Cloud account (primary account) to which the resource bound to the prefix list belongs.
+* `status` - The association status of the prefix list. Value:-**Created**: Success.-**ModifyFailed**: is not associated with the latest version.-**Creating**: Creating.-**Modifying**: Modifying.-**Deleting**: Deleting.-**Deleted**: Deleted.
+
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Prefix List.
 * `delete` - (Defaults to 5 mins) Used when delete the Prefix List.

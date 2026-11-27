@@ -7,16 +7,16 @@ description: |-
     Provides a collection of data disk and system disk types when create emr cluster according to the specified filters.
 ---
 
-# alicloud\_emr\_disk\_types
+# alicloud_emr_disk_types
 
-The `alicloud_emr_disk_types` data source provides a collection of data disk and 
+The `alicloud_emr_disk_types` data source provides a collection of data disk and
 system disk types available in Alibaba Cloud account when create a emr cluster.
 
--> **NOTE:** Available in 1.60.0+
+-> **NOTE:** Available since v1.60.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_emr_disk_types" "default" {
   destination_resource = "DataDisk"
   instance_charge_type = "PostPaid"
@@ -45,8 +45,15 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of data disk and system disk type IDs. 
-* `types` - A list of emr instance types. Each element contains the following attributes:
-  * `value` - The value of the data disk or system disk
-  * `min` - The mininum value of the data disk to supported the specific instance type
-  * `max` - The maximum value of the data disk to supported the specific instance type
+* `ids` - A list of data disk and system disk type IDs.
+* `types` - A list of emr instance types.
+
+---
+
+### `types`
+
+The types supports the following attributes:
+
+* `value` - The value of the data disk or system disk
+* `min` - The mininum value of the data disk to supported the specific instance type
+* `max` - The maximum value of the data disk to supported the specific instance type

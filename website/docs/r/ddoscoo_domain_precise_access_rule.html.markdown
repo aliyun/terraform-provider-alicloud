@@ -84,6 +84,8 @@ The following arguments are supported:
 * `expires` - (Optional, Int) Rule validity period, in seconds. This parameter takes effect only when the rule's matching action is set to block (`action` is `block`), blocking access requests during the validity period. If this parameter is not specified, the rule remains effective permanently.
 * `name` - (Required, ForceNew) Rule name.
 
+---
+
 ### `condition`
 
 The condition supports the following:
@@ -104,7 +106,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Domain Precise Access Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Domain Precise Access Rule.

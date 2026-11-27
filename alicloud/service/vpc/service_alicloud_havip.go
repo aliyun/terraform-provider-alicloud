@@ -27,9 +27,7 @@ func (s *HaVipService) DescribeHaVip(haVipId string) (v vpc.HaVip, err error) {
 
 	invoker := NewInvoker()
 	err = invoker.Run(func() error {
-		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeHaVips(request)
-		})
+		raw, err := s.client.VpcSdkRpc(request, vpc.CreateDescribeHaVipsResponse())
 		if err != nil {
 			return err
 		}

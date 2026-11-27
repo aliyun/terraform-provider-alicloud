@@ -7,15 +7,15 @@ description: |-
     Provides a list of Route Entries owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_route\_entries
+# alicloud_route_entries
 
 This data source provides a list of Route Entries owned by an Alibaba Cloud account.
 
--> **NOTE:** Available in 1.37.0+.
+-> **NOTE:** Available since v1.37.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -31,7 +31,7 @@ data "alicloud_images" "default" {
 }
 
 variable "name" {
-  default = "tf-testAccRouteEntryConfig"
+  default = "tf-exampleAccRouteEntryConfig"
 }
 resource "alicloud_vpc" "foo" {
   name       = "${var.name}"
@@ -97,7 +97,7 @@ data "alicloud_route_entries" "foo" {
 
 The following arguments are supported:
 
-* `route_table_id` - (Required, ForceNew) The ID of the router table to which the route entry belongs.
+* `route_table_id` - (Required) The ID of the router table to which the route entry belongs.
 * `instance_id` - (Optional) The instance ID of the next hop.
 * `type` - (Optional) The type of the route entry.
 * `cidr_block` - (Optional) The destination CIDR block of the route entry.
@@ -107,11 +107,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `entries` - A list of Route Entries. Each element contains the following attributes:
-  * `type` - The type of the route entry.
-  * `next_hop_type` - The type of the next hop.
-  * `status` - The status of the route entry.
-  * `instance_id` - The instance ID of the next hop.
-  * `route_table_id` - The ID of the router table to which the route entry belongs.
-  * `cidr_block` - The destination CIDR block of the route entry.
+* `entries` - A list of Route Entries.
 
+---
+
+### `entries`
+
+The entries supports the following attributes:
+
+* `type` - The type of the route entry.
+* `next_hop_type` - The type of the next hop.
+* `status` - The status of the route entry.
+* `instance_id` - The instance ID of the next hop.
+* `route_table_id` - The ID of the router table to which the route entry belongs.
+* `cidr_block` - The destination CIDR block of the route entry.

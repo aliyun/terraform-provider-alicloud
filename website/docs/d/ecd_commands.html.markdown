@@ -72,33 +72,47 @@ output "ecd_command_id_1" {
 
 The following arguments are supported:
 
-* `command_type` - (Optional, ForceNew) The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
-* `content_encoding` - (Optional, ForceNew) That Returns the Data Encoding Method. Valid values: `Base64`, `PlainText`.
-* `ids` - (Optional, ForceNew, Computed)  A list of Command IDs.
+* `command_type` - (Optional) The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
+* `content_encoding` - (Optional) That Returns the Data Encoding Method. Valid values: `Base64`, `PlainText`.
+* `ids` - (Optional, Computed)  A list of Command IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `desktop_id` - (Optional, ForceNew) The desktop id of the Desktop.
-* `status` - (Optional, ForceNew) Script Is Executed in the Overall Implementation of the State. Valid values: `Pending`, `Failed`, `PartialFailed`, `Running`, `Stopped`, `Stopping`, `Finished`, `Success`.
+* `desktop_id` - (Optional) The desktop id of the Desktop.
+* `status` - (Optional) Script Is Executed in the Overall Implementation of the State. Valid values: `Pending`, `Failed`, `PartialFailed`, `Running`, `Stopped`, `Stopping`, `Finished`, `Success`.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `commands` - A list of Ecd Commands. Each element contains the following attributes:
-  * `command_content` - The Contents of the Script to Base64 Encoded Transmission.
-  * `command_type` - The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
-  * `create_time` - The Task of Creation Time.
-  * `id` - The ID of the Command.
-  * `invoke_desktops` - The Implementation of the Target Cloud Desktop Collection.
-    * `error_code` - Command of the Failure Or Perform the Reason for the Failure of the Code.
-    * `error_info` - Command of the Failure Or Perform the Reason for the Failure of the Details.
-    * `exit_code` - Command of the Failure Or Perform the Reason for the Failure of the Details.
-    * `start_time` - The Script Process on the Desktop, in the Start Timing of the Execution.
-    * `stop_time` - If You Use the invocation Indicates That the Call of the Time.
-    * `desktop_id` - The desktop id of the Desktop.
-    * `dropped` - Output Field Text Length Exceeds 24 KB of Truncated Discarded Text Length.
-    * `finish_time` - The Script Process until the End of Time.
-    * `invocation_status` - A Single Cloud Desktop Script Progress Status.
-    * `output` - Script the Output of the Process.
-    * `repeats` - Command in the Desktop Implementation.
-  * `invoke_id` - The invoke id of the Command.
-  * `status` - Script Is Executed in the Overall Implementation of the State. Valid values: `Pending`, `Failed`, `PartialFailed`, `Running`, `Stopped`, `Stopping`, `Finished`, `Success`.
+* `commands` - A list of Ecd Commands.
+
+---
+
+### `commands`
+
+The commands supports the following attributes:
+
+* `command_content` - The Contents of the Script to Base64 Encoded Transmission.
+* `command_type` - The Script Type. Valid values: `RunBatScript`, `RunPowerShellScript`.
+* `create_time` - The Task of Creation Time.
+* `id` - The ID of the Command.
+* `invoke_desktops` - The Implementation of the Target Cloud Desktop Collection.
+* `invoke_id` - The invoke id of the Command.
+* `status` - Script Is Executed in the Overall Implementation of the State. Valid values: `Pending`, `Failed`, `PartialFailed`, `Running`, `Stopped`, `Stopping`, `Finished`, `Success`.
+
+---
+
+### `commands.invoke_desktops`
+
+The invoke_desktops supports the following attributes:
+
+* `error_code` - Command of the Failure Or Perform the Reason for the Failure of the Code.
+* `error_info` - Command of the Failure Or Perform the Reason for the Failure of the Details.
+* `exit_code` - Command of the Failure Or Perform the Reason for the Failure of the Details.
+* `start_time` - The Script Process on the Desktop, in the Start Timing of the Execution.
+* `stop_time` - If You Use the invocation Indicates That the Call of the Time.
+* `desktop_id` - The desktop id of the Desktop.
+* `dropped` - Output Field Text Length Exceeds 24 KB of Truncated Discarded Text Length.
+* `finish_time` - The Script Process until the End of Time.
+* `invocation_status` - A Single Cloud Desktop Script Progress Status.
+* `output` - Script the Output of the Process.
+* `repeats` - Command in the Desktop Implementation.

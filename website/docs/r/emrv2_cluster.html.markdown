@@ -188,7 +188,9 @@ resource "alicloud_emrv2_cluster" "default" {
 The following arguments are supported:
 
 * `resource_group_id` - (Optional) The Id of resource group which the emr-cluster belongs.
-* `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription. **NOTE:** From version 1.227.0, `payment_type` can be modified.
+* `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
+
+  -> **NOTE:** From version 1.227.0, `payment_type` can be modified.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#subscription_config) below.
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. DATALAKE, OLAP, DATAFLOW, DATASERVING, CUSTOM etc. You can find all valid EMR cluster type in emr web console.
 * `release_version` - (Required, ForceNew) EMR Version, e.g. EMR-5.10.0. You can find the all valid EMR Version in emr web console.
@@ -200,9 +202,13 @@ The following arguments are supported:
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
 * `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
 * `node_attributes` - (Required, ForceNew) The node attributes of ecs instances which the emr-cluster belongs. See [`node_attributes`](#node_attributes) below.
-* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below. **NOTE:** Since version 1.227.0, the type of `node_groups` changed from Set to List.
+* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below.
+
+  -> **NOTE:** Since version 1.227.0, the type of `node_groups` changed from Set to List.
 * `bootstrap_scripts` - (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster, if priority is not specified, the scripts will execute in the declared order. See [`bootstrap_scripts`](#bootstrap_scripts) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+
+---
 
 ### `subscription_config`
 
@@ -214,6 +220,8 @@ The `subscription_config` block supports the following:
 * `auto_pay_order` - (Optional, Available since v1.219.0) Auto pay order for payment type of subscription, ’true’ or ‘false’ .  Default value is ’true’.
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
+
+---
 
 ### `application_configs`
 
@@ -227,6 +235,8 @@ The `application_configs` block supports the following:
 * `config_description` - (Optional) The configuration description of application installed.
 * `node_group_name` - (Optional) The configuration effected which node group name of emr cluster.
 * `node_group_id` - (Optional) The configuration effected which node group id of emr cluster.
+
+---
 
 ### `node_attributes`
 
@@ -242,6 +252,8 @@ The `node_attributes` block supports the following:
 * `system_disk_encrypted` - (Optional, ForceNew, Available since v1.242.0) Whether to enable system disk encryption.
 * `system_disk_kms_key_id` - (Optional, ForceNew, Available since v1.242.0) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
 
+---
+
 ### `node_groups`
 
 The node_groups mapping supports the following:
@@ -252,21 +264,35 @@ The node_groups mapping supports the following:
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
 * `private_pool_options` - (Optional, Available since v1.253.0) The node group specific private pool resources. See [`private_pool_options`](#node_groups-private_pool_options) below.
 * `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance. See [`spot_bid_prices`](#node_groups-spot_bid_prices) below.
-* `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group. **NOTE:** From version 1.236.0, `vswitch_ids` can be modified.
-* `with_public_ip` - (Optional) Whether the node has a public IP address enabled. **NOTE:** From version 1.236.0, `with_public_ip` can be modified.
-* `additional_security_group_ids` - (Optional) Additional security Group IDS for Cluster, you can also specify this key for each node group. **NOTE:** From version 1.236.0, `additional_security_group_ids` can be modified.
-* `instance_types` - (Required) Host Ecs instance types. **NOTE:** From version 1.236.0, `instance_types` can be modified.
+* `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group.
+
+  -> **NOTE:** From version 1.236.0, `vswitch_ids` can be modified.
+* `with_public_ip` - (Optional) Whether the node has a public IP address enabled.
+
+  -> **NOTE:** From version 1.236.0, `with_public_ip` can be modified.
+* `additional_security_group_ids` - (Optional) Additional security Group IDS for Cluster, you can also specify this key for each node group.
+
+  -> **NOTE:** From version 1.236.0, `additional_security_group_ids` can be modified.
+* `instance_types` - (Required) Host Ecs instance types.
+
+  -> **NOTE:** From version 1.236.0, `instance_types` can be modified.
 * `node_count` - (Required) Host Ecs number in this node group.
 * `system_disk` - (Required) Host Ecs system disk information in this node group. See [`system_disk`](#node_groups-system_disk) below.
 * `data_disks` - (Required) Host Ecs data disks information in this node group. See [`data_disks`](#node_groups-data_disks) below.
 * `graceful_shutdown` - (Optional) Enable emr cluster of task node graceful decommission, ’true’ or ‘false’ .
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
 * `spot_strategy` - (Optional, Available since v1.236.0) The spot strategy configuration of emr cluster. Valid values: `NoSpot`, `SpotWithPriceLimit`, `SpotAsPriceGo`.
-* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below. **NOTE:** From version 1.236.0, `cost_optimized_config` can be modified.
-* `deployment_set_strategy` - (Optional, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP. **NOTE:** From version 1.236.0, `deployment_set_strategy` can be modified.
+* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below.
+
+  -> **NOTE:** From version 1.236.0, `cost_optimized_config` can be modified.
+* `deployment_set_strategy` - (Optional, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP.
+
+  -> **NOTE:** From version 1.236.0, `deployment_set_strategy` can be modified.
 * `auto_scaling_policy` - (Optional, Available since v1.227.0) The node group auto scaling policy for emr cluster. See [`auto_scaling_policy`](#node_groups-auto_scaling_policy) below.
 * `ack_config` - (Optional, Available since v1.236.0) The node group of ack configuration for emr cluster to deploying on kubernetes. See [`ack_config`](#node_groups-ack_config) below.
 * `node_resize_strategy` - (Optional, Available since v1.219.0) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
+
+---
 
 ### `node_groups-private_pool_options`
 
@@ -274,6 +300,8 @@ The private_pool_options mapping supports the following:
 
 * `private_pool_ids` - (Optional) The node group specific private pool resource ids.
 * `match_criteria` - (Optional) The node group specific private pool resource match criteria. Valid values: `Open`, `Target`, `None`.
+
+---
 
 ### `node_groups-subscription_config`
 
@@ -286,6 +314,8 @@ The subscription_config mapping supports the following:
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 
+---
+
 ### `node_groups-spot_bid_prices`
 
 The spot_bid_prices mapping supports the following:
@@ -293,23 +323,33 @@ The spot_bid_prices mapping supports the following:
 * `instance_type` - (Required) Host Ecs instance type.
 * `bid_price` - (Required) The spot bid price of a PayAsYouGo instance.
 
+---
+
 ### `node_groups-system_disk`
 
 The system_disk mapping supports the following:
 
-* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_ssd`. **NOTE:** Since version v1.230.0, the category `cloud_ssd` is available.
+* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_ssd`.
+
+  -> **NOTE:** Since version v1.230.0, the category `cloud_ssd` is available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
+
+---
 
 ### `node_groups-data_disks`
 
 The data_disks mapping supports the following:
 
-* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro`. **NOTE:** Since version v1.230.0, the categories `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro` are available.
+* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro`.
+
+  -> **NOTE:** Since version v1.230.0, the categories `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro` are available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
+
+---
 
 ### `node_groups-cost_optimized_config`
 
@@ -319,12 +359,16 @@ The cost_optimized_config mapping supports the following:
 * `on_demand_percentage_above_base_capacity` - (Required) The cost optimized configuration which on demand percentage above based capacity.
 * `spot_instance_pools` - (Required) The cost optimized configuration with spot instance pools.
 
+---
+
 ### `node_groups-auto_scaling_policy`
 
 The auto_scaling_policy mapping supports the following:
 
 * `scaling_rules` - (Optional) The scaling rules of auto scaling policy. See [`scaling_rules`](#node_groups-auto_scaling_policy-scaling_rules) below.
 * `constraints` - (Optional) The constraints of auto scaling policy. See [`constraints`](#node_groups-auto_scaling_policy-constraints) below.
+
+---
 
 ### `node_groups-ack_config`
 
@@ -348,12 +392,16 @@ The ack_config mapping supports the following:
 * `pod_anti_affinity` - (Optional) The job pod anti-affinity.
 * `node_affinity` - (Optional) The ack cluster node affinity.
 
+---
+
 ### `node_groups-ack_config-node_selectors`
 
 The node_selectors mapping supports the following:
 
 * `key` - (Required) The key of ack cluster node selector.
 * `value` - (Optional) The value of ack cluster node selector.
+
+---
 
 ### `node_groups-ack_config-tolerations`
 
@@ -364,6 +412,8 @@ The tolerations mapping supports the following:
 * `operator` - (Optional) The operator of ack cluster tolerations.
 * `effect` - (Optional) The effect of ack cluster tolerations.
 
+---
+
 ### `node_groups-ack_config-custom_labels`
 
 The custom_labels mapping supports the following:
@@ -371,12 +421,16 @@ The custom_labels mapping supports the following:
 * `key` - (Required) The key of ack cluster custom labels.
 * `value` - (Optional) The value of ack cluster custom labels.
 
+---
+
 ### `node_groups-ack_config-custom_annotations`
 
 The custom_annotations mapping supports the following:
 
 * `key` - (Required) The key of ack cluster custom labels.
 * `value` - (Optional) The value of ack cluster custom labels.
+
+---
 
 ### `node_groups-ack_config-pvcs`
 
@@ -387,6 +441,8 @@ The pvcs mapping supports the following:
 * `data_disk_storage_class` - (Required) The ack cluster job pod data disk storage class of persistent volume claim.
 * `data_disk_size` - (Required) The ack cluster job pod data disk size of persistent volume claim.
 
+---
+
 ### `node_groups-ack_config-volumes`
 
 The volumes mapping supports the following:
@@ -395,12 +451,16 @@ The volumes mapping supports the following:
 * `path` - (Required) The path of ack cluster job pod volumes.
 * `type` - (Required) The ack cluster job pod volumes type.
 
+---
+
 ### `node_groups-ack_config-volume_mounts`
 
 The volume_mounts mapping supports the following:
 
 * `name` - (Required) The name of ack cluster job pod volume mounts.
 * `path` - (Required) The path of ack cluster job pod volume mounts.
+
+---
 
 ### `node_groups-auto_scaling_policy-scaling_rules`
 
@@ -415,6 +475,8 @@ The scaling_rules mapping supports the following:
 * `time_trigger` - (Optional) The trigger time of scaling rules for emr node group auto scaling policy. See [`time_trigger`](#node_groups-auto_scaling_policy-scaling_rules-time_trigger) below.
 * `metrics_trigger` - (Optional) The trigger metrics of scaling rules for emr node group auto scaling policy. See [`metrics_trigger`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger) below.
 
+---
+
 ### `node_groups-auto_scaling_policy-scaling_rules-time_trigger`
 
 The time_trigger mapping supports the following:
@@ -425,6 +487,8 @@ The time_trigger mapping supports the following:
 * `launch_expiration_time` - (Optional) The launch expiration time for this scaling rule specific time trigger. The value should between 0 and 3600.
 * `recurrence_type` - (Optional) The recurrence type for this scaling rule specific time trigger. Valid values: `MINUTELY`, `HOURLY`, `DAILY`, `WEEKLY`, `MONTHLY`.
 * `recurrence_value` - (Optional) The recurrence value for this scaling rule specific time trigger.
+
+---
 
 ### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger`
 
@@ -437,12 +501,16 @@ The metrics_trigger mapping supports the following:
 * `time_constraints` - (Optional) The time constraints for this scaling rule specific metrics trigger. See [`time_constraints`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-time_constraints) below.
 * `conditions` - (Optional) The conditions for this scaling rule specific metrics trigger. See [`conditions`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions) below.
 
+---
+
 ### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-time_constraints`
 
 The time_constraints mapping supports the following:
 
 * `start_time` - (Optional) The start time for this scaling rule specific metrics trigger.
 * `end_time` - (Optional) The end time for this scaling rule specific metrics trigger.
+
+---
 
 ### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions`
 
@@ -454,6 +522,8 @@ The conditions mapping supports the following:
 * `threshold` - (Required) The threshold for this scaling rule specific metrics trigger.
 * `tags` - (Optional) The tags for this scaling rule specific metrics trigger. See [`tags`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions-tags) below.
 
+---
+
 ### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions-tags`
 
 The tags mapping supports the following:
@@ -461,12 +531,16 @@ The tags mapping supports the following:
 * `key` - (Required) The tag key for this scaling rule specific metrics trigger.
 * `value` - (Optional) The tag value for this scaling rule specific metrics trigger.
 
+---
+
 ### `node_groups-auto_scaling_policy-constraints`
 
 The constraints supports the following:
 
 * `max_capacity` - (Optional) The maximum capacity of constraints for emr node group auto scaling policy.
 * `min_capacity` - (Optional) The minimum capacity of constraints for emr node group auto scaling policy.
+
+---
 
 ### `bootstrap_scripts`
 
@@ -479,6 +553,8 @@ The bootstrap_scripts mapping supports the following:
 * `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’, ‘AFTER_STARTED’ or ‘BEFORE_START’. The execution moment of BEFORE_START is available since v1.243.0.
 * `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCK’ or ‘FAILED_CONTINUE’ .
 * `node_selector` - (Required) The bootstrap scripts execution target. See [`node_selector`](#bootstrap_scripts-node_selector) below.
+
+---
 
 ### `bootstrap_scripts-node_selector`
 
@@ -500,7 +576,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the cluster (until it reaches the initial `RUNNING` status).
 * `delete` - (Defaults to 5 mins) Used when terminating the cluster.

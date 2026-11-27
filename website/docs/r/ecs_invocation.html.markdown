@@ -105,7 +105,9 @@ The following arguments are supported:
 * `command_id` - (Required, ForceNew) The ID of the command.
 * `instance_id` - (Required, ForceNew) The list of instances to execute the command. You can specify up to 50 instance IDs.
 * `repeat_mode` - (Optional, ForceNew, Computed) Specifies how to run the command. Valid values: `Once`, `Period`, `NextRebootOnly`, `EveryReboot`. Default value: When `frequency` is not specified, the default value of `repeat_mode` is `Once`. When `frequency` is specified, `Period` is used as the value of `repeat_mode` regardless of whether `repeat_mode` is specified.
-* `timed` - (Optional, ForceNew, Computed, Deprecated) Specifies whether to periodically run the command. Default value: `false`. **NOTE:** This parameter has been deprecated by the ECS API and no longer takes effect. To run a command periodically, set `repeat_mode` to `Period` and specify `frequency` instead. Existing configurations in which `timed` is set to `true` together with `frequency` are not affected because the command runs periodically as long as `frequency` is specified.
+* `timed` - (Optional, ForceNew, Computed, Deprecated) Specifies whether to periodically run the command. Default value: `false`.
+
+  -> **NOTE:** This parameter has been deprecated by the ECS API and no longer takes effect. To run a command periodically, set `repeat_mode` to `Period` and specify `frequency` instead. Existing configurations in which `timed` is set to `true` together with `frequency` are not affected because the command runs periodically as long as `frequency` is specified.
 * `frequency` - (Optional, ForceNew) The schedule on which the recurring execution of the command takes place. Take note of the following items:
   * The interval between two consecutive executions must be 10 seconds or longer. The minimum interval cannot be less than the timeout period of the execution.
   * When you set `repeat_mode` to `Period`, you must specify `frequency`.
@@ -126,7 +128,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the ECS Invocation.
 * `delete` - (Defaults to 1 mins) Used when stop the ECS Invocation.

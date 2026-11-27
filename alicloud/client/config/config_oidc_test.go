@@ -1,8 +1,10 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -114,7 +116,7 @@ func TestConfigSetAuthCredentialByOidcTokenFileRefresh(t *testing.T) {
 		},
 	}
 
-	if err := config.setAuthCredentialByOidc(); err != nil {
+	if err := config.setAuthCredentialByOidc(context.Background()); err != nil {
 		t.Fatalf("setAuthCredentialByOidc failed: %v", err)
 	}
 
@@ -153,6 +155,50 @@ func TestConfigSetAuthCredentialByOidcTokenFileRefresh(t *testing.T) {
 	}
 	if len(durations) != 3 || durations[0] != "1800" || durations[1] != "1800" || durations[2] != "1800" {
 		t.Fatalf("Expected session_expiration 1800 to reach all STS requests, got %v", durations)
+	}
+}
+
+func TestRefreshAuthCredentialContextCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cfg := &Config{AssumeRoleWithOidc: &AssumeRoleWithOidc{OIDCTokenFile: "/missing/token"}}
+	if err := cfg.RefreshAuthCredentialContext(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("取消必须先于凭证读取返回：%v", err)
+	}
+	if cfg.Credential != nil {
+		t.Fatal("取消后仍初始化了凭证")
+	}
+}
+
+func TestRefreshAuthCredentialContextStopsNextStage(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var hits atomic.Int32
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		cancel()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"Credentials":{"AccessKeyId":"test-ak","AccessKeySecret":"test-sk","SecurityToken":"test-token","Expiration":"2099-12-31T23:59:59Z"}}`)
+	}))
+	defer server.Close()
+	trustOIDCStsServer(t, server)
+	tokenFile := filepath.Join(t.TempDir(), "token")
+	if err := os.WriteFile(tokenFile, []byte("test-jwt"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &Config{
+		StsEndpoint: strings.TrimPrefix(server.URL, "https://"),
+		RamRoleArn:  "acs:ram::123456789012:role/next-role",
+		AssumeRoleWithOidc: &AssumeRoleWithOidc{
+			RoleARN: "acs:ram::123456789012:role/test-role", OIDCProviderArn: "acs:ram::123456789012:oidc-provider/test-idp",
+			RoleSessionName: "terraform", OIDCTokenFile: tokenFile,
+		},
+	}
+	if err := cfg.RefreshAuthCredentialContext(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("阶段间取消未返回：%v", err)
+	}
+	if hits.Load() != 1 {
+		t.Fatalf("取消后仍进入后续 AssumeRole：请求数=%d", hits.Load())
 	}
 }
 

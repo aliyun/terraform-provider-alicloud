@@ -45,9 +45,23 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `instances` - A list of Cms Monitor Group Instances. Each element contains the following attributes:
-  * `instances` - Instance information added to the Cms Group.
-    * `category` - The category of instance.
-    * `instance_id` - The id of instance.
-    * `instance_name` - The name of instance.
-    * `region_id` - The region id of instance.
+* `instances` - A list of Cms Monitor Group Instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `instances` - Instance information added to the Cms Group.
+
+---
+
+### `instances.instances`
+
+The instances supports the following attributes:
+
+* `category` - The category of instance.
+* `instance_id` - The id of instance.
+* `instance_name` - The name of instance.
+* `region_id` - The region id of instance.

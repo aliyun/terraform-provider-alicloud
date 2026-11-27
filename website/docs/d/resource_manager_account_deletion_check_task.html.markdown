@@ -35,20 +35,34 @@ output "abandon_able_checks_ids" {
 
 The following arguments are supported:
 
-* `account_id` - (Required, ForceNew) The ID of the member that you want to delete.
+* `account_id` - (Required) The ID of the member that you want to delete.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - This ID of Resource Manager Account Deletion Check Task.
-* `not_allow_reason` - The reasons why the member cannot be deleted. Each element contains the following attributes:
-  * `check_id` - The ID of the check item.
-  * `check_name` - The name of the cloud service to which the check item belongs.
-  * `description` - The description of the check item.
-* `abandon_able_checks` - The check items that you can choose to ignore for the member deletion. Each element contains the following attributes:
-  * `check_id` - The ID of the check item.
-  * `check_name` - The name of the cloud service to which the check item belongs.
-  * `description` - The description of the check item.
+* `not_allow_reason` - The reasons why the member cannot be deleted.
+* `abandon_able_checks` - The check items that you can choose to ignore for the member deletion.
 * `allow_delete` - Indicates whether the member can be deleted.
 * `status` - The status of the check.
+
+---
+
+### `not_allow_reason`
+
+The not_allow_reason supports the following attributes:
+
+* `check_id` - The ID of the check item.
+* `check_name` - The name of the cloud service to which the check item belongs.
+* `description` - The description of the check item.
+
+---
+
+### `abandon_able_checks`
+
+The abandon_able_checks supports the following attributes:
+
+* `check_id` - The ID of the check item.
+* `check_name` - The name of the cloud service to which the check item belongs.
+* `description` - The description of the check item.

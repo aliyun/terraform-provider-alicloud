@@ -72,6 +72,8 @@ The following arguments are supported:
 * `resource_change_delivery` - (Optional, List) The configurations for delivery of resource configuration change events. See [`resource_change_delivery`](#resource_change_delivery) below.
 * `resource_snapshot_delivery` - (Optional, List) The configurations for delivery of scheduled resource snapshots. See [`resource_snapshot_delivery`](#resource_snapshot_delivery) below.
 
+---
+
 ### `delivery_channel_filter`
 
 The delivery_channel_filter supports the following:
@@ -79,6 +81,8 @@ The delivery_channel_filter supports the following:
 * `resource_types` - (Optional, List) An array of effective resource types for the delivery channel.
   - Example: ["ACS::VPC::VPC", "ACS::ECS::Instance"].
   - If you want to deliver items of all resource types supported by Resource Center, set this parameter to ["ALL"].
+
+---
 
 ### `resource_change_delivery`
 
@@ -97,6 +101,8 @@ Valid values:
 
 - SLS
 
+---
+
 ### `resource_change_delivery-sls_properties`
 
 The resource_change_delivery-sls_properties supports the following:
@@ -104,6 +110,8 @@ The resource_change_delivery-sls_properties supports the following:
 * `oversized_data_oss_target_arn` - (Optional) The ARN of the destination to which large files are delivered.
   - If the size of a resource configuration change event exceeds 1 MB, the event is delivered as an OSS object.
   - You need to set this parameter to the ARN of a bucket whose name is prefixed with resourcecenter-.
+
+---
 
 ### `resource_snapshot_delivery`
 
@@ -125,6 +133,8 @@ Valid values:
 - `OSS` for standard delivery
 - `OSS` or `SLS` for custom delivery
 
+---
+
 ### `resource_snapshot_delivery-sls_properties`
 
 The resource_snapshot_delivery-sls_properties supports the following:
@@ -141,7 +151,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Delivery Channel.
 * `delete` - (Defaults to 5 mins) Used when delete the Delivery Channel.

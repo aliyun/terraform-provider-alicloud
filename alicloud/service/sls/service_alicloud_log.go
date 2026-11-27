@@ -456,6 +456,11 @@ func (s *Service) WaitForLogtailAttachment(id string, status Status, timeout int
 	}
 }
 
+// DescribeLogAlertResource backs the ACC resource check for
+// alicloud_log_alert_resource: acctest.ResourceCheckInit resolves the method
+// by name from the resource ID and calls it through reflection, so no static
+// caller exists even though the check depends on it. The probe itself is SLS
+// native data plane, so it stays on WithLogClient like the resource Read.
 func (s *Service) DescribeLogAlertResource(id string) (map[string]string, error) {
 	var result = map[string]string{}
 	parts, err := helper.ParseResourceId(id, 3)
@@ -464,69 +469,10 @@ func (s *Service) DescribeLogAlertResource(id string) (map[string]string, error)
 	}
 	resourceType := parts[1]
 	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
-		_, err := s.client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
-			switch resourceType {
-			case "user":
-				_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-					record, err := slsClient.GetResourceRecord("sls.alert.global_config", "default_config")
-					if err != nil {
-						return nil, err
-					}
-					var alertGlobalConfig AlertGlobalConfig
-					err = json.Unmarshal([]byte(record.Value), &alertGlobalConfig)
-					if err != nil {
-						return nil, err
-					}
-					region := alertGlobalConfig.ConfigDetail.AlertCenterLog.Region
-					accountId, err := s.client.AccountId()
-					if err != nil {
-						return nil, err
-					}
-					projectName := fmt.Sprintf("sls-alert-%s-%s", accountId, region)
-					endpoint := slsClient.Endpoint
-					slsClient.Endpoint = strings.Replace(endpoint, s.client.RegionId, region, 1)
-					_, err = slsClient.GetProject(projectName)
-					if err != nil {
-						slsClient.Endpoint = endpoint
-						return nil, err
-					}
-					_, err = slsClient.GetLogStore(projectName, "internal-alert-center-log")
-					slsClient.Endpoint = endpoint
-					if err != nil {
-						return nil, err
-					}
-					return nil, nil
-				})
-				if err != nil {
-					if errs.IsExpectedErrors(err, []string{"ProjectNotExist"}) || errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
-						return result, nil
-					}
-					return nil, err
-				}
-				lang := parts[2]
-				result["type"] = resourceType
-				result["project"] = ""
-				result["lang"] = lang
-				return result, nil
-			case "project":
-				project := parts[2]
-				_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-					return slsClient.GetLogStore(project, "internal-alert-history")
-				})
-				if err != nil {
-					if errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
-						return nil, nil
-					}
-					return nil, err
-				}
-				result["type"] = resourceType
-				result["project"] = project
-				result["lang"] = ""
-				return result, nil
-			default:
-				return result, errs.WrapErrorf(errors.New("type error"), errs.DefaultErrorMsg, "alicloud_log_alert_resource", "ReadAlertResource", errs.AliyunLogGoSdkERROR)
-			}
-		})
+		// The alert-resource probe is SLS native data plane (GetResourceRecord /
+		// GetLogStore), so it stays on WithLogClient; the old WithLogPopClient
+		// wrapper never used its POP client.
+		err := s.readLogAlertResourceOnce(resourceType, parts, result)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{errs.LogClientTimeout}) {
 				time.Sleep(5 * time.Second)
@@ -539,6 +485,107 @@ func (s *Service) DescribeLogAlertResource(id string) (map[string]string, error)
 		return result, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_log_alert_resource", "ReadAlertResource", errs.AliyunLogGoSdkERROR)
 	}
 	return result, nil
+}
+
+func (s *Service) readLogAlertResourceOnce(resourceType string, parts []string, result map[string]string) error {
+	switch resourceType {
+	case "user":
+		_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			record, err := slsClient.GetResourceRecord("sls.alert.global_config", "default_config")
+			if err != nil {
+				return nil, err
+			}
+			var alertGlobalConfig AlertGlobalConfig
+			err = json.Unmarshal([]byte(record.Value), &alertGlobalConfig)
+			if err != nil {
+				return nil, err
+			}
+			region := alertGlobalConfig.ConfigDetail.AlertCenterLog.Region
+			accountId, err := s.client.AccountId()
+			if err != nil {
+				return nil, err
+			}
+			projectName := fmt.Sprintf("sls-alert-%s-%s", accountId, region)
+			endpoint := slsClient.Endpoint
+			slsClient.Endpoint = strings.Replace(endpoint, s.client.RegionId, region, 1)
+			_, err = slsClient.GetProject(projectName)
+			if err != nil {
+				slsClient.Endpoint = endpoint
+				return nil, err
+			}
+			_, err = slsClient.GetLogStore(projectName, "internal-alert-center-log")
+			slsClient.Endpoint = endpoint
+			if err != nil {
+				return nil, err
+			}
+			return nil, nil
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"ProjectNotExist"}) || errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+				return nil
+			}
+			return err
+		}
+		lang := parts[2]
+		result["type"] = resourceType
+		result["project"] = ""
+		result["lang"] = lang
+		return nil
+	case "project":
+		project := parts[2]
+		_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetLogStore(project, "internal-alert-history")
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+				return nil
+			}
+			return err
+		}
+		result["type"] = resourceType
+		result["project"] = project
+		result["lang"] = ""
+		return nil
+	default:
+		return errs.WrapErrorf(errors.New("type error"), errs.DefaultErrorMsg, "alicloud_log_alert_resource", "ReadAlertResource", errs.AliyunLogGoSdkERROR)
+	}
+}
+
+// InitLogAlertResource performs the POP side of the alicloud_log_alert_resource
+// create path, shared by the resource and its deprecated data source:
+// InitUserAlertResource for the "user" type, or AnalyzeProductLog for a
+// "project" whose internal-alert-history logstore is missing. The native SLS
+// GetLogStore probe stays on WithLogClient.
+func (s *Service) InitLogAlertResource(resourceType, lang, project string) error {
+	switch resourceType {
+	case "user":
+		request := slsPop.CreateInitUserAlertResourceRequest()
+		request.Region = s.client.RegionId
+		request.App = "none"
+		request.Language = lang
+		_, err := s.client.LegacySdkRpc(request, slsPopApiPath, slsPop.CreateInitUserAlertResourceResponse())
+		return err
+	case "project":
+		_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.GetLogStore(project, "internal-alert-history")
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+				request := slsPop.CreateAnalyzeProductLogRequest()
+				request.CloudProduct = "sls.alert"
+				request.Project = project
+				request.Logstore = "internal-alert-history"
+				request.Overwrite = "true"
+				request.Region = s.client.RegionId
+				_, err := s.client.LegacySdkRpc(request, slsPopApiPath, slsPop.CreateAnalyzeProductLogResponse())
+				return err
+			}
+			return err
+		}
+		return nil
+	default:
+		return errs.WrapErrorf(errors.New("type error"), errs.DefaultErrorMsg, "alicloud_log_alert_resource", "CreateAlertResource", errs.AliyunLogGoSdkERROR)
+	}
 }
 
 func (s *Service) DescribeLogAlert(id string) (*sls.Alert, error) {
@@ -670,22 +717,39 @@ func CreateDashboard(project, name string, client *sls.Client) error {
 	return err
 }
 
-func (s *Service) DescribeLogAudit(id string) (*slsPop.DescribeAppResponse, error) {
+// slsPopApiPath is the fixed SLS POP API path: the old client appended
+// "/open-api" to its Domain and the old SDK's query builder turned that into
+// the "/open-api/" request path; calls migrated off WithLogPopClient keep
+// reaching the same URL on both signature paths.
+const slsPopApiPath = "/open-api/"
+
+func (s *Service) DescribeLogAudit(id string) (string, error) {
 	request := slsPop.CreateDescribeAppRequest()
-	response := &slsPop.DescribeAppResponse{}
 	request.AppName = "audit"
-	raw, err := s.client.WithLogPopClient(func(client *slsPop.Client) (interface{}, error) {
-		return client.DescribeApp(request)
-	})
+	response, err := s.client.LegacySdkRpc(request, slsPopApiPath, slsPop.CreateDescribeAppResponse())
 
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"AppNotExist"}) {
-			return response, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+			return "", errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
+		// The old flow silently ignored every other error and continued with a
+		// nil response; surface it so Read fails loudly instead.
+		return "", errs.WrapError(err)
 	}
-	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ = raw.(*slsPop.DescribeAppResponse)
-	return response, nil
+	// Keep the baseline debug form: the typed request and its raw RpcRequest
+	// both go in, exactly as the old WithLogPopClient flow logged them.
+	logs.AddDebug(request.GetActionName(), response, request.RpcRequest, request)
+	// Callers consumed the raw HTTP body via HttpContentString; the shared
+	// path returns the parsed map, so serialize it back for the parser. The
+	// synthetic "_headers" key is injected by the shared transport layer for
+	// debug output only — the old flow handed the raw HTTP body here, which
+	// never carried it, so strip it before rebuilding the payload.
+	delete(response, "_headers")
+	data, err := json.Marshal(response)
+	if err != nil {
+		return "", errs.WrapError(err)
+	}
+	return string(data), nil
 }
 
 func GetCharTitile(project, dashboard, char string, client *sls.Client) string {

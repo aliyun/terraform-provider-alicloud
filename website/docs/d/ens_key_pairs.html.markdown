@@ -31,10 +31,10 @@ output "ens_key_pair_id_1" {
 
 The following arguments are supported:
 
-* `key_pair_name` - (Optional, ForceNew) The name of the key pair.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Key Pair name.
+* `key_pair_name` - (Optional) The name of the key pair.
+* `name_regex` - (Optional) A regex string to filter results by Key Pair name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `version` - (Required, ForceNew) The version number.
+* `version` - (Required) The version number.
 
 ## Attributes Reference
 
@@ -42,9 +42,16 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Key Pair IDs.
 * `names` - A list of Key Pair names.
-* `pairs` - A list of Ens Key Pairs. Each element contains the following attributes:
-  * `create_time` - The creation time of the key pair. The date format is in accordance with ISO8601 notation and uses UTC time. The format is yyyy-MM-ddTHH:mm:ssZ.
-  * `id` - The ID of the Key Pair.
-  * `key_pair_finger_print` - Fingerprint of the key pair.
-  * `key_pair_name` - The name of the key pair.
-  * `version` - The version number.
+* `pairs` - A list of Ens Key Pairs.
+
+---
+
+### `pairs`
+
+The pairs supports the following attributes:
+
+* `create_time` - The creation time of the key pair. The date format is in accordance with ISO8601 notation and uses UTC time. The format is yyyy-MM-ddTHH:mm:ssZ.
+* `id` - The ID of the Key Pair.
+* `key_pair_finger_print` - Fingerprint of the key pair.
+* `key_pair_name` - The name of the key pair.
+* `version` - The version number.

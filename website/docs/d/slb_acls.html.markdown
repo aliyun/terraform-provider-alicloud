@@ -31,7 +31,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of acls IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by acl name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which acl belongs.
+* `resource_group_id` - (Optional, Available in 1.60.0+) The Id of resource group which acl belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -40,14 +40,23 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB acls IDs.
 * `names` - A list of SLB acls names.
-* `acls` - A list of SLB acls. Each element contains the following attributes:
-  * `id` - Acl ID.
-  * `name` - Acl name.
-  * `ip_version` - The IP version of the access control list.
-  * `entry_list` - A list of entry (IP addresses or CIDR blocks).
-  * `related_listeners` - A list of listeners attached to the acl.
-  * `tags` - (Optional) A mapping of tags to assign to the resource.
-  * `resource_group_id` - Resource group ID.
+* `acls` - A list of SLB acls.
+
+---
+
+### `acls`
+
+The acls supports the following attributes:
+
+* `id` - Acl ID.
+* `name` - Acl name.
+* `ip_version` - The IP version of the access control list.
+* `entry_list` - A list of entry (IP addresses or CIDR blocks).
+* `related_listeners` - A list of listeners attached to the acl.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `resource_group_id` - Resource group ID.
+
+---
 
 ### `acls.entry_list`
 
@@ -55,6 +64,8 @@ The entry mapping supports the following:
 
 * `entry` - An IP address or CIDR block.
 * `comment` - The comment of the entry.
+
+---
 
 ### `acls.related_listeners`
 

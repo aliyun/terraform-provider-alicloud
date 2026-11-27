@@ -29,12 +29,12 @@ output "first_transit_routers_type" {
 
 The following arguments are supported:
 
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `ids` - (Optional, ForceNew, Available in 1.151.0+) A list of resource id. The element value is same as <cen_id>:<transit_router_id>`.
-* `name_regex` - (Optional, ForceNew, Available in 1.151.0+) A regex string to filter CEN Transit Routers by name.
-* `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `status` - (Optional, ForceNew) The status of the resource. Valid values `Active`, `Creating`, `Deleting` and `Updating`.  
-* `transit_router_ids` - (Optional, ForceNew) A list of ID of the transit router.
+* `cen_id` - (Required) The ID of the CEN instance.
+* `ids` - (Optional, Available in 1.151.0+) A list of resource id. The element value is same as <cen_id>:<transit_router_id>`.
+* `name_regex` - (Optional, Available in 1.151.0+) A regex string to filter CEN Transit Routers by name.
+* `transit_router_id` - (Optional) The ID of the transit router.
+* `status` - (Optional) The status of the resource. Valid values `Active`, `Creating`, `Deleting` and `Updating`.
+* `transit_router_ids` - (Optional) A list of ID of the transit router.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -42,13 +42,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of  CEN Transit Routers names.
-* `transit_routers` - A list of CEN Transit Routers. Each element contains the following attributes:
-  * `cen_id` - The ID of the CEN instance.
-  * `ali_uid` - The UID of the Aliyun.
-  * `transit_router_id` - The ID of the transit router.
-  * `transit_router_name` - The name of the transit router.
-  * `transit_router_description` - The description of the transit router.
-  * `status` - The status of the transit router attachment.
-  * `type` - The Type of the transit router.
-  * `xgw_vip` - The vip of the XGW.
-  * `id` - The ID of the resource, It is formatted to `<cen_id>:<transit_router_id>`. **NOTE:** Before 1.151.0, It is formatted to `<transit_router_id>`.
+* `transit_routers` - A list of CEN Transit Routers.
+
+---
+
+### `transit_routers`
+
+The transit_routers supports the following attributes:
+
+* `cen_id` - The ID of the CEN instance.
+* `ali_uid` - The UID of the Aliyun.
+* `transit_router_id` - The ID of the transit router.
+* `transit_router_name` - The name of the transit router.
+* `transit_router_description` - The description of the transit router.
+* `status` - The status of the transit router attachment.
+* `type` - The Type of the transit router.
+* `xgw_vip` - The vip of the XGW.
+* `id` - The ID of the resource, It is formatted to `<cen_id>:<transit_router_id>`.
+
+  -> **NOTE:** Before 1.151.0, It is formatted to `<transit_router_id>`.

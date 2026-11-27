@@ -123,7 +123,7 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead. It conflicts with `account_password`, `kms_encrypted_password` and `account_password_wo`, and one of the four password sources must be set.
 * `type` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
-  -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
+  -> **NOTE:** Only MySQL engine is supported resets permissions of the privileged account.
 * `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
 * `check_policy` - (Optional, Available since v1.266.0) Whether to apply password policy
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Available`, `Unavailable`.
@@ -136,7 +136,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when create the Account.
 * `update` - (Defaults to 6 mins) Used when update the Account.

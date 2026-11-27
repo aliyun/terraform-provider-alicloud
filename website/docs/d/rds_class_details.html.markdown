@@ -29,7 +29,7 @@ data "alicloud_rds_class_details" "default" {
 
 The following arguments are supported:
 
-* `commodity_code` - (Required, ForceNew) The commodity code of the instance. Valid values:
+* `commodity_code` - (Required) The commodity code of the instance. Valid values:
   * **bards**: The instance is a pay-as-you-go primary instance. This value is available on the China site (aliyun.com).
   * **rds**: The instance is a subscription primary instance. This value is available on the China site (aliyun.com).
   * **rords**: The instance is a pay-as-you-go read-only instance. This value is available on the China site (aliyun.com).
@@ -38,13 +38,13 @@ The following arguments are supported:
   * **rds_intl**: The instance is a subscription primary instance. This value is available on the International site (alibabacloud.com).
   * **rords_intl**: The instance is a pay-as-you-go read-only instance. This value is available on the International site (alibabacloud.com).
   * **rds_rordspre_public_intl**: The instance is a subscription read-only instance. This value is available on the International site (alibabacloud.com).
-* `class_code` - (Required, ForceNew) The code of the instance type.
-* `engine_version` - (Required, ForceNew) Database version. Value options:
+* `class_code` - (Required) The code of the instance type.
+* `engine_version` - (Required) Database version. Value options:
   - MySQL: [ 5.5、5.6、5.7、8.0、8.4 ]
   - SQLServer: [ 2008r2、08r2_ent_ha、2012、2012_ent_ha、2012_std_ha、2012_web、2014_std_ha、2016_ent_ha、2016_std_ha、2016_web、2017_std_ha、2017_ent、2019_std_ha、2019_ent、2022_web、2022_std_ha、2022_ent、2025_std、2025_ent ]
   - PostgreSQL: [ 10.0、11.0、12.0、13.0、14.0、15.0 ]
   - MariaDB: [ 10.3 ]
-* `engine` - (Required, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
+* `engine` - (Required) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 
 ## Attributes Reference
 

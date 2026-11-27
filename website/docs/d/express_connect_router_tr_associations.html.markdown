@@ -17,6 +17,14 @@ This data source provides the  Express Connect Router Tr Association of the curr
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -76,16 +84,24 @@ The following attributes are exported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `associations` - A list of Tr Associations. Each element contains the following attributes:
-  * `id` - The ID of the Tr Association.
-  * `ecr_id` - The ID of the Express Connect Router instance.
-  * `association_id` - The ID of the association between the Express Connect Router and the TR.
-  * `transit_router_id` - The ID of the TR instance.
-  * `association_node_type` - The type of the associated resource.
-  * `transit_router_owner_id` - The ID of the Alibaba Cloud account that owns the TR.
-  * `cen_id` - The ID of the CEN instance.
-  * `allowed_prefixes_mode` - The prefix-based routing mode.
-  * `status` - The status of the association.
-  * `create_time` - The time when the association was created.
-  * `modify_time` - The time when the association was modified.
-  * `allowed_prefixes` - The prefix-based routing mode.
+* `associations` - A list of Tr Associations.
+
+---
+
+### `associations`
+
+The associations supports the following attributes:
+
+* `id` - The ID of the Tr Association.
+* `ecr_id` - The ID of the Express Connect Router instance.
+* `association_id` - The ID of the association between the Express Connect Router and the TR.
+* `transit_router_id` - The ID of the TR instance.
+* `association_node_type` - The type of the associated resource.
+* `transit_router_owner_id` - The ID of the Alibaba Cloud account that owns the TR.
+* `cen_id` - The ID of the CEN instance.
+* `allowed_prefixes_mode` - The prefix-based routing mode.
+* `description` - (String, Available since v2.4.0) The description of the association resource.
+* `status` - The status of the association.
+* `create_time` - The time when the association was created.
+* `modify_time` - The time when the association was modified.
+* `allowed_prefixes` - The prefix-based routing mode.

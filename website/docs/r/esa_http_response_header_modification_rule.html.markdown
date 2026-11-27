@@ -97,6 +97,8 @@ The following arguments are supported:
 * `site_id` - (Required, ForceNew) The site ID.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
 
+---
+
 ### `response_header_modification`
 
 The response_header_modification supports the following:
@@ -120,7 +122,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Http Response Header Modification Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Http Response Header Modification Rule.

@@ -59,14 +59,21 @@ The following arguments are supported:
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Dataset belongs. It must be 2 to 64 characters in length.
 * `dataset_name` - (Required, ForceNew) The name of the Dataset. It must be 2 to 64 characters in length, must start with a lowercase letter, can contain only lowercase letters, digits, and non-consecutive underscores (`_`), and cannot end with an underscore.
 * `description` - (Optional) The description of the Dataset. It can be modified in place.
-* `schema` - (Required, ForceNew, Map) The schema definition of the Dataset fields. Each map key is a field name, and the value is a JSON string describing the index key, e.g. `jsonencode({ type = "text", chn = true })`. The index key supports the following properties:
-  - `type` - The field type, such as `text`, `long`, `double`, `json`.
-  - `chn` - Whether to enable Chinese word segmentation. It is required when `type` is `text`; set it explicitly even when the value is `false`.
-  - `description` - An optional string description of the field.
-  - `embedding` - The name of the embedding model used to build the vector index (a string identifier, e.g. `agentloop-embedding-v4`), not a configuration object.
-  - `jsonKeys` - The sub-field definitions when `type` is `json`. Each sub-field only supports `type` and `chn`, and `chn` is required when the sub-field `type` is `text`.
+* `schema` - (Required, ForceNew, Map) The schema definition of the Dataset fields. Each map key is a field name, and the value is a JSON string describing the index key, e.g. `jsonencode({ type = "text", chn = true })`. See [`schema`](#schema) below.
 
   -> **NOTE:** The API automatically injects a system-defined `agentloop_annotations` field into the schema; the provider ignores it when reading, so it does not appear in the state. The JSON values are compared semantically: differences in key order or whitespace between the configured JSON text and the API representation do not produce a diff and do not recreate the Dataset.
+
+---
+
+### `schema`
+
+The schema mapping supports the following:
+
+- `type` - The field type, such as `text`, `long`, `double`, `json`.
+- `chn` - Whether to enable Chinese word segmentation. It is required when `type` is `text`; set it explicitly even when the value is `false`.
+- `description` - An optional string description of the field.
+- `embedding` - The name of the embedding model used to build the vector index (a string identifier, e.g. `agentloop-embedding-v4`), not a configuration object.
+- `jsonKeys` - The sub-field definitions when `type` is `json`. Each sub-field only supports `type` and `chn`, and `chn` is required when the sub-field `type` is `text`.
 
 ## Attributes Reference
 
@@ -79,7 +86,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Dataset.
 * `delete` - (Defaults to 5 mins) Used when delete the Dataset.

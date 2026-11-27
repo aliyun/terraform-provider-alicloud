@@ -204,7 +204,7 @@ provider "alicloud" {
 If provided with a role ARN and a token from a service account OpenID Connect (OIDC),
 the Alibaba Cloud Provider will attempt to assume this role using the supplied credentials.
 
-**NOTE:** Assuming-Role-With-OIDC is a no-AK auth type, and there is no need setting access_key and secret_key while using it.
+-> **NOTE:** Assuming-Role-With-OIDC is a no-AK auth type, and there is no need setting access_key and secret_key while using it.
 
 Usage:
 
@@ -272,7 +272,7 @@ $ export TF_APPEND_USER_AGENT="ArgoAgent/argo-12345678 NodeID/1234 (Optional Ext
 
 ### Custom Product Sign Version
 
-Some Alibaba Cloud products support more than one API signature version. The provider lets you override the signature version per product through the [`sign_version`](#sign_version) block. Currently `oss` and `sls` are supported. Note that the OSS SDK client defaults to signature `v4` since v1.278.0 (it was `v1` in earlier versions); set `oss = "v1"` explicitly if you still need the legacy signature.
+Use the [`sign_version`](#sign_version) block to configure request signing for a provider instance. Set `default = "v4"` for an EO provider instance with the station's product endpoints and physical signing region. A separate public cloud provider instance can keep its existing signing behavior by omitting this setting. Product-specific values take precedence.
 
 Usage:
 
@@ -365,7 +365,7 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
 
 * `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
-* `sign_version` - (Optional, Available since v1.215.0) A [`sign_version`](#sign_version) block to specify the signature version used for the API requests of certain cloud products (currently `oss` and `sls`). Only one `sign_version` block may be in the configuration.
+* `sign_version` - (Optional, Available since v1.215.0) A [`sign_version`](#sign_version) block to specify default and product-specific request signing. Only one block may be configured per provider instance.
 
 * `skip_region_validation` - (Optional, Available since v1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
   Can also be set with the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable since v1.287.0.
@@ -428,17 +428,33 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 
 ### `sign_version`
 
-The `sign_version` configuration block overrides the signature version used by the SDK client of specific cloud products. See [Custom Product Sign Version](#custom-product-sign-version) for an example. The following arguments are supported:
+The `sign_version` configuration block applies to one provider instance. See [Custom Product Sign Version](#custom-product-sign-version) for an example.
+
+* `default` - (Optional) Set to `v4` to sign supported API requests with V4 using the configured physical region. Set the product endpoints for your EO station. For regions outside the built-in region list, use `skip_region_validation = true`. Omitting this setting preserves existing signing behavior. Explicit `oss`, `sls` and `mns` settings override the default for their respective products. The `alicloud_fc_*` resources and data sources built on the FC 1.0 client are signed with V4 as well. Calls that still use a legacy SDK send its original signature to the endpoint. An endpoint that requires V4 can reject those calls.
 
 * `oss` - (Optional) The signature version used by the OSS SDK client. Valid values: `v1`, `v4`. Starting from v1.278.0, the default value is changed from `v1` to `v4`; in earlier versions the default was `v1`. Set this field to `v1` explicitly if you need to keep using the legacy signature.
 
- ->**NOTE:** `v2` is no longer accepted starting from v1.278.0; the value will be treated as the default and the client will fall back to `v4`.
+  -> **NOTE:** `v2` is no longer accepted starting from v1.278.0; the value will be treated as the default and the client will fall back to `v4`.
 
 * `sls` - (Optional) The signature version used by the SLS (Log Service) SDK client. Valid values: `v1`, `v4`. Defaults to `v1`. Full v4 signature support across all `alicloud_sls_*` / `alicloud_log_*` resources is available since v1.276.0.
 
+* `mns` - (Optional) The signature version used by the MNS message queue data plane requests. Valid values: `v1`, `v4`. Defaults to `v1`; setting `default = "v4"` (without an explicit `mns = "v1"`) signs the queue, topic, subscription and account-level (OpenService) operations of the deprecated `alicloud_mns_*` resources and data sources with V4. The `mns` (or `mns_endpoint`) endpoint and the provider `region` are used as the data plane endpoint and the physical signing region.
+
+* `ecs` - (Optional) Overrides `default` for the ECS calls this provider makes (including the `alicloud_regions` data source). Valid values: `v1`, `v4`. Takes effect only when `default = "v4"`; with any other default the legacy `v1` signature is used.
+
+* `cms` - (Optional) Overrides `default` for the CMS (Cloud Monitor) calls this provider makes (alarm contacts, contact groups and site monitors). Valid values: `v1`, `v4`. Takes effect only when `default = "v4"`; with any other default the legacy `v1` signature is used.
+
+* `nas` - (Optional) Overrides `default` for the NAS calls this provider makes (including the open-service call of the `alicloud_nas_service` data source). Valid values: `v1`, `v4`. Takes effect only when `default = "v4"`; with any other default the legacy `v1` signature is used.
+
+  -> **NOTE:** Unlike `oss` and `sls`, the `ecs`, `cms` and `nas` keys reject any other value at plan time — a misspelled version would otherwise silently fall back to the default signing path instead of the intended override.
+
+* `ots` - (Optional) The signature version used by the OTS (Tablestore) request paths: the control plane, the REST data plane, the table client, and the tunnel client. Set `default = "v4"` to enable V4; set `ots = "v1"` to keep OTS on its legacy signature under that default. An explicit `ots = "v4"` requires `default = "v4"`. Valid values: `v1`, `v4`. Defaults to `v1`. Under `v4` the instance endpoint set in the `endpoints` block (`ots` key) or the deprecated `ots_endpoint` argument is also used for the REST data plane.
+
+* `vpc` - (Optional) Overrides `default` for VPC requests, including cross-product VPC lookups. Set `v1` to keep legacy signing when `default = "v4"`, or `v4` to use V4. Other values fail validation.
+
 ### `features`
 
-The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behaviour. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
+The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behavior. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
 
 ```terraform
 provider "alicloud" {
@@ -468,7 +484,7 @@ The `ecs_instance` configuration block applies to the [alicloud_instance](https:
 
 ### `endpoints`
 
-**NOTE:** Due to certain API restrictions, the endpoints pointing to the area should be consistent with the `region_id`.
+-> **NOTE:** Due to certain API restrictions, the endpoints pointing to the area should be consistent with the `region_id`.
 
 * `ecs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.
 

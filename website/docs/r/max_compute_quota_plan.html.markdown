@@ -76,11 +76,14 @@ resource "alicloud_max_compute_quota_plan" "default" {
 
 The following arguments are supported:
 
-* `is_effective` - (Optional) Whether to take effect immediately. “Valid values: true”  
-.-> **NOTE:** when other quota plans in the same quota group take effect, the effective quota group will become invalid. That is, IsEffective will become false. The effective quota plan cannot be deleted.
+* `is_effective` - (Optional) Whether to take effect immediately. “Valid values: true”
+
+  -> **NOTE:** when other quota plans in the same quota group take effect, the effective quota group will become invalid. That is, IsEffective will become false. The effective quota plan cannot be deleted.
 * `nickname` - (Required, ForceNew) Quota Name
 * `plan_name` - (Required, ForceNew) The Quota plan name. Start with a letter, containing letters, numbers, and underscores (_). It is no more than 64 characters long.
 * `quota` - (Optional, ForceNew, List) Quota property See [`quota`](#quota) below.
+
+---
 
 ### `quota`
 
@@ -92,11 +95,15 @@ The quota supports the following:
   -> **NOTE:** need to list all secondary Quota
   See [`sub_quota_info_list`](#quota-sub_quota_info_list) below.
 
+---
+
 ### `quota-parameter`
 
 The quota-parameter supports the following:
 
 * `elastic_reserved_cu` - (Required, Int) The value of elastic Reserved CUs.
+
+---
 
 ### `quota-sub_quota_info_list`
 
@@ -104,6 +111,8 @@ The quota-sub_quota_info_list supports the following:
 
 * `nick_name` - (Required, ForceNew) The nickname of the level-2 quota.
 * `parameter` - (Optional, List) Level 2 Quota CU configuration See [`parameter`](#quota-sub_quota_info_list-parameter) below.
+
+---
 
 ### `quota-sub_quota_info_list-parameter`
 
@@ -127,13 +136,27 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.The value is formulated as `<nickname>:<plan_name>`.
 * `quota` - Quota property
-  * `parameter` - The parameters of level-1 quota.
-    * `max_cu` - The value of maxCU in Reserved CUs.
-    * `min_cu` - The value of minCU in Reserved CUs.
+
+---
+
+### `quota`
+
+The quota supports the following attributes:
+
+* `parameter` - The parameters of level-1 quota.
+
+---
+
+### `quota.parameter`
+
+The parameter supports the following attributes:
+
+* `max_cu` - The value of maxCU in Reserved CUs.
+* `min_cu` - The value of minCU in Reserved CUs.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Quota Plan.
 * `delete` - (Defaults to 5 mins) Used when delete the Quota Plan.

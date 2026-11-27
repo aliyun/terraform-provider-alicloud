@@ -44,18 +44,25 @@ output "alicloud_ga_domain_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed) A list of Ga Domain IDs.
-* `accelerator_id` - (Optional, ForceNew) The ID of the global acceleration instance.
-* `domain` - (Optional, ForceNew) The accelerated domain name to be added. only top-level domain names are supported, such as 'example.com'.
-* `status` - (Optional, ForceNew) The status of the resource. Valid values: `illegal`, `inactive`, `active`, `unknown`.
+* `ids` - (Optional, Computed) A list of Ga Domain IDs.
+* `accelerator_id` - (Optional) The ID of the global acceleration instance.
+* `domain` - (Optional) The accelerated domain name to be added. only top-level domain names are supported, such as 'example.com'.
+* `status` - (Optional) The status of the resource. Valid values: `illegal`, `inactive`, `active`, `unknown`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `domains` - A list of Domain Entries. Each element contains the following attributes:
-  * `id` - The ID of the Ga Domain.
-  * `accelerator_id` - The ID of the global acceleration instance.
-  * `domain` - The accelerated domain name to be added.
-  * `status` - The status of the resource
+* `domains` - A list of Domain Entries.
+
+---
+
+### `domains`
+
+The domains supports the following attributes:
+
+* `id` - The ID of the Ga Domain.
+* `accelerator_id` - The ID of the global acceleration instance.
+* `domain` - The accelerated domain name to be added.
+* `status` - The status of the resource

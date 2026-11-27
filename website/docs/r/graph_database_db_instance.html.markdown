@@ -61,6 +61,8 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew, Available since v1.171.0) ID of the VPC.
 * `zone_id` - (Optional, ForceNew, Available since v1.171.0) The zone ID of the resource.
 
+---
+
 ### `db_instance_ip_array`
 
 The db_instance_ip_array supports the following:
@@ -80,7 +82,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the Db Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Db Instance.

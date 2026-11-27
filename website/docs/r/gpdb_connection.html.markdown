@@ -75,24 +75,24 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
 * `connection_prefix` - (Optional, ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + '-tf'.
 * `port` - (Optional) Internet connection port. Valid value: [3200-3999]. Default to 3306.
-* `connection_string` - (Optional) Connection instance string.
-* `ip_address` - (Optional) The ip address of connection string.
-
-## Timeouts
-
--> **NOTE:** Available since v1.53.0.
-
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status).
-* `update` - (Defaults to 10 mins) Used when activating the DB instance during update.
-* `delete` - (Defaults to 10 mins) Used when terminating the DB instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<instance_id>:<connection_prefix>`.
+* `connection_string` - (Computed) Connection instance string.
+* `ip_address` - (Computed) The ip address of connection string.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.53.0.
+
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the Internet connection (until DB instance reaches the initial `Running` status).
+* `update` - (Defaults to 10 mins) Used when activating the DB instance during update.
+* `delete` - (Defaults to 10 mins) Used when terminating the DB instance.
 
 ## Import
 

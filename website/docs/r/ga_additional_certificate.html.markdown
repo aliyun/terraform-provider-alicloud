@@ -152,9 +152,15 @@ resource "alicloud_ga_additional_certificate" "default" {
 The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
-* `listener_id` - (Required, ForceNew) The ID of the listener. **NOTE:** Only HTTPS listeners support this parameter.
-* `domain` - (Required, ForceNew) The domain name specified by the certificate. **NOTE:** You can associate each domain name with only one additional certificate.
-* `certificate_id` - (Required) The Certificate ID. **NOTE:** From version 1.209.1, `certificate_id` can be modified.
+* `listener_id` - (Required, ForceNew) The ID of the listener.
+
+  -> **NOTE:** Only HTTPS listeners support this parameter.
+* `domain` - (Required, ForceNew) The domain name specified by the certificate.
+
+  -> **NOTE:** You can associate each domain name with only one additional certificate.
+* `certificate_id` - (Required) The Certificate ID.
+
+  -> **NOTE:** From version 1.209.1, `certificate_id` can be modified.
 
 ## Attributes Reference
 
@@ -164,7 +170,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used to wait accelerator and listener to be active after creating the Ga additional certificate.
 * `update` - (Defaults to 3 mins) Used to wait accelerator and listener to be active after updating the Ga additional certificate.

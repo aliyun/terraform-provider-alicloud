@@ -146,10 +146,10 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `hostname` - (Optional, ForceNew, Available since v1.265.0) Host name
+* `hostname` - (Optional, Available since v1.265.0) Host name
 * `hpn_zone` - (Optional, ForceNew) Cluster Number
-* `ip_allocation_policy` - (Optional, ForceNew, List, Available since v1.265.0) IP address combination policy: only one policy type can be selected for each policy, and multiple policies can be combined. See [`ip_allocation_policy`](#ip_allocation_policy) below.
-* `login_password` - (Optional, ForceNew, Available since v1.265.0) Login Password
+* `ip_allocation_policy` - (Optional, List, Available since v1.265.0) IP address combination policy: only one policy type can be selected for each policy, and multiple policies can be combined. See [`ip_allocation_policy`](#ip_allocation_policy) below.
+* `login_password` - (Optional, Available since v1.265.0) Login Password
 * `machine_type` - (Optional, ForceNew, Computed, Available since v1.261.0) Model
 * `node_group_id` - (Optional, Available since v1.265.0) node group id
 * `node_type` - (Optional, Computed, Available since v1.265.0) node type
@@ -188,11 +188,13 @@ The default ManualRenewal.
 
 * `status` - (Optional, Computed) The status of the resource
 * `tags` - (Optional, Map) The tag of the resource
-* `user_data` - (Optional, ForceNew, Available since v1.265.0) Custom Data
-* `vswitch_id` - (Optional, ForceNew, Available since v1.265.0) Switch ID
-* `vpc_id` - (Optional, ForceNew, Available since v1.265.0) VPC ID
+* `user_data` - (Optional, Available since v1.265.0) Custom Data
+* `vswitch_id` - (Optional, Available since v1.265.0) Switch ID
+* `vpc_id` - (Optional, Available since v1.265.0) VPC ID
 * `zone` - (Optional, ForceNew) Availability Zone
 * `data_disk` - (Optional, List, Available since v1.265.0) The data disk of the cloud disk to be attached to the node. See [`data_disk`](#data_disk) below.
+
+---
 
 ### `data_disk`
 
@@ -202,56 +204,70 @@ The data_disk supports the following:
 * `performance_level` - (Optional) Performance level
 * `size` - (Optional, Int) Data disk size
 
+---
+
 ### `ip_allocation_policy`
 
 The ip_allocation_policy supports the following:
 
-* `bond_policy` - (Optional, ForceNew, List, Available since v1.265.0) Specify the cluster subnet ID based on the bond name See [`bond_policy`](#ip_allocation_policy-bond_policy) below.
-* `machine_type_policy` - (Optional, ForceNew, List, Available since v1.265.0) Model Assignment Policy See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
-* `node_policy` - (Optional, ForceNew, List, Available since v1.265.0) Node allocation policy See [`node_policy`](#ip_allocation_policy-node_policy) below.
+* `bond_policy` - (Optional, List, Available since v1.265.0) Specify the cluster subnet ID based on the bond name See [`bond_policy`](#ip_allocation_policy-bond_policy) below.
+* `machine_type_policy` - (Optional, List, Available since v1.265.0) Model Assignment Policy See [`machine_type_policy`](#ip_allocation_policy-machine_type_policy) below.
+* `node_policy` - (Optional, List, Available since v1.265.0) Node allocation policy See [`node_policy`](#ip_allocation_policy-node_policy) below.
+
+---
 
 ### `ip_allocation_policy-bond_policy`
 
 The ip_allocation_policy-bond_policy supports the following:
 
-* `bond_default_subnet` - (Optional, ForceNew, Available since v1.265.0) Default bond cluster subnet
-* `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
+* `bond_default_subnet` - (Optional, Available since v1.265.0) Default bond cluster subnet
+* `bonds` - (Optional, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-bond_policy-bonds) below.
+
+---
 
 ### `ip_allocation_policy-machine_type_policy`
 
 The ip_allocation_policy-machine_type_policy supports the following:
 
-* `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
-* `machine_type` - (Optional, ForceNew, Available since v1.265.0) Model
+* `bonds` - (Optional, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-machine_type_policy-bonds) below.
+* `machine_type` - (Optional, Available since v1.265.0) Model
+
+---
 
 ### `ip_allocation_policy-node_policy`
 
 The ip_allocation_policy-node_policy supports the following:
 
-* `bonds` - (Optional, ForceNew, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
-* `hostname` - (Optional, ForceNew, Available since v1.265.0) Host name
-* `node_id` - (Optional, ForceNew, Available since v1.265.0) Node ID
+* `bonds` - (Optional, List, Available since v1.265.0) Bond information See [`bonds`](#ip_allocation_policy-node_policy-bonds) below.
+* `hostname` - (Optional, Available since v1.265.0) Host name
+* `node_id` - (Optional, Available since v1.265.0) Node ID
+
+---
 
 ### `ip_allocation_policy-node_policy-bonds`
 
 The ip_allocation_policy-node_policy-bonds supports the following:
 
-* `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
-* `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
+* `name` - (Optional, Available since v1.265.0) Bond Name
+* `subnet` - (Optional, Available since v1.265.0) IP source cluster subnet
+
+---
 
 ### `ip_allocation_policy-machine_type_policy-bonds`
 
 The ip_allocation_policy-machine_type_policy-bonds supports the following:
 
-* `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
-* `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
+* `name` - (Optional, Available since v1.265.0) Bond Name
+* `subnet` - (Optional, Available since v1.265.0) IP source cluster subnet
+
+---
 
 ### `ip_allocation_policy-bond_policy-bonds`
 
 The ip_allocation_policy-bond_policy-bonds supports the following:
 
-* `name` - (Optional, ForceNew, Available since v1.265.0) Bond Name
-* `subnet` - (Optional, ForceNew, Available since v1.265.0) IP source cluster subnet
+* `name` - (Optional, Available since v1.265.0) Bond Name
+* `subnet` - (Optional, Available since v1.265.0) IP source cluster subnet
 
 ## Attributes Reference
 
@@ -263,7 +279,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when create the Node.
 * `delete` - (Defaults to 5 mins) Used when delete the Node.

@@ -163,11 +163,11 @@ func (s *configureStub) Configure(_ context.Context, req resource.ConfigureReque
 
 func TestWrapResourceNilChainIsIdentity(t *testing.T) {
 	r := &stubResource{}
-	got := WrapResource("test", r, nil)
+	got := WrapResource("test", r, nil, nil)
 	if got != resource.Resource(r) {
 		t.Fatal("nil chain must return the same resource")
 	}
-	got = WrapResource("test", r, []intercept.Interceptor{})
+	got = WrapResource("test", r, []intercept.Interceptor{}, nil)
 	if got != resource.Resource(r) {
 		t.Fatal("empty chain must return the same resource")
 	}
@@ -176,7 +176,7 @@ func TestWrapResourceNilChainIsIdentity(t *testing.T) {
 func TestWrapResourceCreate(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &stubResource{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.CreateResponse
@@ -197,7 +197,7 @@ func TestWrapResourceCreate(t *testing.T) {
 func TestWrapResourceRead(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &stubResource{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.ReadResponse
@@ -211,7 +211,7 @@ func TestWrapResourceRead(t *testing.T) {
 func TestWrapResourceUpdate(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &stubResource{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.UpdateResponse
@@ -225,7 +225,7 @@ func TestWrapResourceUpdate(t *testing.T) {
 func TestWrapResourceDelete(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &stubResource{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.DeleteResponse
@@ -239,7 +239,7 @@ func TestWrapResourceDelete(t *testing.T) {
 func TestWrapResourceBeforeAbort(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", beforeErr: errors.New("abort")}
 	r := &stubResource{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.CreateResponse
@@ -256,7 +256,7 @@ func TestWrapResourceBeforeAbort(t *testing.T) {
 func TestWrapResourceAfterSeesInnerError(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &stubResource{createErr: "inner error"}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.CreateResponse
@@ -274,7 +274,7 @@ func TestWrapResourceAfterSeesInnerError(t *testing.T) {
 func TestWrapResourceAfterRewritesError(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", rewriteErr: errors.New("rewritten")}
 	r := &stubResource{createErr: "inner error"}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.CreateResponse
@@ -294,7 +294,7 @@ func TestWrapResourceAfterRewritesError(t *testing.T) {
 func TestWrapResourceAfterCannotSwallowError(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", swallow: true}
 	r := &stubResource{readErr: "resource not found"}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.ReadResponse
@@ -317,7 +317,7 @@ func TestWrapResourceAfterCannotSwallowError(t *testing.T) {
 func TestWrapResourceWarningsSurviveRewrite(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", rewriteErr: errors.New("rewritten")}
 	r := &stubResource{readErr: "resource not found"}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.ReadResponse
@@ -337,7 +337,7 @@ func TestWrapResourceWrapKeepsEveryInnerErrorIntact(t *testing.T) {
 		diag.NewAttributeErrorDiagnostic(path.Root("cidr_block"), "invalid CIDR", "must be a /16 or narrower"),
 		diag.NewErrorDiagnostic("second failure", "with a detail"),
 	}}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.CreateResponse
@@ -366,7 +366,7 @@ func TestWrapResourceWrapKeepsEveryInnerErrorIntact(t *testing.T) {
 func TestWrapResourceForwardsProviderDataAsMeta(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	r := &configureStub{}
-	got := WrapResource("test", r, []intercept.Interceptor{rec})
+	got := WrapResource("test", r, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	meta := struct{ client string }{client: "stub"}
@@ -384,7 +384,7 @@ func TestWrapResourceForwardsProviderDataAsMeta(t *testing.T) {
 
 func TestWrapResourceMetaIsNilBeforeConfigure(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
-	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{rec})
+	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{rec}, nil)
 	wr := got.(*wrappedResource)
 
 	var resp resource.ReadResponse
@@ -395,7 +395,7 @@ func TestWrapResourceMetaIsNilBeforeConfigure(t *testing.T) {
 }
 
 func TestWrapResourceNilSafeInterfacesAlwaysPresent(t *testing.T) {
-	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{&recordInterceptor{name: "rec"}})
+	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{&recordInterceptor{name: "rec"}}, nil)
 
 	if _, ok := got.(resource.ResourceWithConfigure); !ok {
 		t.Error("wrapper must implement ResourceWithConfigure")
@@ -412,7 +412,7 @@ func TestWrapResourceNilSafeInterfacesAlwaysPresent(t *testing.T) {
 }
 
 func TestWrapResourceDoesNotInventCapabilities(t *testing.T) {
-	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{&recordInterceptor{name: "rec"}})
+	got := WrapResource("test", &stubResource{}, []intercept.Interceptor{&recordInterceptor{name: "rec"}}, nil)
 
 	if _, ok := got.(resource.ResourceWithImportState); ok {
 		t.Error("wrapper must not add ResourceWithImportState")
@@ -425,7 +425,7 @@ func TestWrapResourceDoesNotInventCapabilities(t *testing.T) {
 func TestWrapResourceStateMigrationCapabilities(t *testing.T) {
 	chain := []intercept.Interceptor{&recordInterceptor{name: "rec"}}
 
-	plain := WrapResource("test", &stubResource{}, chain).(*wrappedResource)
+	plain := WrapResource("test", &stubResource{}, chain, nil).(*wrappedResource)
 	if got := plain.UpgradeState(context.Background()); got != nil {
 		t.Errorf("UpgradeState = %v, want nil for a resource without it", got)
 	}
@@ -436,7 +436,7 @@ func TestWrapResourceStateMigrationCapabilities(t *testing.T) {
 		t.Errorf("UpgradeIdentity = %v, want nil for a resource without it", got)
 	}
 
-	wrapped := WrapResource("test", &upgradeStateStub{}, chain)
+	wrapped := WrapResource("test", &upgradeStateStub{}, chain, nil)
 	withUpgrade, ok := wrapped.(resource.ResourceWithUpgradeState)
 	if !ok {
 		t.Fatal("wrapper must implement ResourceWithUpgradeState")
@@ -447,7 +447,7 @@ func TestWrapResourceStateMigrationCapabilities(t *testing.T) {
 
 	rec := &recordInterceptor{name: "rec"}
 	inner := &upgradeStateStub{}
-	got := WrapResource("test", inner, []intercept.Interceptor{rec})
+	got := WrapResource("test", inner, []intercept.Interceptor{rec}, nil)
 	var resp resource.ReadResponse
 	got.Read(context.Background(), resource.ReadRequest{}, &resp)
 	if !inner.readCalled {
@@ -475,7 +475,7 @@ func TestWrapResourceCapabilitySplit(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			rec := &recordInterceptor{name: "rec"}
-			got := WrapResource("test", tc.inner, []intercept.Interceptor{rec})
+			got := WrapResource("test", tc.inner, []intercept.Interceptor{rec}, nil)
 
 			withImportState, hasImportState := got.(resource.ResourceWithImportState)
 			if hasImportState != tc.importState {
@@ -527,7 +527,7 @@ func innerStub(r resource.Resource) *stubResource {
 func TestWrapDataSourceRead(t *testing.T) {
 	rec := &recordInterceptor{name: "rec"}
 	ds := &stubDataSource{}
-	got := WrapDataSource("test", ds, []intercept.Interceptor{rec})
+	got := WrapDataSource("test", ds, []intercept.Interceptor{rec}, nil)
 	wd := got.(*wrappedDataSource)
 
 	var resp datasource.ReadResponse
@@ -547,7 +547,7 @@ func TestWrapDataSourceRead(t *testing.T) {
 
 func TestWrapDataSourceNilChainIsIdentity(t *testing.T) {
 	ds := &stubDataSource{}
-	got := WrapDataSource("test", ds, nil)
+	got := WrapDataSource("test", ds, nil, nil)
 	if got != datasource.DataSource(ds) {
 		t.Fatal("nil chain must return the same data source")
 	}
@@ -556,7 +556,7 @@ func TestWrapDataSourceNilChainIsIdentity(t *testing.T) {
 func TestWrapDataSourceBeforeAbort(t *testing.T) {
 	rec := &recordInterceptor{name: "rec", beforeErr: errors.New("abort")}
 	ds := &stubDataSource{}
-	got := WrapDataSource("test", ds, []intercept.Interceptor{rec})
+	got := WrapDataSource("test", ds, []intercept.Interceptor{rec}, nil)
 	wd := got.(*wrappedDataSource)
 
 	var resp datasource.ReadResponse

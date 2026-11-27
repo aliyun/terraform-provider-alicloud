@@ -32,54 +32,89 @@ output "first_cms_group_metric_rule_id" {
 
 The following arguments are supported:
 
-* `dimensions` - (Optional, ForceNew) The dimensions that specify the resources to be associated with the alert rule.
-* `enable_state` - (Optional, ForceNew) EnableState.
-* `group_id` - (Optional, ForceNew) The ID of the application group.
-* `group_metric_rule_name` - (Optional, ForceNew) The name of the alert rule.
-* `ids` - (Optional, ForceNew, Computed)  A list of Group Metric Rule IDs.
-* `metric_name` - (Optional, ForceNew) The name of the metric.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
-* `namespace` - (Optional, ForceNew) The namespace of the service.
+* `dimensions` - (Optional) The dimensions that specify the resources to be associated with the alert rule.
+* `enable_state` - (Optional) EnableState.
+* `group_id` - (Optional) The ID of the application group.
+* `group_metric_rule_name` - (Optional) The name of the alert rule.
+* `ids` - (Optional, Computed)  A list of Group Metric Rule IDs.
+* `metric_name` - (Optional) The name of the metric.
+* `name_regex` - (Optional) A regex string to filter results by Group Metric Rule name.
+* `namespace` - (Optional) The namespace of the service.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of Group Metric Rule.
+* `status` - (Optional) The status of Group Metric Rule.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group Metric Rule names.
-* `rules` - A list of Cms Group Metric Rules. Each element contains the following attributes:
-  * `contact_groups` - Alarm contact group.
-  * `dimensions` - The dimensions that specify the resources to be associated with the alert rule.
-  * `effective_interval` - The time period during which the alert rule is effective.
-  * `email_subject` - The subject of the alert notification email.
-  * `enable_state` - Indicates whether the alert rule is enabled.
-  * `escalations` - Alarm level.
-    * `critical` - The critical level.
-      * `comparison_operator` - The comparison operator of the threshold for critical-level alerts.
-      * `statistics` - The statistical aggregation method for critical-level alerts.
-      * `threshold` - The threshold for critical-level alerts.
-      * `times` - The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
-    * `info` - The info level.
-      * `comparison_operator` - The comparison operator of the threshold for info-level alerts.
-      * `statistics` - The statistical aggregation method for info-level alerts.
-      * `threshold` - The threshold for info-level alerts.
-      * `times` - The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
-    * `warn` - The warn level.
-      * `comparison_operator` - The comparison operator of the threshold for warn-level alerts.
-      * `statistics` - The statistical aggregation method for warn-level alerts.
-      * `threshold` - The threshold for warn-level alerts.
-      * `times` - The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.
-  * `group_id` - The ID of the application group.
-  * `group_metric_rule_name` - The name of the alert rule.
-  * `id` - The ID of the Group Metric Rule.
-  * `metric_name` - The name of the metric.
-  * `namespace` - The namespace of the service.
-  * `no_effective_interval` - The time period during which the alert rule is ineffective.
-  * `period` - The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.
-  * `resources` - The resources that are associated with the alert rule.
-  * `rule_id` - The ID of the alert rule.
-  * `silence_time` - The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
-  * `source_type` - The type of the alert rule. The value is fixed to METRIC, indicating an alert rule for time series metrics.
-  * `status` - The status of Group Metric Rule..
-  * `webhook` -  The callback URL.
+* `rules` - A list of Cms Group Metric Rules.
+
+---
+
+### `rules`
+
+The rules supports the following attributes:
+
+* `contact_groups` - Alarm contact group.
+* `dimensions` - The dimensions that specify the resources to be associated with the alert rule.
+* `effective_interval` - The time period during which the alert rule is effective.
+* `email_subject` - The subject of the alert notification email.
+* `enable_state` - Indicates whether the alert rule is enabled.
+* `escalations` - Alarm level.
+* `group_id` - The ID of the application group.
+* `group_metric_rule_name` - The name of the alert rule.
+* `id` - The ID of the Group Metric Rule.
+* `metric_name` - The name of the metric.
+* `namespace` - The namespace of the service.
+* `no_effective_interval` - The time period during which the alert rule is ineffective.
+* `period` - The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.
+* `resources` - The resources that are associated with the alert rule.
+* `rule_id` - The ID of the alert rule.
+* `silence_time` - The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
+* `source_type` - The type of the alert rule. The value is fixed to METRIC, indicating an alert rule for time series metrics.
+* `status` - The status of Group Metric Rule..
+* `webhook` -  The callback URL.
+
+---
+
+### `rules.escalations`
+
+The escalations supports the following attributes:
+
+* `critical` - The critical level.
+* `info` - The info level.
+* `warn` - The warn level.
+
+---
+
+### `rules.escalations.critical`
+
+The critical supports the following attributes:
+
+* `comparison_operator` - The comparison operator of the threshold for critical-level alerts.
+* `statistics` - The statistical aggregation method for critical-level alerts.
+* `threshold` - The threshold for critical-level alerts.
+* `times` - The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
+
+---
+
+### `rules.escalations.info`
+
+The info supports the following attributes:
+
+* `comparison_operator` - The comparison operator of the threshold for info-level alerts.
+* `statistics` - The statistical aggregation method for info-level alerts.
+* `threshold` - The threshold for info-level alerts.
+* `times` - The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
+
+---
+
+### `rules.escalations.warn`
+
+The warn supports the following attributes:
+
+* `comparison_operator` - The comparison operator of the threshold for warn-level alerts.
+* `statistics` - The statistical aggregation method for warn-level alerts.
+* `threshold` - The threshold for warn-level alerts.
+* `times` - The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.

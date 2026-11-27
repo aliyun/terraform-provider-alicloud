@@ -35,26 +35,54 @@ output "alicloud_service_catalog_launch_option_example_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List) A list of Launch Option IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by portfolio name.
-* `product_id` - (Required, ForceNew) Product ID.
+* `ids` - (Optional, List) A list of Launch Option IDs.
+* `name_regex` - (Optional) A regex string to filter results by portfolio name.
+* `product_id` - (Required) Product ID.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `launch_options` - (Available since v1.197.0) A list of Launch Option Entries. Each element contains the following attributes:
-  * `id` - ID of Service Catalog Launch Option.
-  * `constraint_summaries` - List of constraints.
-    * `constraint_type` - Constraint type.The value is Launch, which indicates that the constraint is started.
-    * `description` - Constraint description.
-  * `portfolio_id` - Product mix ID.
-  * `portfolio_name` - Product portfolio name.
-* `options` - (Deprecated since v1.197.0) A list of Launch Option Entries. Each element contains the following attributes:
-  * `id` - ID of Service Catalog Launch Option.
-  * `constraint_summaries` - List of constraints.
-    * `constraint_type` - Constraint type.The value is Launch, which indicates that the constraint is started.
-    * `description` - Constraint description.
-  * `portfolio_id` - Product mix ID.
-  * `portfolio_name` - Product portfolio name.
+* `launch_options` - (Available since v1.197.0) A list of Launch Option Entries.
+* `options` - (Deprecated since v1.197.0) A list of Launch Option Entries.
+
+---
+
+### `launch_options`
+
+The launch_options supports the following attributes:
+
+* `id` - ID of Service Catalog Launch Option.
+* `constraint_summaries` - List of constraints.
+* `portfolio_id` - Product mix ID.
+* `portfolio_name` - Product portfolio name.
+
+---
+
+### `launch_options.constraint_summaries`
+
+The constraint_summaries supports the following attributes:
+
+* `constraint_type` - Constraint type.The value is Launch, which indicates that the constraint is started.
+* `description` - Constraint description.
+
+---
+
+### `options`
+
+The options supports the following attributes:
+
+* `id` - ID of Service Catalog Launch Option.
+* `constraint_summaries` - List of constraints.
+* `portfolio_id` - Product mix ID.
+* `portfolio_name` - Product portfolio name.
+
+---
+
+### `options.constraint_summaries`
+
+The constraint_summaries supports the following attributes:
+
+* `constraint_type` - Constraint type.The value is Launch, which indicates that the constraint is started.
+* `description` - Constraint description.

@@ -202,6 +202,49 @@ func fields(expr ast.Expr) map[string]ast.Expr {
 }
 func falseOrAbsent(expr ast.Expr) bool { return expr == nil || ident(expr) == "false" }
 
+// importCommandKind reports whether an ImportStateKind expression selects the
+// harness's CLI import (ImportCommandWithID). The other pinned kind,
+// ImportBlockWithID, routes the import through a config-driven import block
+// and does not qualify here. The symbol is matched only on the harness import
+// alias, so same-named identifiers from other packages or the same package
+// stay out.
+func importCommandKind(expr ast.Expr, sdk string) bool {
+	return selector(expr, sdk, "ImportCommandWithID")
+}
+
+// isNonPersistentImportStep reports whether a config-less step only performs a
+// non-persistent import. Such a step leaves the previously applied
+// configuration as the description of the remote world, so a following
+// convergent apply of a reordered config is still reorder coverage for the
+// earlier apply. Persistent imports, import-block or other non-CLI kinds, and
+// any option that can change or assert state disqualify the step.
+func isNonPersistentImportStep(attrs map[string]ast.Expr, sdk string) bool {
+	kind := attrs["ImportStateKind"]
+	importing := ident(attrs["ImportState"]) == "true" || importCommandKind(kind, sdk)
+	if !importing {
+		return false
+	}
+	// An ImportStateKind other than the CLI import (import block, unknown
+	// kind) routes the imported state through other machinery, so the previous
+	// apply no longer describes what later steps see, even when ImportState is
+	// also set.
+	if kind != nil && !importCommandKind(kind, sdk) {
+		return false
+	}
+	return attrs["Config"] == nil &&
+		falseOrAbsent(attrs["ImportStatePersist"]) &&
+		falseOrAbsent(attrs["Destroy"]) &&
+		falseOrAbsent(attrs["RefreshState"]) &&
+		falseOrAbsent(attrs["ExpectNonEmptyPlan"]) &&
+		attrs["Taint"] == nil &&
+		attrs["PreConfig"] == nil &&
+		attrs["PostConfig"] == nil &&
+		attrs["SkipFunc"] == nil &&
+		attrs["ExpectError"] == nil &&
+		attrs["ErrorMatch"] == nil &&
+		attrs["Check"] == nil
+}
+
 type builder struct {
 	address string
 	config  map[string]interface{}
@@ -352,7 +395,16 @@ func inspectSteps(expr ast.Expr, sdk string, builders map[string]*builder, candi
 		}
 		config, ok := attrs["Config"].(*ast.CallExpr)
 		if !ok || len(config.Args) != 1 {
-			previous = nil
+			// A config-less step can still be a legal non-persistent import
+			// verification between two applies: the imported state is compared
+			// and then discarded, so the last applied config keeps describing
+			// the remote world and the next apply can still be attributed to
+			// it. Anything that actually changes or asserts state — a
+			// persistent import, destroy, refresh, taint, pre-config callback,
+			// skip or expected error — breaks that chain.
+			if !isNonPersistentImportStep(attrs, sdk) {
+				previous = nil
+			}
 			continue
 		}
 		key := ident(config.Fun)

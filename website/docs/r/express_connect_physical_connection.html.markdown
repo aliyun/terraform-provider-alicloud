@@ -89,10 +89,14 @@ The following arguments are supported:
 * `bandwidth` - (Optional) The maximum bandwidth of the hosted connection.
 * `circuit_code` - (Optional) The circuit code of the Express Connect circuit.
 * `peer_location` - (Optional) The geographical location of the data center.
-* `redundant_physical_connection_id` - (Optional, ForceNew) The ID of the redundant Express Connect circuit. **NOTE:** From version 1.230.1, `redundant_physical_connection_id` cannot be modified.
+* `redundant_physical_connection_id` - (Optional, ForceNew) The ID of the redundant Express Connect circuit.
+
+  -> **NOTE:** From version 1.230.1, `redundant_physical_connection_id` cannot be modified.
 * `physical_connection_name` - (Optional) The name of the Express Connect circuit.
 * `description` - (Optional) The description of the Express Connect circuit.
-* `status` - (Optional) The status of the Express Connect circuit. Valid values: `Confirmed`, `Enabled`, `Canceled`, `Terminated`. **NOTE:** From version 1.230.1, `status` can be set to `Confirmed`. If you want to set `status` to `Enabled`, `period` must be set.
+* `status` - (Optional) The status of the Express Connect circuit. Valid values: `Confirmed`, `Enabled`, `Canceled`, `Terminated`.
+
+  -> **NOTE:** From version 1.230.1, `status` can be set to `Confirmed`. If you want to set `status` to `Enabled`, `period` must be set.
 * `period` - (Optional, Int, Available since v1.230.1) The subscription duration. Valid values:
   - If `pricing_cycle` is set to `Month`. Valid values: `1` to `9`.
   - If `pricing_cycle` is set to `Year`. Valid values: `1` to `5`.
@@ -105,11 +109,13 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Physical Connection.
-* `order_id` - The ID of the order that is placed. **Note:** `order_id` takes effect only if `status` is set to `Enabled`.
+* `order_id` - The ID of the order that is placed.
+
+  -> **NOTE:** `order_id` takes effect only if `status` is set to `Enabled`.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Physical Connection.
 

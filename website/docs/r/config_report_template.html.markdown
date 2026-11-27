@@ -81,6 +81,8 @@ Among them:
 
 -> **NOTE:**  It can only be triggered according to the cron expression time as much as possible. The cron expression limits the same template to trigger at most one notification per day.
 
+---
+
 ### `report_scope`
 
 The report_scope supports the following:
@@ -100,7 +102,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Report Template.
 * `delete` - (Defaults to 5 mins) Used when delete the Report Template.

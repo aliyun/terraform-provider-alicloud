@@ -84,6 +84,8 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.246.0) The tags.
 * `vswitch_id` - (Required, ForceNew) Switch ID.
 
+---
+
 ### `environment_var`
 
 The environment_var supports the following:
@@ -101,7 +103,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
 * `delete` - (Defaults to 5 mins) Used when delete the Instance.

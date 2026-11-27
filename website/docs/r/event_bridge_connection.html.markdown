@@ -117,14 +117,20 @@ The following arguments are supported:
 * `network_parameters` - (Required, Set) The parameters that are configured for the network. See [`network_parameters`](#network_parameters) below.
 * `auth_parameters` - (Optional, Set) The parameters that are configured for authentication. See [`auth_parameters`](#auth_parameters) below.
 
+---
+
 ### `network_parameters`
 
 The network_parameters supports the following:
 
-* `network_type` - (Required) The network type. Valid values: `PublicNetwork`, `PrivateNetwork`. **NOTE:** If you set `network_type` to `PrivateNetwork`, you must configure `vpc_id`, `vswitche_id`, and `security_group_id`.
+* `network_type` - (Required) The network type. Valid values: `PublicNetwork`, `PrivateNetwork`.
+
+  -> **NOTE:** If you set `network_type` to `PrivateNetwork`, you must configure `vpc_id`, `vswitche_id`, and `security_group_id`.
 * `vpc_id` - (Optional) The ID of the VPC.
 * `vswitche_id` - (Optional) The ID of the VSwitch.
 * `security_group_id` - (Optional) The ID of the security group.
+
+---
 
 ### `auth_parameters`
 
@@ -135,6 +141,8 @@ The auth_parameters supports the following:
 * `basic_auth_parameters` - (Optional, Set) The parameters that are configured for basic authentication. See [`basic_auth_parameters`](#auth_parameters-basic_auth_parameters) below.
 * `oauth_parameters` - (Optional, Set) The parameters that are configured for OAuth authentication. See [`oauth_parameters`](#auth_parameters-oauth_parameters) below.
 
+---
+
 ### `auth_parameters-api_key_auth_parameters`
 
 The api_key_auth_parameters supports the following:
@@ -142,12 +150,16 @@ The api_key_auth_parameters supports the following:
 * `api_key_name` - (Optional) The name of the API key.
 * `api_key_value` - (Optional) The value of the API key.
 
+---
+
 ### `auth_parameters-basic_auth_parameters`
 
 The basic_auth_parameters supports the following:
 
 * `username` - (Optional) The username for basic authentication.
 * `password` - (Optional) The password for basic authentication.
+
+---
 
 ### `auth_parameters-oauth_parameters`
 
@@ -158,12 +170,16 @@ The oauth_parameters supports the following:
 * `client_parameters` - (Optional, Set) The parameters that are configured for the client. See [`client_parameters`](#auth_parameters-oauth_parameters-client_parameters) below.
 * `oauth_http_parameters` - (Optional, Set) The request parameters that are configured for OAuth authentication. See [`oauth_http_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters) below.
 
+---
+
 ### `auth_parameters-oauth_parameters-client_parameters`
 
 The client_parameters supports the following:
 
 * `client_id` - (Optional) The ID of the client.
 * `client_secret` - (Optional) The AccessKey secret of the client.
+
+---
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters`
 
@@ -173,6 +189,8 @@ The oauth_http_parameters supports the following:
 * `body_parameters` - (Optional, Set) The parameters that are configured for the request body. See [`body_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-body_parameters) below.
 * `query_string_parameters` - (Optional, Set) The parameters that are configured for the request path. See [`query_string_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-query_string_parameters) below.
 
+---
+
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-header_parameters`
 
 The header_parameters supports the following:
@@ -181,6 +199,8 @@ The header_parameters supports the following:
 * `value` - (Optional) The value of the request header.
 * `is_value_secret` - (Optional) Specifies whether to enable authentication.
 
+---
+
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-body_parameters`
 
 The body_parameters supports the following:
@@ -188,6 +208,8 @@ The body_parameters supports the following:
 * `key` - (Optional) The key of the request body.
 * `value` - (Optional) The value of the request body.
 * `is_value_secret` - (Optional) Specifies whether to enable authentication.
+
+---
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-query_string_parameters`
 
@@ -206,7 +228,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Connection.
 * `update` - (Defaults to 5 mins) Used when update the Connection.

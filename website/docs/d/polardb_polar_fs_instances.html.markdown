@@ -32,27 +32,34 @@ data "alicloud_polardb_polar_fs_instances" "example" {
 
 ## Attributes Reference
 
-* `polar_fs_instances` - (Available since v2.1.0) The matched instances. It contains the following attributes:
-  * `id` - (Available since v2.1.0) The PolarFS instance ID.
-  * `path` - (Available since v2.1.0) The PolarFS path.
-  * `status` - (Available since v2.1.0) The instance status.
-  * `description` - (Available since v2.1.0) The instance description.
-  * `create_time` - (Available since v2.1.0) The creation time.
-  * `expire_time` - (Available since v2.1.0) The expiration time.
-  * `pay_type` - (Available since v2.1.0) The billing method.
-  * `region_id` - (Available since v2.1.0) The region ID.
-  * `zone_id` - (Available since v2.1.0) The zone ID.
-  * `storage_space` - (Available since v2.1.0) The storage capacity.
-  * `storage_type` - (Available since v2.1.0) The storage type.
-  * `expired` - (Available since v2.1.0) Whether the instance has expired.
-  * `bandwidth` - (Available since v2.1.0) The bandwidth.
-  * `polar_fs_type` - (Available since v2.1.0) The PolarFS type.
-  * `vpc_id` - (Available since v2.1.0) The VPC ID.
-  * `vswitch_id` - (Available since v2.1.0) The vSwitch ID.
-  * `security_group_id` - (Available since v2.1.0) The security group ID.
-  * `relative_db_cluster_id` - (Available since v2.1.0) The associated database cluster ID.
-  * `category` - (Available since v2.1.0) The product category.
-  * `accelerating_enable` - (Available since v2.1.0) Whether acceleration is enabled.
-  * `accelerated_storage_space` - (Available since v2.1.0) The accelerated storage capacity.
-  * `accelerate_type` - (Available since v2.1.0) The acceleration type.
-  * `tags` - (Available since v2.1.0) The instance tags.
+* `polar_fs_instances` - (Available since v2.1.0) The matched instances.
+
+---
+
+### `polar_fs_instances`
+
+The polar_fs_instances supports the following attributes:
+
+* `id` - (Available since v2.1.0) The PolarFS instance ID.
+* `path` - (Available since v2.1.0) The PolarFS path.
+* `status` - (Available since v2.1.0) The instance status.
+* `description` - (Available since v2.1.0) The instance description.
+* `create_time` - (Available since v2.1.0) The creation time.
+* `expire_time` - (Available since v2.1.0) The expiration time.
+* `pay_type` - (Available since v2.1.0) The billing method.
+* `region_id` - (Available since v2.1.0) The region ID.
+* `zone_id` - (Available since v2.1.0) The zone ID.
+* `storage_space` - (Available since v2.1.0) The storage capacity.
+* `storage_type` - (Available since v2.1.0) The storage type.
+* `expired` - (Available since v2.1.0) Whether the instance has expired.
+* `bandwidth` - (Available since v2.1.0) The bandwidth.
+* `polar_fs_type` - (Available since v2.1.0) The PolarFS type.
+* `vpc_id` - (Available since v2.1.0) The VPC ID.
+* `vswitch_id` - (Available since v2.1.0) The vSwitch ID.
+* `security_group_id` - (Available since v2.1.0) The security group ID.
+* `relative_db_cluster_id` - (Available since v2.1.0) The associated database cluster ID.
+* `category` - (Available since v2.1.0) The product category.
+* `accelerating_enable` - (Available since v2.1.0) Whether acceleration is enabled.
+* `accelerated_storage_space` - (Available since v2.1.0) The accelerated storage capacity.
+* `accelerate_type` - (Available since v2.1.0) The acceleration type.
+* `tags` - (Available since v2.1.0) The instance tags.

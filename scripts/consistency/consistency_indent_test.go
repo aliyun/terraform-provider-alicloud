@@ -24,8 +24,11 @@ func indentFixtureDocs(t *testing.T, stem, body string) (map[string]ResourceAttr
 	}
 	attrs := make(map[string]ResourceAttribute)
 	// parseResourceDocs joins docsPath+stem+".html.markdown"; the trailing
-	// separator is required because it does not use filepath.Join.
-	err := parseResourceDocs("alicloud_"+stem, dir+"/", true, attrs)
+	// separator is required because it does not use filepath.Join. A nil schema
+	// key set keeps the legacy "every `### `block`` heading prefixes its bullets"
+	// assumption, which is what these indentation fixtures describe. The
+	// duplicate list is irrelevant here.
+	_, err := parseResourceDocs("alicloud_"+stem, dir+"/", true, attrs, nil)
 	return attrs, err
 }
 

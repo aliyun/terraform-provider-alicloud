@@ -39,24 +39,31 @@ output "cen_traffic_marking_policy_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Traffic Marking Policy IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Traffic Marking Policy name.
+* `ids` - (Optional, Computed)  A list of Traffic Marking Policy IDs.
+* `name_regex` - (Optional) A regex string to filter results by Traffic Marking Policy name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource.  Valid values: `Active`, `Creating`, `Deleting`, `Updating`.
+* `status` - (Optional) The status of the resource.  Valid values: `Active`, `Creating`, `Deleting`, `Updating`.
 * `description` - (Optional) The traffic marking policy description.
-* `transit_router_id` - (Required, ForceNew) The ID of the transit router.
+* `transit_router_id` - (Required) The ID of the transit router.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Traffic Marking Policy names.
-* `policies` - A list of Cen Traffic Marking Policies. Each element contains the following attributes:
-  * `description` - The description of the Traffic Marking Policy.
-  * `id` - The ID of the resource. The value is formatted `<transit_router_id>:<traffic_marking_policy_id>`.
-  * `marking_dscp` - The DSCP(Differentiated Services Code Point) of the Traffic Marking Policy.
-  * `priority` - The Priority of the Traffic Marking Policy.
-  * `transit_router_id` - The ID of the transit router.
-  * `status` - The status of the resource.
-  * `traffic_marking_policy_id` - The ID of the Traffic Marking Policy.
-  * `traffic_marking_policy_name` - The name of the Traffic Marking Policy.
+* `policies` - A list of Cen Traffic Marking Policies.
+
+---
+
+### `policies`
+
+The policies supports the following attributes:
+
+* `description` - The description of the Traffic Marking Policy.
+* `id` - The ID of the resource. The value is formatted `<transit_router_id>:<traffic_marking_policy_id>`.
+* `marking_dscp` - The DSCP(Differentiated Services Code Point) of the Traffic Marking Policy.
+* `priority` - The Priority of the Traffic Marking Policy.
+* `transit_router_id` - The ID of the transit router.
+* `status` - The status of the resource.
+* `traffic_marking_policy_id` - The ID of the Traffic Marking Policy.
+* `traffic_marking_policy_name` - The name of the Traffic Marking Policy.

@@ -127,7 +127,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 75 mins) Used when waiting for the certificate to be issued. A DV certificate is usually issued within minutes of the validation records going live. OV and EV certificates additionally go through a manual review that can take hours and exposes no progress API, so raise this timeout for them.
 * `delete` - (Defaults to 5 mins) Used when delete the Certificate Validation.

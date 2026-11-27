@@ -170,6 +170,78 @@ func TestUnitContextRpcFastDialDelayedHeader(t *testing.T) {
 	}
 }
 
+func TestUnitContextRpcNormalizesBusinessError(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		body     string
+		wantCode string
+	}{
+		{name: "string_code", body: `{"Code":"OperationDenied.EcrAttachmentExisted","Message":"attachment exists","Success":false,"AccessKeyId":"unit-test-access-key"}`, wantCode: "OperationDenied.EcrAttachmentExisted"},
+		{name: "numeric_code", body: `{"Code":400,"Message":"numeric business code","Success":false}`, wantCode: "400"},
+		{name: "numeric_status_code", body: `{"Code":"OperationDenied.EcrAttachmentExisted","Message":"attachment exists","StatusCode":201}`, wantCode: "OperationDenied.EcrAttachmentExisted"},
+		{name: "object_status_code", body: `{"Code":"OperationDenied.EcrAttachmentExisted","Message":"attachment exists","StatusCode":{}}`, wantCode: "OperationDenied.EcrAttachmentExisted"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clearProxyEnv(t)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer server.Close()
+
+			client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+			_, err := client.RpcPostWithContext(context.Background(), "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"})
+			if err == nil {
+				t.Fatal("a 2xx business error must be returned as an SDK error")
+			}
+			var sdkErr *tea.SDKError
+			if !errors.As(err, &sdkErr) {
+				t.Fatalf("business error type = %T, want *tea.SDKError: %s", err, err)
+			}
+			if got := tea.StringValue(sdkErr.Code); got != tc.wantCode {
+				t.Fatalf("business error code = %q, want %q", got, tc.wantCode)
+			}
+			if strings.Contains(err.Error(), "unit-test-access-key") {
+				t.Fatal("business error exposes a credential field")
+			}
+		})
+	}
+}
+
+func TestUnitContextRpcPreservesNumericResult(t *testing.T) {
+	clearProxyEnv(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"InstanceCount":1,"Success":true}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	result, err := client.RpcPostWithContext(context.Background(), "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, nil)
+	if err != nil {
+		t.Fatalf("numeric success response failed: %s", err)
+	}
+	value, ok := result["InstanceCount"].(float64)
+	if !ok || value != 1 {
+		t.Fatalf("InstanceCount = %T(%v), want float64(1)", result["InstanceCount"], result["InstanceCount"])
+	}
+}
+
+func TestUnitContextRpcRejectsTrailingJSON(t *testing.T) {
+	clearProxyEnv(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"Code":"OperationDenied","Message":"malformed"}]`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	_, err := client.RpcPostWithContext(context.Background(), "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, nil)
+	if !errors.Is(err, ErrUnreadableResponse) {
+		t.Fatalf("trailing JSON error = %v, want ErrUnreadableResponse", err)
+	}
+}
+
 // Cancelling the lifecycle context must abort an in-flight Set or Describe
 // request and prevent another attempt.
 func TestUnitContextRpcCancellationStopsInFlightWrite(t *testing.T) {
@@ -289,6 +361,72 @@ func TestUnitRpcMalformedEndpointIsRejected(t *testing.T) {
 		if strings.Contains(message, secret) {
 			t.Fatalf("the endpoint error exposes %q: %s", secret, message)
 		}
+	}
+}
+
+// TestUnitContextRpcTransportErrorRedactsSyntheticSTSAndSignature drives the real signing and
+// transport error outlet with synthetic STS credentials. Both the decoded credential values and
+// their URL-encoded forms must be absent from the diagnostic, while the url.Error chain survives.
+func TestUnitContextRpcTransportErrorRedactsSyntheticSTSAndSignature(t *testing.T) {
+	clearProxyEnv(t)
+	const (
+		accessKey = "LTAI-synthetic-unit-key"
+		secret    = "synthetic-unit-secret"
+		token     = "synthetic/token+value="
+	)
+	type signedValues struct {
+		accessKey string
+		token     string
+		signature string
+	}
+	captured := make(chan signedValues, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		captured <- signedValues{
+			accessKey: r.URL.Query().Get("AccessKeyId"),
+			token:     r.URL.Query().Get("SecurityToken"),
+			signature: r.URL.Query().Get("Signature"),
+		}
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			t.Errorf("the test server does not support hijacking")
+			return
+		}
+		conn, _, err := hijacker.Hijack()
+		if err != nil {
+			t.Errorf("hijacking the response: %s", err)
+			return
+		}
+		_ = conn.Close()
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("sts").
+		SetAccessKeyId(accessKey).
+		SetAccessKeySecret(secret).
+		SetSecurityToken(token))
+	if err != nil {
+		t.Fatalf("building the synthetic STS credential: %s", err)
+	}
+	client.config.Credential = credential
+	_, err = client.RpcPostWithContext(context.Background(), "Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"})
+	if err == nil {
+		t.Fatal("expected the closed connection to fail the request")
+	}
+	values := <-captured
+	if values.accessKey != accessKey || values.token != token || values.signature == "" {
+		t.Fatal("the test did not capture the expected synthetic signed query")
+	}
+	message := err.Error()
+	for _, value := range []string{accessKey, token, values.signature} {
+		if strings.Contains(message, value) || strings.Contains(message, url.QueryEscape(value)) {
+			t.Fatal("the transport error exposes synthetic credential material or its URL-encoded form")
+		}
+	}
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		t.Fatal("the sanitized transport error lost its url.Error classification")
 	}
 }
 

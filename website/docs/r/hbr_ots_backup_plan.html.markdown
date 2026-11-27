@@ -113,29 +113,50 @@ The following arguments are supported:
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `vault_id` - (Optional, ForceNew) The ID of backup vault.
-* `instance_name` - (Optional, ForceNew) The name of the Table store instance. **Note:** Required while source_type equals `OTS_TABLE`.
+* `instance_name` - (Optional, ForceNew) The name of the Table store instance.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
 * `cross_account_type` - (Optional, ForceNew, Computed, Available since v1.189.0) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
 * `cross_account_user_id` - (Optional, ForceNew, Available since v1.189.0) The original account ID of the cross account backup managed by the current account.
 * `cross_account_role_name` - (Optional, ForceNew, Available since v1.189.0) The role name created in the original account RAM backup by the cross account managed by the current account.
-* `ots_detail` - (Optional) The details about the Table store instance. See [`ots_detail`](#ots_detail) below. **Note:** Required while source_type equals `OTS_TABLE`.
-* `rules` - (Optional, Available since v1.164.0) The backup plan rule. See [`rules`](#rules) below. **Note:** Required while source_type equals `OTS_TABLE`.
+* `ots_detail` - (Optional) The details about the Table store instance. See [`ots_detail`](#ots_detail) below.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
+* `rules` - (Optional, Available since v1.164.0) The backup plan rule. See [`rules`](#rules) below.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
+
+---
 
 ### `ots_detail`
 
 The ots_detail supports the following:
 
-* `table_names` - (Optional) The names of the destination tables in the Tablestore instance. **Note:** Required while source_type equals `OTS_TABLE`.
+* `table_names` - (Optional) The names of the destination tables in the Tablestore instance.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
+
+---
 
 ### `rules`
 
 The rules support the following:
 
-* `schedule` - (Optional) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered. **Note:** Required while source_type equals `OTS_TABLE`.
+* `schedule` - (Optional) Backup strategy. Optional format: `I|{startTime}|{interval}`. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task has not completed yet, the next backup task will not be triggered.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
+
   - `startTime` Backup start time, UNIX time seconds.
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
-* `retention` - (Optional) Backup retention days, the minimum is 1. **Note:** Required while source_type equals `OTS_TABLE`.
-* `rule_name` - (Optional)  The name of the backup rule.**Note:** Required while source_type equals `OTS_TABLE`. `rule_name` should be unique for the specific user.
-* `backup_type` - (Optional) The name of the tableStore instance. Valid values: `COMPLETE`, `INCREMENTAL`. **Note:** Required while source_type equals `OTS_TABLE`.
+* `retention` - (Optional) Backup retention days, the minimum is 1.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
+* `rule_name` - (Optional)  The name of the backup rule.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`. `rule_name` should be unique for the specific user.
+* `backup_type` - (Optional) The name of the tableStore instance. Valid values: `COMPLETE`, `INCREMENTAL`.
+
+  -> **NOTE:** Required while source_type equals `OTS_TABLE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: true, false.
 
 ## Attributes Reference

@@ -35,5 +35,12 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `regions` - A list of Ros Regions. Each element contains the following attributes:
-  * `replication_region_id` - The ID of the replication region.
+* `regions` - A list of Ros Regions.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `replication_region_id` - The ID of the replication region.

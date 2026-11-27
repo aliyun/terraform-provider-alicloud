@@ -174,11 +174,11 @@ output "emrv2_cluster_instances_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew)  A list of Cluster IDs.
-* `cluster_id` - (Optional, ForceNew) The emr cluster ID.
-* `node_group_ids` - (Optional, ForceNew) The cluster node group ids.
-* `node_group_names` - (Optional, ForceNew) The cluster node group names.
-* `instance_states` - (Optional, ForceNew) The cluster ecs instance states.
+* `ids` - (Optional)  A list of Cluster IDs.
+* `cluster_id` - (Optional) The emr cluster ID.
+* `node_group_ids` - (Optional) The cluster node group ids.
+* `node_group_names` - (Optional) The cluster node group names.
+* `instance_states` - (Optional) The cluster ecs instance states.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `next_token` - (Optional) The next token is used to list emr cluster ecs instances for next page.
@@ -190,19 +190,26 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Cluster ecs instance names.
 * `ids` - A list of Cluster ecs instance IDS.
-* `instances` - A list of Emr Cluster ecs instances. Each element contains the following attributes:
-  * `instance_id` - The emr cluster ecs instance ID.
-  * `instance_name` - The emr cluster ecs instance name.
-  * `instance_type` - The emr cluster ecs instance type.
-  * `instance_state` - The emr cluster ecs instance state.
-  * `node_group_id` - The emr cluster node group ID.
-  * `node_group_type` - The emr cluster node group type.
-  * `zone_id` - The emr cluster node group zone ID.
-  * `public_ip` - The emr cluster ecs instance public ip.
-  * `private_ip` - The emr cluster ecs instance private ip.
-  * `auto_renew` - The emr cluster node group whether auto renew when payment type is 'Subscription'.
-  * `auto_renew_duration_unit` - The emr cluster node group auto renew duration unit when payment type is 'Subscription'.
-  * `auto_renew_duration` - The emr cluster node group auto renew duration when payment type is 'Subscription'.
-  * `create_time` - The creation time of the resource.
-  * `expire_time` - The expire time of the resource.
+* `instances` - A list of Emr Cluster ecs instances.
 * `total_count` - The total count of list emr cluster ecs instances.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `instance_id` - The emr cluster ecs instance ID.
+* `instance_name` - The emr cluster ecs instance name.
+* `instance_type` - The emr cluster ecs instance type.
+* `instance_state` - The emr cluster ecs instance state.
+* `node_group_id` - The emr cluster node group ID.
+* `node_group_type` - The emr cluster node group type.
+* `zone_id` - The emr cluster node group zone ID.
+* `public_ip` - The emr cluster ecs instance public ip.
+* `private_ip` - The emr cluster ecs instance private ip.
+* `auto_renew` - The emr cluster node group whether auto renew when payment type is 'Subscription'.
+* `auto_renew_duration_unit` - The emr cluster node group auto renew duration unit when payment type is 'Subscription'.
+* `auto_renew_duration` - The emr cluster node group auto renew duration when payment type is 'Subscription'.
+* `create_time` - The creation time of the resource.
+* `expire_time` - The expire time of the resource.

@@ -31,10 +31,10 @@ output "first_ga_accelerator_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, List)  A list of Accelerator IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Accelerator name.
-* `status` - (Optional, ForceNew) The status of the GA instance. Valid values: `active`, `binding`, `configuring`, `deleting`, `finacialLocked`, `init`, `unbinding`.
-* `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.217.1) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
+* `ids` - (Optional, List)  A list of Accelerator IDs.
+* `name_regex` - (Optional) A regex string to filter results by Accelerator name.
+* `status` - (Optional) The status of the GA instance. Valid values: `active`, `binding`, `configuring`, `deleting`, `finacialLocked`, `init`, `unbinding`.
+* `bandwidth_billing_type` - (Optional, Available since v1.217.1) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
   - `BandwidthPackage`: billed based on bandwidth plans.
   - `CDT`: billed based on data transfer.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -44,23 +44,55 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Accelerator names.
-* `accelerators` - A list of Ga Accelerators. Each element contains the following attributes:
-  * `accelerator_id` - The ID of the GA instance to query.
-  * `accelerator_name` - The Name of the GA instance.
-  * `basic_bandwidth_package` - Details of the basic bandwidth package bound to the global acceleration instance.
-  	* `bandwidth` - The bandwidth value of the basic bandwidth package.
-    * `bandwidth_type` - The bandwidth type of the basic bandwidth package.
-    * `instance_id` - Instance ID of the basic bandwidth package.
-  * `cen_id` - The cloud enterprise network instance ID bound to the global acceleration instance.
-  * `cross_domain_bandwidth_package` - Details of the cross-domain acceleration package bound to the global acceleration instance.
-    * `instance_id` - Instance ID of the cross-domain acceleration package.
-    * `bandwidth` - Bandwidth value of cross-domain acceleration package.
-  * `ddos_id` - DDoS high-defense instance ID that is unbound from the global acceleration instance.
-  * `description` - Descriptive information of the global acceleration instance.
-  * `dns_name` - CNAME address assigned by Global Acceleration instance.
-  * `expired_time` - Time when the global acceleration instance expires.
-  * `id` - The ID of the Accelerator.
-  * `payment_type` - The billing method of the GA instance. Valid values: `POSTPAY`, `PREPAY`.
-  * `second_dns_name` - CNAME of the Global Acceleration Linkage DDoS High Defense Instance.
-  * `spec` - The instance type of the GA instance.
-  * `status` - The status of the GA instance.
+* `accelerators` - A list of Ga Accelerators.
+
+---
+
+### `accelerators`
+
+The accelerators supports the following attributes:
+
+* `bandwidth` - The bandwidth value of the GA instance.
+* `bandwidth_billing_type` - The bandwidth billing type of the GA instance.
+* `ip_set_config` - The IP set configuration of the GA instance.
+* `accelerator_id` - The ID of the GA instance to query.
+* `accelerator_name` - The Name of the GA instance.
+* `basic_bandwidth_package` - Details of the basic bandwidth package bound to the global acceleration instance.
+* `cen_id` - The cloud enterprise network instance ID bound to the global acceleration instance.
+* `cross_domain_bandwidth_package` - Details of the cross-domain acceleration package bound to the global acceleration instance.
+* `ddos_id` - DDoS high-defense instance ID that is unbound from the global acceleration instance.
+* `description` - Descriptive information of the global acceleration instance.
+* `dns_name` - CNAME address assigned by Global Acceleration instance.
+* `expired_time` - Time when the global acceleration instance expires.
+* `id` - The ID of the Accelerator.
+* `payment_type` - The billing method of the GA instance. Valid values: `POSTPAY`, `PREPAY`.
+* `second_dns_name` - CNAME of the Global Acceleration Linkage DDoS High Defense Instance.
+* `spec` - The instance type of the GA instance.
+* `status` - The status of the GA instance.
+
+---
+
+### `accelerators.ip_set_config`
+
+The ip_set_config supports the following attributes:
+
+* `access_mode` - The access mode of the IP set.
+
+---
+
+### `accelerators.basic_bandwidth_package`
+
+The basic_bandwidth_package supports the following attributes:
+
+* `bandwidth` - The bandwidth value of the basic bandwidth package.
+* `bandwidth_type` - The bandwidth type of the basic bandwidth package.
+* `instance_id` - Instance ID of the basic bandwidth package.
+
+---
+
+### `accelerators.cross_domain_bandwidth_package`
+
+The cross_domain_bandwidth_package supports the following attributes:
+
+* `instance_id` - Instance ID of the cross-domain acceleration package.
+* `bandwidth` - Bandwidth value of cross-domain acceleration package.

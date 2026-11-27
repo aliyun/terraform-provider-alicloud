@@ -53,7 +53,9 @@ The following arguments are supported:
 * `vault_storage_class` - (Optional, ForceNew) The storage class of Vault. Valid values: `STANDARD`.
 * `vault_type` - (Optional, ForceNew) The type of Vault. Valid values:
   - `STANDARD`: Standard backup vault.
-  - `OTS_BACKUP`: Backup vault for Tablestore. **NOTE:** We recommend that you use `STANDARD`. The cloud backup product will upgrade the backup vault, and the `vault_type` will be changed from `OTS_BACKUP` to `STANDARD`.
+  - `OTS_BACKUP`: Backup vault for Tablestore.
+
+  -> **NOTE:** We recommend that you use `STANDARD`. The cloud backup product will upgrade the backup vault, and the `vault_type` will be changed from `OTS_BACKUP` to `STANDARD`.
 * `worm_enabled` - (Optional, Bool, Available since v1.243.0) Indicates whether the immutable backup feature is enabled. Valid values: `true`, `false`.
 
 ## Attributes Reference
@@ -67,7 +69,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Vault.
 * `delete` - (Defaults to 10 mins) Used when delete the Vault.

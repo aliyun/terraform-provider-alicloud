@@ -45,35 +45,49 @@ output "mse_gateway_id_3" {
 The following arguments are supported:
 
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `gateway_name` - (Optional, ForceNew) The name of the Gateway.
-* `ids` - (Optional, ForceNew, Computed)  A list of Gateway IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Gateway name.
+* `gateway_name` - (Optional) The name of the Gateway.
+* `ids` - (Optional, Computed)  A list of Gateway IDs.
+* `name_regex` - (Optional) A regex string to filter results by Gateway name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the gateway. Valid values: `0`, `1`, `2`, `3`, `4`, `6`, `8`, `9`, `10`, `11`, `12`, `13`.
-* `vpc_id` - (Optional, ForceNew) The ID of the VPC.
+* `status` - (Optional) The status of the gateway. Valid values: `0`, `1`, `2`, `3`, `4`, `6`, `8`, `9`, `10`, `11`, `12`, `13`.
+* `vpc_id` - (Optional) The ID of the VPC.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Gateway names.
-* `gateways` - A list of Mse Gateways. Each element contains the following attributes:
-  * `backup_vswitch_id` - The backup vswitch id.
-  * `gateway_name` - The name of the Gateway.
-  * `gateway_unique_id` - Gateway unique identification.
-  * `id` - The ID of the Gateway.
-  * `payment_type` - The payment type of the resource.
-  * `replica` - Number of Gateway Nodes.
-  * `spec` - Gateway Node Specifications.
-  * `status` - The status of the gateway.
-  * `vpc_id` - The ID of the vpc.
-  * `vswitch_id` - The ID of the vswitch.
-  * `slb_list` - A list of gateway Slb.
-    * `associate_id` - The associate id.
-    * `slb_id` - The ID of the gateway slb.
-    * `slb_ip` - The ip of the gateway slb.
-    * `slb_port` - The port of the gateway slb.
-    * `type` - The type of the gateway slb.
-    * `gmt_create` - The creation time of the gateway slb.
-    * `gateway_slb_mode` - The Mode of the gateway slb.
-    * `gateway_slb_status` - The Status of the gateway slb.
+* `gateways` - A list of Mse Gateways.
+
+---
+
+### `gateways`
+
+The gateways supports the following attributes:
+
+* `backup_vswitch_id` - The backup vswitch id.
+* `gateway_name` - The name of the Gateway.
+* `gateway_unique_id` - Gateway unique identification.
+* `id` - The ID of the Gateway.
+* `payment_type` - The payment type of the resource.
+* `replica` - Number of Gateway Nodes.
+* `spec` - Gateway Node Specifications.
+* `status` - The status of the gateway.
+* `vpc_id` - The ID of the vpc.
+* `vswitch_id` - The ID of the vswitch.
+* `slb_list` - A list of gateway Slb.
+
+---
+
+### `gateways.slb_list`
+
+The slb_list supports the following attributes:
+
+* `associate_id` - The associate id.
+* `slb_id` - The ID of the gateway slb.
+* `slb_ip` - The ip of the gateway slb.
+* `slb_port` - The port of the gateway slb.
+* `type` - The type of the gateway slb.
+* `gmt_create` - The creation time of the gateway slb.
+* `gateway_slb_mode` - The Mode of the gateway slb.
+* `gateway_slb_status` - The Status of the gateway slb.

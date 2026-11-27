@@ -71,9 +71,11 @@ The following arguments are supported:
 * `network` - (Required, ForceNew) Cluster network information. See [`network`](#network) below.
 * `profile` - (Optional, ForceNew, Computed) Cluster attributes. Valid values: 'Default', 'XFlow'.
 
-**Note**: When profile is Default, vswitches might not be deleted when cluster is deleted because there are some remaining resources in the vswitches. We are still fixing this problem.
+  -> **NOTE:** When profile is Default, vswitches might not be deleted when cluster is deleted because there are some remaining resources in the vswitches. We are still fixing this problem.
 
 * `argocd_enabled` - (Optional) (Available since v1.243.0) Whether to enable ArgoCD. Default to true. Only valid when `profile` is 'Default'. It has to be false when cluster is deleted.
+
+---
 
 ### `network`
 
@@ -89,9 +91,16 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Cluster creation time.
 * `network` - Cluster network information.
-  * `security_group_ids` - Security group to which the cluster belongs.
 * `status` - The status of the resource.
 * `argocd_enabled` - Whether to enable ArgoCD.
+
+---
+
+### `network`
+
+The network supports the following attributes:
+
+* `security_group_ids` - Security group to which the cluster belongs.
 
 ## Timeouts
 

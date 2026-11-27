@@ -31,26 +31,40 @@ output "ga_custom_routing_port_mappings_accelerator_id_1" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
-* `listener_id` - (Optional, ForceNew) The ID of the listener.
-* `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group.
-* `status` - (Optional, ForceNew) The access policy of traffic for the backend instance. Valid Values: `allow`, `deny`.
+* `accelerator_id` - (Required) The ID of the GA instance.
+* `listener_id` - (Optional) The ID of the listener.
+* `endpoint_group_id` - (Optional) The ID of the endpoint group.
+* `status` - (Optional) The access policy of traffic for the backend instance. Valid Values: `allow`, `deny`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `custom_routing_port_mappings` - A list of Custom Routing Port Mappings. Each element contains the following attributes:
-  * `accelerator_id` - The ID of the GA instance.
-  * `listener_id` - The ID of the listener.
-  * `endpoint_group_id` - The ID of the endpoint group.
-  * `endpoint_id` - The ID of the endpoint.
-  * `accelerator_port` - The acceleration port.
-  * `vswitch` - The ID of the endpoint (vSwitch).
-  * `endpoint_group_region` - The ID of the region in which the endpoint group resides.
-  * `protocols` - The protocol of the backend service.
-  * `destination_socket_address` - The service IP address and port of the backend instance.
-    * `ip_address` - The service IP address of the backend instance.
-    * `port` - The service port of the backend instance.
-  * `status` - The access policy of traffic for the backend instance.
+* `custom_routing_port_mappings` - A list of Custom Routing Port Mappings.
+
+---
+
+### `custom_routing_port_mappings`
+
+The custom_routing_port_mappings supports the following attributes:
+
+* `accelerator_id` - The ID of the GA instance.
+* `listener_id` - The ID of the listener.
+* `endpoint_group_id` - The ID of the endpoint group.
+* `endpoint_id` - The ID of the endpoint.
+* `accelerator_port` - The acceleration port.
+* `vswitch` - The ID of the endpoint (vSwitch).
+* `endpoint_group_region` - The ID of the region in which the endpoint group resides.
+* `protocols` - The protocol of the backend service.
+* `destination_socket_address` - The service IP address and port of the backend instance.
+* `status` - The access policy of traffic for the backend instance.
+
+---
+
+### `custom_routing_port_mappings.destination_socket_address`
+
+The destination_socket_address supports the following attributes:
+
+* `ip_address` - The service IP address of the backend instance.
+* `port` - The service port of the backend instance.

@@ -12,7 +12,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -241,9 +240,8 @@ func ResourceCluster() *schema.Resource {
 										Optional: true,
 									},
 									"cen_id": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ValidateFunc: validators.StringInSlice([]string{"11111"}, false),
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 									"vpd_cidr": {
 										Type:     schema.TypeString,
@@ -317,6 +315,48 @@ func ResourceCluster() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"login_password": {
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+						},
+						"key_pair_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_disk": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"category": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"size": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"ram_role_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"file_system_mount_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"virtual_gpu_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"nodes": {
 							Type:     schema.TypeList,
 							Optional: true,
@@ -339,8 +379,9 @@ func ResourceCluster() *schema.Resource {
 										Optional: true,
 									},
 									"login_password": {
-										Type:     schema.TypeString,
-										Optional: true,
+										Type:      schema.TypeString,
+										Optional:  true,
+										Sensitive: true,
 									},
 								},
 							},
@@ -583,6 +624,40 @@ func resourceClusterCreate(d *schema.ResourceData, meta interface{}) error {
 			dataLoop8Map["NodeGroupName"] = dataLoop8Tmp["node_group_name"]
 			dataLoop8Map["MachineType"] = dataLoop8Tmp["machine_type"]
 			dataLoop8Map["ImageId"] = dataLoop8Tmp["image_id"]
+			if v, ok := dataLoop8Tmp["login_password"]; ok && v.(string) != "" {
+				dataLoop8Map["LoginPassword"] = v
+			}
+			if v, ok := dataLoop8Tmp["key_pair_name"]; ok && v.(string) != "" {
+				dataLoop8Map["KeyPairName"] = v
+			}
+			if v, ok := dataLoop8Tmp["ram_role_name"]; ok && v.(string) != "" {
+				dataLoop8Map["RamRoleName"] = v
+			}
+			if v, ok := dataLoop8Tmp["file_system_mount_enabled"]; ok {
+				dataLoop8Map["FileSystemMountEnabled"] = v
+			}
+			if v, ok := dataLoop8Tmp["virtual_gpu_enabled"]; ok {
+				dataLoop8Map["VirtualGpuEnabled"] = v
+			}
+			if systemDiskRaw, ok := dataLoop8Tmp["system_disk"]; ok {
+				systemDiskList := systemDiskRaw.([]interface{})
+				if len(systemDiskList) > 0 && systemDiskList[0] != nil {
+					systemDiskTmp := systemDiskList[0].(map[string]interface{})
+					systemDiskMap := make(map[string]interface{})
+					if v, ok := systemDiskTmp["category"]; ok && v.(string) != "" {
+						systemDiskMap["Category"] = v
+					}
+					if v, ok := systemDiskTmp["size"]; ok && v.(int) != 0 {
+						systemDiskMap["Size"] = v
+					}
+					if v, ok := systemDiskTmp["performance_level"]; ok && v.(string) != "" {
+						systemDiskMap["PerformanceLevel"] = v
+					}
+					if len(systemDiskMap) > 0 {
+						dataLoop8Map["SystemDisk"] = systemDiskMap
+					}
+				}
+			}
 			nodeGroupsMapsArray = append(nodeGroupsMapsArray, dataLoop8Map)
 		}
 		nodeGroupsMapsJson, err := json.Marshal(nodeGroupsMapsArray)
@@ -694,7 +769,11 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("cluster_name", objectRaw["ClusterName"])
 	d.Set("cluster_type", objectRaw["ClusterType"])
 	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	// DescribeCluster returns an empty ResourceGroupId until the resource-group binding
+	// propagates after create/ChangeResourceGroup; keep the last known value meanwhile.
+	if v, ok := objectRaw["ResourceGroupId"].(string); ok && v != "" {
+		d.Set("resource_group_id", v)
+	}
 	d.Set("status", objectRaw["OperatingState"])
 
 	objectRaw, err = efloServiceV2.DescribeClusterListTagResources(d.Id())

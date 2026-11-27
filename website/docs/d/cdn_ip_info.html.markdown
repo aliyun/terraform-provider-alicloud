@@ -28,7 +28,7 @@ data "alicloud_cdn_ip_info" "ip_test" {
 
 The following arguments are supported:
 
-* `ip` - (Required, ForceNew)  Specify IP address.
+* `ip` - (Required)  Specify IP address.
 
 ## Attributes Reference
 

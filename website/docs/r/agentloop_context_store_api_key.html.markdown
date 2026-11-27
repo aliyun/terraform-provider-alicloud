@@ -70,7 +70,9 @@ The following arguments are supported:
 
 * `agent_space` - (Required, ForceNew) The name of the Agent Space to which the Context Store belongs.
 * `context_store_name` - (Required, ForceNew) The name of the Context Store.
-* `name` - (Required, ForceNew) The name of the Api Key. **NOTE:** The backend reserves the name after an Api Key is deleted by design: a deleted name cannot be reused (recreating it returns `APIKeyNameConflict`), it is invisible to `List`, and the reservation cannot be cleared through the API. Always use a unique name, e.g. suffixed with `random_uuid` as shown in the example.
+* `name` - (Required, ForceNew) The name of the Api Key.
+
+  -> **NOTE:** The backend reserves the name after an Api Key is deleted by design: a deleted name cannot be reused (recreating it returns `APIKeyNameConflict`), it is invisible to `List`, and the reservation cannot be cleared through the API. Always use a unique name, e.g. suffixed with `random_uuid` as shown in the example.
 
 ## Attributes Reference
 
@@ -83,7 +85,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Context Store Api Key.
 * `delete` - (Defaults to 5 mins) Used when delete the Context Store Api Key.

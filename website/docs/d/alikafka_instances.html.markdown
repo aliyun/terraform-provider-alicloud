@@ -62,6 +62,8 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 
+---
+
 ### `instances`
 
 * `tags` - (Optional) A mapping of tags to assign to the instance.
@@ -73,40 +75,75 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of instance IDs.
 * `names` - A list of instance names.
 * `instances` - A list of instances. Each element contains the following attributes. See [`instances`](#instances) for the optional argument block.
-  * `id` - ID of the instance.
-  * `name` - Name of the instance.
-  * `create_time` - The create time of the instance.
-  * `service_status` - The current status of the instance. -1: unknown status, 0: wait deploy, 1: initializing, 2: preparing, 3 starting, 5: in service, 7: wait upgrade, 8: upgrading, 10: released, 15: freeze, 101: deploy error, 102: upgrade error.
-  * `deploy_type` - The deploy type of the instance. 0: sharing instance, 1: vpc instance, 2: vpc instance(support ip mapping), 3: eip instance, 4: eip/vpc instance, 5: vpc instance.
-  * `vpc_id` - The ID of attaching VPC to instance.
-  * `vswitch_id` - The ID of attaching vswitch to instance.
-  * `io_max` - The peak value of io of the instance.
-  * `eip_max` - The peak bandwidth of the instance.
-  * `disk_type` - The disk type of the instance. 0: efficient cloud disk , 1: SSD.
-  * `disk_size` - The disk size of the instance.
-  * `partition_num` - (Available in 1.194.0+) The number of partitions.
-  * `topic_quota` - The max num of topic can be create of the instance.
-  * `zone_id` - The ID of attaching zone to instance.
-  * `end_point` - The endPoint to access the instance.
-  * `paid_type` - The paid type of the instance.
-  * `spec_type` - The spec type of the instance.
-  * `security_group` - The security group of the instance.
-  * `service_version` - The kafka openSource version of the instance.
-  * `config` - The config the instance.
-  * `expired_time` - The expired time  of the instance.
-  * `msg_retain` - The msg retain of the instance.
-  * `ssl_end_point` - The SSL end point of the instance.
-  * `upgrade_service_detail_info` - The UpgradeServiceDetailInfo List.
-    * `current2_open_source_version` - The Current2OpenSourceVersion of the instance.
-  * `domain_endpoint` - The domain point of the instance.
-  * `ssl_domain_endpoint` - The SSL domain point of the instance.
-  * `sasl_domain_endpoint` - The SASL domain point of the instance.
-  * `tags` - A mapping of tags to assign to the instance.
-  * `allowed_list` - The allowed list of the instance.
-    * `deploy_type` - The deployed type of the instance.
-    * `vpc_list` - The vpc list of the instance.
-      * `allowed_ip_list` - The allowed ip list of the vpc_list.
-      * `port_range` - The port range of the vpc_list.
-    * `internet_list` - The internet list of the instance.
-      * `allowed_ip_list` - The allowed ip list of the internet_list.
-      * `port_range` - The port range of the internet_list.
+
+---
+
+### `instances`
+
+The instances supports the following attributes:
+
+* `id` - ID of the instance.
+* `name` - Name of the instance.
+* `create_time` - The create time of the instance.
+* `service_status` - The current status of the instance. -1: unknown status, 0: wait deploy, 1: initializing, 2: preparing, 3 starting, 5: in service, 7: wait upgrade, 8: upgrading, 10: released, 15: freeze, 101: deploy error, 102: upgrade error.
+* `deploy_type` - The deploy type of the instance. 0: sharing instance, 1: vpc instance, 2: vpc instance(support ip mapping), 3: eip instance, 4: eip/vpc instance, 5: vpc instance.
+* `vpc_id` - The ID of attaching VPC to instance.
+* `vswitch_id` - The ID of attaching vswitch to instance.
+* `io_max` - The peak value of io of the instance.
+* `eip_max` - The peak bandwidth of the instance.
+* `disk_type` - The disk type of the instance. 0: efficient cloud disk , 1: SSD.
+* `disk_size` - The disk size of the instance.
+* `partition_num` - (Available in 1.194.0+) The number of partitions.
+* `topic_quota` - The max num of topic can be create of the instance.
+* `zone_id` - The ID of attaching zone to instance.
+* `end_point` - The endPoint to access the instance.
+* `paid_type` - The paid type of the instance.
+* `spec_type` - The spec type of the instance.
+* `security_group` - The security group of the instance.
+* `service_version` - The kafka openSource version of the instance.
+* `config` - The config the instance.
+* `expired_time` - The expired time  of the instance.
+* `msg_retain` - The msg retain of the instance.
+* `ssl_end_point` - The SSL end point of the instance.
+* `upgrade_service_detail_info` - The UpgradeServiceDetailInfo List.
+* `domain_endpoint` - The domain point of the instance.
+* `ssl_domain_endpoint` - The SSL domain point of the instance.
+* `sasl_domain_endpoint` - The SASL domain point of the instance.
+* `tags` - A mapping of tags to assign to the instance.
+* `allowed_list` - The allowed list of the instance.
+
+---
+
+### `instances.upgrade_service_detail_info`
+
+The upgrade_service_detail_info supports the following attributes:
+
+* `current2_open_source_version` - The Current2OpenSourceVersion of the instance.
+
+---
+
+### `instances.allowed_list`
+
+The allowed_list supports the following attributes:
+
+* `deploy_type` - The deployed type of the instance.
+* `vpc_list` - The vpc list of the instance.
+* `internet_list` - The internet list of the instance.
+
+---
+
+### `instances.allowed_list.vpc_list`
+
+The vpc_list supports the following attributes:
+
+* `allowed_ip_list` - The allowed ip list of the vpc_list.
+* `port_range` - The port range of the vpc_list.
+
+---
+
+### `instances.allowed_list.internet_list`
+
+The internet_list supports the following attributes:
+
+* `allowed_ip_list` - The allowed ip list of the internet_list.
+* `port_range` - The port range of the internet_list.

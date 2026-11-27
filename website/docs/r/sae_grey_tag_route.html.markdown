@@ -129,6 +129,8 @@ The following arguments are supported:
 * `sc_rules` - (Optional, Set) The grayscale rule created for SpringCloud Application. See [`sc_rules`](#sc_rules) below.
 * `dubbo_rules` - (Optional, Set) The grayscale rule created for Dubbo Application. See [`dubbo_rules`](#dubbo_rules) below.
 
+---
+
 ### `sc_rules`
 
 The sc_rules supports the following:
@@ -136,6 +138,8 @@ The sc_rules supports the following:
 * `path` - (Optional) The path corresponding to the grayscale rule.
 * `condition` - (Optional) The conditional Patterns for Grayscale Rules. Valid values: `AND`, `OR`.
 * `items` - (Optional, Set) A list of conditions items. See [`items`](#sc_rules-items) below.
+
+---
 
 ### `sc_rules-items`
 
@@ -147,6 +151,8 @@ The items supports the following:
 * `value` - (Optional) The value of the parameter.
 * `operator` - (Optional) The operator. Valid values: `rawvalue`, `list`, `mod`, `deterministic_proportional_steaming_division`.
 
+---
+
 ### `dubbo_rules`
 
 The dubbo_rules supports the following:
@@ -157,6 +163,8 @@ The dubbo_rules supports the following:
 * `group` - (Optional) The service group.
 * `condition` - (Optional) The Conditional Patterns for Grayscale Rules. Valid values: `AND`, `OR`.
 * `items` - (Optional, Set) A list of conditions items. See [`items`](#dubbo_rules-items) below.
+
+---
 
 ### `dubbo_rules-items`
 
@@ -176,7 +184,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the resource.
 * `update` - (Defaults to 1 mins) Used when update the resource.

@@ -15,7 +15,7 @@ const Module = "Terraform-Module"
 const TerraformTraceId = "TerraformTraceId"
 
 // The main version number that is being run at the moment.
-var providerVersion = "2.3.0"
+var providerVersion = "2.4.0"
 
 func ProviderVersion() string {
 	return providerVersion

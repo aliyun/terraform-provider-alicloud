@@ -39,19 +39,26 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `objects` - A list of bucket objects. Each element contains the following attributes:
-  * `key` - Object key.
-  * `acl` - Object access control list. Possible values: `default`, `private`, `public-read` and `public-read-write`.
-  * `content_type` - Standard MIME type describing the format of the object data, e.g. "application/octet-stream".
-  * `content_length` - Size of the object in bytes.
-  * `cache_control` - Caching behavior along the request/reply chain. Read [RFC2616 Cache-Control](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-  * `content_disposition` - Presentational information for the object. Read [RFC2616 Content-Disposition](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-  * `content_encoding` - Content encodings that have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field. Read [RFC2616 Content-Encoding](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-  * `content_md5` - MD5 value of the content. Read [MD5](https://www.alibabacloud.com/help/doc-detail/31978.htm) for computing method.
-  * `expires` - Expiration date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-  * `server_side_encryption` - Server-side encryption of the object in OSS. It can be empty or `AES256`.
-  * `sse_kms_key_id` - If present, specifies the ID of the Key Management Service(KMS) master encryption key that was used for the object.
-  * `x_oss_hash_crc64ecma` - The CRC64-ECMA checksum of the object content, which is the value of the `x-oss-hash-crc64ecma` response header returned by OSS. Available since v2.1.0.
-  * `etag` - ETag generated for the object (MD5 sum of the object content).
-  * `storage_class` - Object storage type. Possible values: `Standard`, `IA`, `Archive` and `ColdArchive`.
-  * `last_modification_time` - Last modification time of the object.
+* `objects` - A list of bucket objects.
+
+---
+
+### `objects`
+
+The objects supports the following attributes:
+
+* `key` - Object key.
+* `acl` - Object access control list. Possible values: `default`, `private`, `public-read` and `public-read-write`.
+* `content_type` - Standard MIME type describing the format of the object data, e.g. "application/octet-stream".
+* `content_length` - Size of the object in bytes.
+* `cache_control` - Caching behavior along the request/reply chain. Read [RFC2616 Cache-Control](https://www.ietf.org/rfc/rfc2616.txt) for further details.
+* `content_disposition` - Presentational information for the object. Read [RFC2616 Content-Disposition](https://www.ietf.org/rfc/rfc2616.txt) for further details.
+* `content_encoding` - Content encodings that have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field. Read [RFC2616 Content-Encoding](https://www.ietf.org/rfc/rfc2616.txt) for further details.
+* `content_md5` - MD5 value of the content. Read [MD5](https://www.alibabacloud.com/help/doc-detail/31978.htm) for computing method.
+* `expires` - Expiration date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
+* `server_side_encryption` - Server-side encryption of the object in OSS. It can be empty or `AES256`.
+* `sse_kms_key_id` - If present, specifies the ID of the Key Management Service(KMS) master encryption key that was used for the object.
+* `x_oss_hash_crc64ecma` - The CRC64-ECMA checksum of the object content, which is the value of the `x-oss-hash-crc64ecma` response header returned by OSS. Available since v2.1.0.
+* `etag` - ETag generated for the object (MD5 sum of the object content).
+* `storage_class` - Object storage type. Possible values: `Standard`, `IA`, `Archive` and `ColdArchive`.
+* `last_modification_time` - Last modification time of the object.

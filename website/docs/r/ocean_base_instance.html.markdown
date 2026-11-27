@@ -76,7 +76,6 @@ The following arguments are supported:
   - receive_last: Keep the last backup set.
 
   -> **NOTE:**   The default value is delete_all.
-* `cpu` - (Optional, ForceNew, Computed, Int, Available since v1.230.0) The number of CPU cores of the cluster.
 * `cpu_arch` - (Optional, ForceNew, Available since v1.230.0) Cpu architecture, x86, arm. If no, the default value is x86
 
 * `disk_size` - (Required, Int) The size of the storage space, in GB.
@@ -151,10 +150,11 @@ The following attributes are exported:
 * `commodity_code` - The product code of the OceanBase cluster._oceanbasepre_public_cn: Domestic station cloud database package Year-to-month package._oceanbasepost_public_cn: The domestic station cloud database is paid by the hour._obpre_public_intl: International Station Cloud Database Package Monthly Package.
 * `create_time` - The creation time of the resource
 * `status` - The status of the resource
+* `cpu` - (Computed, Int, Available since v1.230.0) The number of CPU cores of the cluster.
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.

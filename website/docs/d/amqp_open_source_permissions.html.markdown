@@ -117,11 +117,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Open Source Permission IDs.
-* `permissions` - A list of Open Source Permission Entries. Each element contains the following attributes:
-  * `configure` - Permission configuration, such as .
-  * `instance_id` - Instance ID.
-  * `read` - Read permission, such as .
-  * `user_name` - Username.
-  * `vhost` - Vhost of the instance.
-  * `write` - Write permission, such as .
-  * `id` - The ID of the resource supplied above.
+* `permissions` - A list of Open Source Permission Entries.
+
+---
+
+### `permissions`
+
+The permissions supports the following attributes:
+
+* `configure` - Permission configuration, such as .
+* `instance_id` - Instance ID.
+* `read` - Read permission, such as .
+* `user_name` - Username.
+* `vhost` - Vhost of the instance.
+* `write` - Write permission, such as .
+* `id` - The ID of the resource supplied above.

@@ -229,19 +229,27 @@ The following arguments are supported:
 * `tags` - (Optional, Map, Available since v1.211.2) The tag of the resource
 * `version` - (Optional) Service grid version number
 
+---
+
 ### `extra_configuration`
 
 The extra_configuration supports the following:
 
 * `cr_aggregation_enabled` - (Optional) Whether the data plane KubeAPI access capability is enabled.
 
+---
+
 ### `load_balancer`
 
 The load_balancer supports the following:
 
 * `api_server_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposed API Server
-* `pilot_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposure Istio Pilot. **Note**: This field has been deprecated and is readonly as of 1.232.0. Use pilot_public_eip_id instead.
+* `pilot_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposure Istio Pilot.
+
+  -> **NOTE:** : This field has been deprecated and is readonly as of 1.232.0. Use pilot_public_eip_id instead.
 * `pilot_public_eip_id` - (Optional, Available since v1.232.0) the EIP instance id of Pilot load balancer.
+
+---
 
 ### `mesh_config`
 
@@ -262,6 +270,8 @@ The mesh_config supports the following:
 * `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/)
 * `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/)
 
+---
+
 ### `mesh_config-access_log`
 
 The mesh_config-access_log supports the following:
@@ -273,12 +283,16 @@ The mesh_config-access_log supports the following:
 * `sidecar_enabled` - (Optional, Available since v1.223.1) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
 * `sidecar_lifecycle` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of AccessLog of ASM Sidecars which have been collected to Alibaba Cloud SLS
 
+---
+
 ### `mesh_config-audit`
 
 The mesh_config-audit supports the following:
 
 * `enabled` - (Optional, Computed) Enable Audit
 * `project` - (Optional, Computed) Audit Log Items
+
+---
 
 ### `mesh_config-control_plane_log`
 
@@ -289,6 +303,8 @@ The mesh_config-control_plane_log supports the following:
   -'false': does not enable control plane log collection.
 * `log_ttl_in_day` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of logs has been collected to Alibaba Cloud SLS
 * `project` - (Optional) The name of the SLS Project to which the control plane logs are collected.
+
+---
 
 ### `mesh_config-kiali`
 
@@ -304,6 +320,8 @@ The mesh_config-kiali supports the following:
 * `ram_oauth_config` - (Optional, List, Available since v1.232.0) When the authentication strategy of the mesh topology is ramoauth, the mesh topology will be connected to the RAM OAuth application to log in with the Alibaba Cloud account. In this case, this attribute must be provided to configure the connection with the RAM OAuth application. See [`ram_oauth_config`](#mesh_config-kiali-ram_oauth_config) below.
 * `server_config` - (Optional, List, Available since v1.232.0) When you need to configure external access to the mesh topology through ASM gateway or other means, and access the mesh topology through a custom domain name or address, you need to specify this property. (The service mesh instance version must be 1.16.4.5 or above) See [`server_config`](#mesh_config-kiali-server_config) below.
 
+---
+
 ### `mesh_config-opa`
 
 The mesh_config-opa supports the following:
@@ -315,12 +333,16 @@ The mesh_config-opa supports the following:
 * `request_cpu` - (Optional) OPA proxy container of CPU resource request
 * `request_memory` - (Optional) OPA proxy container of the memory resource request
 
+---
+
 ### `mesh_config-pilot`
 
 The mesh_config-pilot supports the following:
 
 * `http10_enabled` - (Optional) Whether to support the HTTP1.0
 * `trace_sampling` - (Optional, Float) Link trace sampling percentage
+
+---
 
 ### `mesh_config-proxy`
 
@@ -331,6 +353,8 @@ The mesh_config-proxy supports the following:
 * `limit_memory` - (Optional) Memory limit resource
 * `request_cpu` - (Optional) CPU requests resources
 * `request_memory` - (Optional) A memory request resources
+
+---
 
 ### `mesh_config-sidecar_injector`
 
@@ -344,12 +368,16 @@ The mesh_config-sidecar_injector supports the following:
 * `request_cpu` - (Optional) Sidecar injector Pods on the requested resource
 * `request_memory` - (Optional) Sidecar injector Pods on the requested resource
 
+---
+
 ### `mesh_config-sidecar_injector-init_cni_configuration`
 
 The mesh_config-sidecar_injector-init_cni_configuration supports the following:
 
 * `enabled` - (Optional) Enable CNI
 * `exclude_namespaces` - (Optional) The excluded namespace
+
+---
 
 ### `mesh_config-kiali-open_id_config`
 
@@ -360,11 +388,15 @@ The mesh_config-kiali-open_id_config supports the following:
 * `issuer_uri` - (Optional, Available since v1.232.0) OIDC应用的Issuer URI
 * `scopes` - (Optional, List, Available since v1.232.0) The scope of the mesh topology request to the OIDC application
 
+---
+
 ### `mesh_config-kiali-ram_oauth_config`
 
 The mesh_config-kiali-ram_oauth_config supports the following:
 
 * `redirect_uris` - (Optional, Available since v1.232.0) The redirect Uri provided to the RAM OAuth application. This needs to be the access address of the mesh topology service. When not provided, the redirect Uri will be automatically inferred based on the ServerConfig or the CLB address of the mesh topology integration.
+
+---
 
 ### `mesh_config-kiali-server_config`
 
@@ -374,6 +406,8 @@ The mesh_config-kiali-server_config supports the following:
 * `web_port` - (Optional, Int, Available since v1.232.0) The port used when accessing the mesh topology in a custom way
 * `web_root` - (Optional, Available since v1.232.0) The root path of the service when accessing the mesh topology in a custom way
 * `web_schema` - (Optional, Available since v1.232.0) The protocol used when accessing the mesh topology in a custom way. Can only be http or https
+
+---
 
 ### `network`
 
@@ -390,27 +424,69 @@ The following attributes are exported:
 * `create_time` - Service grid creation time
 * `kubeconfig` - Kubeconfig configuration content
 * `load_balancer` - Load balancing information
-  * `api_server_loadbalancer_id` - The Instance ID of APIServer Load Balancer
-  * `pilot_public_loadbalancer_id` - The Instance ID of Pilot Load Balancer
 * `mesh_config` - Service grid configuration information
-  * `kiali` - Kiali configuration
-    * `aggregated_kiali_address` - When the mesh topology is deployed in managed mode and integrated with CLB to provide external access, the external access address is automatically generated.
-    * `distributed_kiali_access_tokens` - The login token provided when the mesh topology is deployed in data plane deployment mode. When the mesh topology authentication strategy is token, this token can be used to log in to the mesh topology service. The key of the property is the Kubernetes cluster id, and the value of the property is the login token of the mesh topology service in the cluster.
-    * `distributed_kiali_addresses` - When the mesh topology is deployed in data plane deployment mode and integrated with CLB to provide external access, the external access address is automatically generated. The key of the attribute is the Kubernetes cluster id, and the value is the external access address of the mesh topology service in the cluster.
-    * `url` - Kiali service address
-    * `use_populated_arms_prometheus` - Whether the mesh topology automatically uses the integrated ARMS Prometheus. When the integrated ARMS Prometheus is automatically used, there is no need to specify the dependent Prometheus HTTP API Url.
-  * `prometheus` - Prometheus configuration
-    * `external_url` - Prometheus service addresses (enabled external Prometheus when the system automatically populates)
-    * `use_external` - Whether to enable external Prometheus
-  * `sidecar_injector` - Sidecar injector configuration
-    * `sidecar_injector_webhook_as_yaml` - Other automatic injection Sidecar configuration (in YAML format)
 * `network` - Service grid network configuration information
-  * `security_group_id` - Security group ID
 * `status` - The status of the resource
+
+---
+
+### `load_balancer`
+
+The load_balancer supports the following attributes:
+
+* `api_server_loadbalancer_id` - The Instance ID of APIServer Load Balancer
+* `pilot_public_loadbalancer_id` - The Instance ID of Pilot Load Balancer
+
+---
+
+### `mesh_config`
+
+The mesh_config supports the following attributes:
+
+* `kiali` - Kiali configuration
+* `prometheus` - Prometheus configuration
+* `sidecar_injector` - Sidecar injector configuration
+
+---
+
+### `mesh_config.kiali`
+
+The kiali supports the following attributes:
+
+* `aggregated_kiali_address` - When the mesh topology is deployed in managed mode and integrated with CLB to provide external access, the external access address is automatically generated.
+* `distributed_kiali_access_tokens` - The login token provided when the mesh topology is deployed in data plane deployment mode. When the mesh topology authentication strategy is token, this token can be used to log in to the mesh topology service. The key of the property is the Kubernetes cluster id, and the value of the property is the login token of the mesh topology service in the cluster.
+* `distributed_kiali_addresses` - When the mesh topology is deployed in data plane deployment mode and integrated with CLB to provide external access, the external access address is automatically generated. The key of the attribute is the Kubernetes cluster id, and the value is the external access address of the mesh topology service in the cluster.
+* `url` - Kiali service address
+* `use_populated_arms_prometheus` - Whether the mesh topology automatically uses the integrated ARMS Prometheus. When the integrated ARMS Prometheus is automatically used, there is no need to specify the dependent Prometheus HTTP API Url.
+
+---
+
+### `mesh_config.prometheus`
+
+The prometheus supports the following attributes:
+
+* `external_url` - Prometheus service addresses (enabled external Prometheus when the system automatically populates)
+* `use_external` - Whether to enable external Prometheus
+
+---
+
+### `mesh_config.sidecar_injector`
+
+The sidecar_injector supports the following attributes:
+
+* `sidecar_injector_webhook_as_yaml` - Other automatic injection Sidecar configuration (in YAML format)
+
+---
+
+### `network`
+
+The network supports the following attributes:
+
+* `security_group_id` - Security group ID
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Service Mesh.
 * `delete` - (Defaults to 20 mins) Used when delete the Service Mesh.

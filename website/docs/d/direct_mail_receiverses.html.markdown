@@ -32,22 +32,29 @@ output "first_direct_mail_receivers_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Receivers IDs.
-* `key_word` - (Optional, ForceNew) The key word.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Receivers name.
+* `ids` - (Optional, Computed)  A list of Receivers IDs.
+* `key_word` - (Optional) The key word.
+* `name_regex` - (Optional) A regex string to filter results by Receivers name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of the resource. Valid Values: `0` means uploading, `1` means upload completed.
+* `status` - (Optional) The status of the resource. Valid Values: `0` means uploading, `1` means upload completed.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Receivers names.
-* `receiverses` - A list of Direct Mail Receiverses. Each element contains the following attributes:
-  * `create_time` - The creation time of the resource.
-  * `description` - The description.
-  * `id` - The ID of the Receivers.
-  * `receivers_alias` -The Receivers Alias.
-  * `receivers_id` - The first ID of the resource.
-  * `receivers_name` - The name of the resource.
-  * `status` - The status of the resource.
+* `receiverses` - A list of Direct Mail Receiverses.
+
+---
+
+### `receiverses`
+
+The receiverses supports the following attributes:
+
+* `create_time` - The creation time of the resource.
+* `description` - The description.
+* `id` - The ID of the Receivers.
+* `receivers_alias` -The Receivers Alias.
+* `receivers_id` - The first ID of the resource.
+* `receivers_name` - The name of the resource.
+* `status` - The status of the resource.

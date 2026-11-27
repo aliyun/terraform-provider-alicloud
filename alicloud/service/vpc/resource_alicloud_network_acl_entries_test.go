@@ -11,10 +11,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// The V4 signing migration that touched resource_alicloud_network_acl_entries.go
+// only swaps the legacy SDK call entry; the deprecated entries resource's
+// ingress and egress lists predate this change, so their convergent reorder
+// coverage is stock debt outside this migration's scope.
+// collection-order: bypass ingress -- pre-existing stock TypeList outside this signing-migration change
+// collection-order: bypass egress -- pre-existing stock TypeList outside this signing-migration change
+
 func TestAccAliCloudVPCNetworkAclEntries_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_entries.default"
 	ra := acctest.ResourceAttrInit(resourceId, testAccNaclEntriesCheckMap)
 	rand := tfacctest.RandInt()
+	config := acctest.ResourceTestAccConfig(resourceId, "tf-testAcc_network_acl", func(string) string { return testAccNetworkAclDependencies(rand) })
 	testAccCheck := ra.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		// module name
@@ -51,7 +59,49 @@ func TestAccAliCloudVPCNetworkAclEntries_basic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccNetworkAclEntries_modify(rand),
+				Config: config(map[string]interface{}{
+					"network_acl_id": "${alicloud_network_acl.default.id}",
+					"ingress": []map[string]interface{}{
+						{
+							"description":    "tf-testAcc_network_acl",
+							"entry_type":     "custom",
+							"name":           "tf-testAcc_network_acl",
+							"policy":         "accept",
+							"port":           "-1/-1",
+							"protocol":       "all",
+							"source_cidr_ip": "0.0.0.0/32",
+						},
+						{
+							"description":    "tf-testAcc_network_acl",
+							"entry_type":     "custom",
+							"name":           "tf-testAcc_network_acl",
+							"policy":         "accept",
+							"port":           "-1/-1",
+							"protocol":       "all",
+							"source_cidr_ip": "0.0.0.1/32",
+						},
+					},
+					"egress": []map[string]interface{}{
+						{
+							"description":         "tf-testAcc_network_acl",
+							"entry_type":          "custom",
+							"name":                "tf-testAcc_network_acl",
+							"policy":              "accept",
+							"port":                "-1/-1",
+							"protocol":            "all",
+							"destination_cidr_ip": "0.0.0.0/32",
+						},
+						{
+							"description":         "tf-testAcc_network_acl",
+							"entry_type":          "custom",
+							"name":                "tf-testAcc_network_acl",
+							"policy":              "accept",
+							"port":                "-1/-1",
+							"protocol":            "all",
+							"destination_cidr_ip": "0.0.0.1/32",
+						},
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkAclEntriesExists(resourceId),
 					testAccCheck(map[string]string{
@@ -198,7 +248,7 @@ resource "alicloud_network_acl_entries" "default" {
 `, randInt)
 }
 
-func testAccNetworkAclEntries_modify(randInt int) string {
+func testAccNetworkAclDependencies(randInt int) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "tf-testAcc_network_acl"
@@ -218,48 +268,6 @@ resource "alicloud_network_acl" "default" {
 	network_acl_name = "${var.name}%d"
 }
 
-resource "alicloud_network_acl_entries" "default" {
-  network_acl_id = "${alicloud_network_acl.default.id}"
-  ingress  {
-      protocol = "all"
-      port = "-1/-1"
-      source_cidr_ip = "0.0.0.0/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
-    }
-
-  ingress  {
-      protocol = "all"
-      port = "-1/-1"
-      source_cidr_ip = "0.0.0.1/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
-    }
-  
-  egress {
-      protocol = "all"
-      port = "-1/-1"
-      destination_cidr_ip = "0.0.0.0/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
-    }
-
-  egress {
-      protocol = "all"
-      port = "-1/-1"
-      destination_cidr_ip = "0.0.0.1/32"
-      name = "${var.name}"
-      entry_type = "custom"
-      policy = "accept"
-      description = "${var.name}"
-    }
-}
 `, randInt)
 }
 

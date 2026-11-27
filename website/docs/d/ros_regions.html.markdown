@@ -36,7 +36,14 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `regions` - A list of Ros Regions. Each element contains the following attributes:
-  * `local_name` - The name of the region.
-  * `region_endpoint` - The endpoint of the region.
-  * `region_id` - The ID of the region.
+* `regions` - A list of Ros Regions.
+
+---
+
+### `regions`
+
+The regions supports the following attributes:
+
+* `local_name` - The name of the region.
+* `region_endpoint` - The endpoint of the region.
+* `region_id` - The ID of the region.

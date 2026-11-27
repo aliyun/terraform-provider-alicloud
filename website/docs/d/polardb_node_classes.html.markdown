@@ -35,9 +35,9 @@ output "polardb_available_zone_id" {
 
 The following arguments are supported:
 
-* `pay_type` - (Required, ForceNew) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`.
-* `db_type` - (Optional, ForceNew) Database type. Options are `MySQL`, `PostgreSQL`, `Oracle`. If db_type is set, db_version also needs to be set.
-* `db_version` - (Optional, ForceNew) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/98169.htm) `DBVersion`. If db_version is set, db_type also needs to be set.
+* `pay_type` - (Required) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`.
+* `db_type` - (Optional) Database type. Options are `MySQL`, `PostgreSQL`, `Oracle`. If db_type is set, db_version also needs to be set.
+* `db_version` - (Optional) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/98169.htm) `DBVersion`. If db_version is set, db_type also needs to be set.
 * `db_node_class` - (Optional) The PolarDB node class type by the user.
 * `category` - (Optional) The PolarDB node cluster series.
 * `region_id` - (Optional) The Region to launch the PolarDB cluster.
@@ -48,9 +48,30 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `classes` - A list of PolarDB node classes. Each element contains the following attributes:
-  * `zone_id` - The Zone to launch the PolarDB cluster.
-  * `supported_engines` - A list of PolarDB node classes in the zone.
-    * `engine` - In the zone, the database type supports classes in the following available_resources.
-    * `available_resources` - A list of PolarDB node available classes.
-      * `db_node_class` - PolarDB node available class.
+* `classes` - A list of PolarDB node classes.
+
+---
+
+### `classes`
+
+The classes supports the following attributes:
+
+* `zone_id` - The Zone to launch the PolarDB cluster.
+* `supported_engines` - A list of PolarDB node classes in the zone.
+
+---
+
+### `classes.supported_engines`
+
+The supported_engines supports the following attributes:
+
+* `engine` - In the zone, the database type supports classes in the following available_resources.
+* `available_resources` - A list of PolarDB node available classes.
+
+---
+
+### `classes.supported_engines.available_resources`
+
+The available_resources supports the following attributes:
+
+* `db_node_class` - PolarDB node available class.

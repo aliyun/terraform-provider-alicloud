@@ -69,12 +69,12 @@ resource "alicloud_cen_private_zone" "default" {
 
 The following arguments are supported:
 
+-> **NOTE:** The resource `alicloud_cen_private_zone` depends on the resource `alicloud_cen_instance_attachment`.
+
 * `cen_id` - (Required, ForceNew) The ID of the CEN instance.
 * `access_region_id` - (Required, ForceNew) The ID of the region where PrivateZone is accessed. This region refers to the region in which PrivateZone is accessed by clients.
 * `host_vpc_id` - (Required, ForceNew) The ID of the VPC that is associated with PrivateZone.
 * `host_region_id` - (Required, ForceNew) The ID of the region where PrivateZone is deployed.
-
-->**NOTE:** The resource `alicloud_cen_private_zone` depends on the resource `alicloud_cen_instance_attachment`.
 
 ## Attributes Reference
 
@@ -87,7 +87,7 @@ The following attributes are exported:
 
 -> **NOTE:** Available since v1.238.0.
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 6 mins) Used when create the Private Zone.
 * `delete` - (Defaults to 5 mins) Used when delete the Private Zone.

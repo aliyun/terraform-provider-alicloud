@@ -425,9 +425,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		request := vpc.CreateDescribeNatGatewaysRequest()
 		request.VpcId = ct.VPCID
 
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeNatGateways(request)
-		})
+		raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeNatGatewaysResponse())
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, ct.VPCID, "DescribeNatGateways", errs.AlibabaCloudSdkGoERROR)
 		}

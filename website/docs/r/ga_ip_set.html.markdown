@@ -73,7 +73,9 @@ The following arguments are supported:
 * `bandwidth` - (Optional, Int) The bandwidth allocated to the acceleration region.
 
   -> **NOTE:** The minimum bandwidth of each accelerated region is 2Mbps. The total bandwidth of the acceleration region should be less than or equal to the bandwidth of the basic bandwidth package you purchased.
-* `ip_version` - (Optional, ForceNew) The IP protocol used by the GA instance. Default value: `IPv4`. Valid values: `IPv4`, `IPv6`, `DUAL_STACK`. **NOTE:** From version 1.220.0, `ip_version` can be set to `DUAL_STACK`.
+* `ip_version` - (Optional, ForceNew) The IP protocol used by the GA instance. Default value: `IPv4`. Valid values: `IPv4`, `IPv6`, `DUAL_STACK`.
+
+  -> **NOTE:** From version 1.220.0, `ip_version` can be set to `DUAL_STACK`.
 * `isp_type` - (Optional, ForceNew, Available since v1.207.0) The line type of the elastic IP address (EIP) in the acceleration region. Valid values: `BGP`, `BGP_PRO`.
 
 ## Attributes Reference
@@ -86,7 +88,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Ip Set.
 * `update` - (Defaults to 3 mins) Used when update the Ip Set.

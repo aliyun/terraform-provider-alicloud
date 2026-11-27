@@ -160,6 +160,8 @@ Enumeration value:
 * `white_ip_list` - (Optional, List, Available since v1.266.0) Instance whitelist list See [`white_ip_list`](#white_ip_list) below.
 * `zone_id` - (Required, ForceNew) The zone ID  of the resource
 
+---
+
 ### `engine_list`
 
 The engine_list supports the following:
@@ -181,6 +183,8 @@ Enumeration value:
 - `LSTREAM`: Stream engine
 
 * `node_group` - (Optional, Set) Node Group List See [`node_group`](#engine_list-node_group) below.
+
+---
 
 ### `engine_list-node_group`
 
@@ -228,6 +232,8 @@ The engine_list-node_group supports the following:
 
 * `resource_group_name` - (Required) Resource group name
 
+---
+
 ### `white_ip_list`
 
 The white_ip_list supports the following:
@@ -241,25 +247,46 @@ The following attributes are exported:
 
 * `id` - The ID of the resource supplied above.
 * `engine_list` - Engine List
-  * `connect_address_list` - Connect Address List
-    * `address` - Connect Address
-    * `port` - Connect Port
-    * `type` - Connect Type:
-  * `is_last_version` - Whether it is the latest version
-  * `latest_version` - Latest Version
-  * `node_group` - Node Group List
-    * `category` - Node Type
-    * `cpu_core_count` - Number of CPU cores
-    * `enable_attach_local_disk` - Whether to mount  local cloud disks
-    * `memory_size_gi_b` - Node memory size
-    * `spec_id` - Spec Id
-    * `status` - Node Status
-  * `version` - Engine Version
 * `region_id` - The region ID of the resource
+
+---
+
+### `engine_list`
+
+The engine_list supports the following attributes:
+
+* `connect_address_list` - Connect Address List
+* `is_last_version` - Whether it is the latest version
+* `latest_version` - Latest Version
+* `node_group` - Node Group List
+* `version` - Engine Version
+
+---
+
+### `engine_list.connect_address_list`
+
+The connect_address_list supports the following attributes:
+
+* `address` - Connect Address
+* `port` - Connect Port
+* `type` - Connect Type:
+
+---
+
+### `engine_list.node_group`
+
+The node_group supports the following attributes:
+
+* `category` - Node Type
+* `cpu_core_count` - Number of CPU cores
+* `enable_attach_local_disk` - Whether to mount  local cloud disks
+* `memory_size_gi_b` - Node memory size
+* `spec_id` - Spec Id
+* `status` - Node Status
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/configure#define-operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 101 mins) Used when create the Instance V2.
 * `delete` - (Defaults to 20 mins) Used when delete the Instance V2.

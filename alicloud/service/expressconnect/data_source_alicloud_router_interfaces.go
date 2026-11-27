@@ -192,9 +192,7 @@ func dataSourceAlicloudRouterInterfacesRead(d *schema.ResourceData, meta interfa
 	for {
 		var response *vpc.DescribeRouterInterfacesResponse
 		err := invoker.Run(func() error {
-			raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-				return vpcClient.DescribeRouterInterfaces(request)
-			})
+			raw, err := client.VpcSdkRpc(request, vpc.CreateDescribeRouterInterfacesResponse())
 			if err != nil {
 				return err
 			}

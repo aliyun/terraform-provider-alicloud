@@ -55,6 +55,8 @@ The following arguments are supported:
 * `service_version` - (Required) The Function Compute service version for which you are creating the alias. Pattern: (LATEST|[0-9]+).
 * `routing_config` - (Optional) The Function Compute alias' route configuration settings. See [`routing_config`](#routing_config) below.
 
+---
+
 ### `routing_config`
 
 The routing_config supports the following:
